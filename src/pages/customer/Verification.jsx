@@ -87,7 +87,7 @@ export default function Verification({
                 className="flex items-center gap-3 px-5 py-4 bg-[#00236f]/5 text-[#00236f] font-black text-left border-l-4 border-[#00236f]"
               >
                 <CreditCard className="w-4 h-4 text-[#00236f]" />
-                Hồ sơ pháp lý xác minh (KYC)
+                Hồ sơ pháp lý xác minh 
               </button>
               <button
                 onClick={() => setActivePage('orders')}
@@ -112,7 +112,7 @@ export default function Verification({
           <div className="border-b border-gray-150 pb-4 mb-6">
             <h2 className="text-xl font-black text-[#00236f] font-display flex items-center gap-2">
               <CreditCard className="text-[#fea619] w-6 h-6" />
-              NÂNG CẤP HỒ SƠ PHÁP LÝ XÁC MINH (KYC)
+              NÂNG CẤP HỒ SƠ PHÁP LÝ XÁC MINH 
             </h2>
             <p className="text-xs text-gray-500 mt-1">
               Kê khai danh tính giúp tối giản hóa thủ tục thế cọc giữ chỗ, hỗ trợ nhận trang bị nhanh chóng không cầm cố giấy tờ gốc.

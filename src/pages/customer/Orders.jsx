@@ -190,7 +190,7 @@ export default function Orders({
                         onClick={() => onSelectOrder(order)}
                         className="px-4 py-2 bg-[#00236f] text-white hover:bg-[#fea619] hover:text-[#2a1700] rounded-lg text-xs font-black transition flex items-center gap-1 shrink-0"
                       >
-                        Giải ngân & Chi tiết
+                        Chi tiết
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>

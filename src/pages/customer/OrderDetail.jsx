@@ -101,7 +101,7 @@ export default function OrderDetail({
           {/* Stepper block */}
           <div className="bg-white border border-[#c5c5d3] p-6 rounded-2xl shadow-xs select-none">
             <h3 className="text-xs font-extrabold text-[#00236f] uppercase tracking-wider block border-b border-gray-100 pb-3.5 mb-6">
-              📊 Quy trình hoàn chỉnh thủ tục biên nhận máy
+              Quy trình hoàn chỉnh thủ tục biên nhận máy
             </h3>
 
             {/* Stepper graphic rendering */}
@@ -144,7 +144,7 @@ export default function OrderDetail({
           <div className="bg-white border border-[#c5c5d3] rounded-2xl overflow-hidden shadow-xs">
             <div className="p-4 bg-gray-50 border-b border-gray-100 select-none">
               <h3 className="text-xs font-black uppercase text-[#00236f] tracking-wider">
-                🎥 DANH SÁCH THIẾT BỊ ĐÃ KHỚP LỆCH
+                DANH SÁCH THIẾT BỊ ĐÃ KHỚP LỆCH
               </h3>
             </div>
 
@@ -183,7 +183,7 @@ export default function OrderDetail({
           {/* Legal doc rules & terms contract */}
           <div className="bg-white border border-[#c5c5d3] p-6 rounded-2xl shadow-xs space-y-3.5 select-none text-xs">
             <h3 className="text-xs font-black uppercase text-[#00236f] tracking-wider border-b border-gray-100 pb-2.5 flex justify-between items-center">
-              📑 HỢP ĐỒNG QUY CHẾ KÝ KẾT DÂN SỰ
+              HỢP ĐỒNG QUY CHẾ KÝ KẾT DÂN SỰ
               <button onClick={() => alert('Đang tải bản nháp PDF hợp đồng dịch vụ... Sẵn sàng!')} className="text-[10.5px] font-extrabold text-[#00236f] hover:text-[#fea619] transition flex items-center gap-1 cursor-pointer">
                 <Download className="w-4 h-4 shrink-0" />
                 Bản nháp PDF
@@ -253,7 +253,7 @@ export default function OrderDetail({
                 onClick={handleStartPaymentFlow}
                 className="w-full py-4 bg-[#00236f] text-white hover:bg-[#fea619] hover:text-[#2a1700] text-xs font-black rounded-xl shadow transition duration-200 flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
               >
-                💸 THANH TOÁN ĐẶT CỌC GIỮ CHỖ
+                THANH TOÁN ĐẶT CỌC GIỮ CHỖ
                 <ArrowRight className="w-4 h-4 shrink-0" />
               </button>
             ) : (

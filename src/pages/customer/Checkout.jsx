@@ -102,7 +102,7 @@ export default function Checkout({
               <div className="space-y-1">
                 <span className="text-gray-400 font-bold block">Dịch vụ bàn giao linh động tháp ráp:</span>
                 <span className="text-slate-800 font-extrabold flex items-center gap-1">
-                  <Sparkles className="w-4 h-4 text-[#fea619] shrink-0" />
+                  {/* <Sparkles className="w-4 h-4 text-[#fea619] shrink-0" /> */}
                   Free lắp ráp test sensor & kỹ thuật hướng dẫn setup
                 </span>
               </div>
@@ -216,7 +216,7 @@ export default function Checkout({
               disabled={isSubmitting}
               className="w-full py-4 bg-[#00236f] text-white hover:bg-[#fea619] hover:text-[#2a1700] text-xs font-black rounded-xl shadow-md transition-all duration-2.5 shrink-0 flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
             >
-              🚀 TIẾN HÀNH DUYỆT TÙY CỌC
+              TIẾN HÀNH DUYỆT TÙY CỌC
             </button>
 
             <div className="text-[9.5px] text-gray-400 text-center leading-relaxed font-medium">
