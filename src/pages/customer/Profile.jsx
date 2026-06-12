@@ -61,7 +61,7 @@ export default function Profile({ user, userVerified, onSave, setActivePage }) {
                 className="flex items-center gap-3 px-5 py-4 hover:bg-gray-50 text-left transition text-gray-700"
               >
                 <CreditCard className="w-4 h-4 text-[#00236f]" />
-                Hồ sơ pháp lý xác minh (KYC)
+                Hồ sơ pháp lý xác minh 
               </button>
               <button
                 onClick={() => setActivePage('orders')}
