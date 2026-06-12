@@ -51,11 +51,11 @@ export default function Header({
         </a>
 
         {/* Mid Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-6 select-none text-xs font-black uppercase">
+        <nav className="hidden lg:flex items-center gap-6 select-none text-xs font-black uppercase flex-nowrap">
           <a 
             href="#" 
             onClick={(e) => handleNavClick('home', e)}
-            className={`transition mr-1 ${
+            className={`transition mr-1 whitespace-nowrap ${
               activePage === 'home' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
             }`}
           >
@@ -64,19 +64,11 @@ export default function Header({
           <a 
             href="#" 
             onClick={(e) => handleNavClick('equipments', e)}
-            className={`transition ${
+            className={`transition whitespace-nowrap ${
               activePage === 'equipments' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
             }`}
           >
-            Lục tìm thiết bị
-          </a>
-          
-          <a 
-            href="#" 
-            onClick={handleProcessClick}
-            className="text-gray-250 hover:text-white transition"
-          >
-            Quy trình thuê
+            Danh sách thiết bị
           </a>
 
           {user && (
@@ -84,7 +76,7 @@ export default function Header({
               <a 
                 href="#" 
                 onClick={(e) => handleNavClick('orders', e)}
-                className={`transition ${
+                className={`transition whitespace-nowrap ${
                   activePage === 'orders' || activePage === 'order-detail' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
                 }`}
               >
@@ -92,17 +84,8 @@ export default function Header({
               </a>
               <a 
                 href="#" 
-                onClick={(e) => handleNavClick('verification', e)}
-                className={`transition ${
-                  activePage === 'verification' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
-                }`}
-              >
-                Hồ sơ xác minh (KYC)
-              </a>
-              <a 
-                href="#" 
                 onClick={(e) => handleNavClick('profile', e)}
-                className={`transition ${
+                className={`transition whitespace-nowrap ${
                   activePage === 'profile' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
                 }`}
               >
@@ -176,14 +159,12 @@ export default function Header({
       {/* Mobile Drawer Links block */}
       {mobileMenuOpen && (
         <div className="absolute top-16 left-0 right-0 bg-[#00174c] border-b border-[#00236f] py-4 px-6 flex flex-col gap-3 font-semibold text-xs uppercase lg:hidden select-none">
-          <a href="#" onClick={(e) => handleNavClick('home', e)} className="py-2 border-b border-white/5">Trang chủ</a>
-          <a href="#" onClick={(e) => handleNavClick('equipments', e)} className="py-2 border-b border-white/5">Lục tìm thiết bị</a>
-          <a href="#" onClick={handleProcessClick} className="py-2 border-b border-white/5">Quy trình thuê</a>
+          <a href="#" onClick={(e) => handleNavClick('home', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Trang chủ</a>
+          <a href="#" onClick={(e) => handleNavClick('equipments', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Danh sách thiết bị</a>
           {user && (
             <>
-              <a href="#" onClick={(e) => handleNavClick('orders', e)} className="py-2 border-b border-white/5">Đơn thuê của tôi</a>
-              <a href="#" onClick={(e) => handleNavClick('verification', e)} className="py-2 border-b border-white/5">Hồ sơ xác minh (KYC)</a>
-              <a href="#" onClick={(e) => handleNavClick('profile', e)} className="py-2 border-b border-white/5">Tài khoản cá nhân</a>
+              <a href="#" onClick={(e) => handleNavClick('orders', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Đơn thuê của tôi</a>
+              <a href="#" onClick={(e) => handleNavClick('profile', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Tài khoản cá nhân</a>
             </>
           )}
         </div>
