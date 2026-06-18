@@ -39,8 +39,8 @@ export default function CartDrawer({
           <button 
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-red-50 text-[#444651] hover:text-red-600 rounded-full transition-colors"
-          >
-            <X className="w-4 h-4" />
+          >??ng
+            
           </button>
         </div>
 
@@ -98,8 +98,8 @@ export default function CartDrawer({
                     onClick={() => onRemoveFromCart(idx)}
                     className="absolute right-3 top-3 text-gray-400 hover:text-red-500 transition-colors p-1"
                     title="Xóa khỏi giỏ hàng"
-                  >
-                    <Trash2 className="w-4 h-4" />
+                  >X?a
+                    
                   </button>
                 </div>
               ))}
@@ -132,7 +132,7 @@ export default function CartDrawer({
               onClick={onCheckoutAll}
               className="w-full py-3.5 bg-[#fea619] hover:bg-[#fea619]/90 text-[#2a1700] hover:scale-[1.01] font-extrabold rounded-xl transition duration-200 active:scale-95 shadow-md flex items-center justify-center gap-2 text-xs"
             >
-              <ClipboardCheck className="w-4 h-4 shrink-0" />
+              
               Gửi yêu cầu thuê toàn bộ
             </button>
 

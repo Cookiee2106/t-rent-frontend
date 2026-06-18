@@ -54,25 +54,34 @@ export default function Header({
         <nav className="hidden lg:flex items-center gap-6 select-none text-xs font-black uppercase flex-nowrap">
           <a 
             href="#" 
-            onClick={(e) => handleNavClick('home', e)}
-            className={`transition mr-1 whitespace-nowrap ${
-              activePage === 'home' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
-            }`}
-          >
-            Trang chủ
-          </a>
-          <a 
-            href="#" 
             onClick={(e) => handleNavClick('equipments', e)}
             className={`transition whitespace-nowrap ${
               activePage === 'equipments' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
             }`}
           >
-            Danh sách thiết bị
+            Mẫu thiết bị
           </a>
 
           {user && (
             <>
+              <a 
+                href="#" 
+                onClick={(e) => handleNavClick('verification', e)}
+                className={`transition whitespace-nowrap ${
+                  activePage === 'verification' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
+                }`}
+              >
+                Hồ sơ xác minh
+              </a>
+              <a 
+                href="#" 
+                onClick={(e) => handleNavClick('cart', e)}
+                className={`transition whitespace-nowrap ${
+                  activePage === 'cart' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
+                }`}
+              >
+                Giỏ hàng
+              </a>
               <a 
                 href="#" 
                 onClick={(e) => handleNavClick('orders', e)}
@@ -80,16 +89,7 @@ export default function Header({
                   activePage === 'orders' || activePage === 'order-detail' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
                 }`}
               >
-                Đơn thuê của tôi
-              </a>
-              <a 
-                href="#" 
-                onClick={(e) => handleNavClick('profile', e)}
-                className={`transition whitespace-nowrap ${
-                  activePage === 'profile' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
-                }`}
-              >
-                Tài khoản cá nhân
+                Đơn hàng
               </a>
             </>
           )}
@@ -99,24 +99,26 @@ export default function Header({
         <div className="flex items-center gap-4">
           
           {/* Basket cart direct route trigger icon */}
-          <button 
-            onClick={(e) => handleNavClick('cart', e)}
-            className="w-10 h-10 bg-white/15 hover:bg-white/20 hover:scale-105 active:scale-95 duration-200 transition rounded-xl flex items-center justify-center relative cursor-pointer"
-            id="cart-trigger-btn"
-          >
-            <ShoppingBag className="w-4 h-4 text-white" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-[#fea619] border-2 border-[#00236f] text-[#2a1700] text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
-                {cartCount}
-              </span>
-            )}
-          </button>
+          {user && (
+            <button 
+              onClick={(e) => handleNavClick('cart', e)}
+              className="w-10 h-10 bg-white/15 hover:bg-white/20 hover:scale-105 active:scale-95 duration-200 transition rounded-xl flex items-center justify-center relative cursor-pointer"
+              id="cart-trigger-btn"
+            >
+              <ShoppingBag className="w-4 h-4 text-white" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-[#fea619] border-2 border-[#00236f] text-[#2a1700] text-[9px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Login actions or Avatar menu */}
           <div className="flex items-center gap-2 border-l border-white/20 pl-4 select-none">
             {user ? (
               <div className="flex items-center gap-2">
-                <div onClick={(e) => handleNavClick('profile', e)} className="hidden sm:flex flex-col text-right cursor-pointer group">
+                <div onClick={(e) => handleNavClick('verification', e)} className="hidden sm:flex flex-col text-right cursor-pointer group">
                   <span className="text-xs font-black text-[#fea619] max-w-[120px] truncate flex items-center gap-1">
                     {user.name}
                     {userVerified && <ShieldCheck className="w-3.5 h-3.5 text-green-400 shrink-0" />}
@@ -127,20 +129,29 @@ export default function Header({
                 </div>
                 <button 
                   onClick={onLogout}
-                  className="w-8 h-8 rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-300 hover:text-red-200 transition flex items-center justify-center"
+                  className="px-3 py-1.5 rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-300 hover:text-red-200 transition flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
                   title="Đăng xuất"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Đăng xuất</span>
                 </button>
               </div>
             ) : (
-              <button 
-                onClick={(e) => handleNavClick('login', e)}
-                className="h-9 px-4 bg-[#fea619] hover:bg-[#fea619]/90 text-[#2a1700] text-xs font-black rounded-lg duration-200 active:scale-95 transition flex items-center gap-1.5"
-              >
-                <LogIn className="w-4 h-4" />
-                Đăng nhập
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={(e) => handleNavClick('login', e)}
+                  className="h-9 px-3.5 bg-[#fea619] hover:bg-[#fea619]/90 text-[#2a1700] text-xs font-black rounded-lg duration-200 active:scale-95 transition flex items-center gap-1.5"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Đăng nhập
+                </button>
+                <button 
+                  onClick={(e) => handleNavClick('register', e)}
+                  className="h-9 px-3.5 bg-white/10 hover:bg-white/20 text-white text-xs font-black rounded-lg duration-200 active:scale-95 transition"
+                >
+                  Đăng ký
+                </button>
+              </div>
             )}
           </div>
 
@@ -159,12 +170,12 @@ export default function Header({
       {/* Mobile Drawer Links block */}
       {mobileMenuOpen && (
         <div className="absolute top-16 left-0 right-0 bg-[#00174c] border-b border-[#00236f] py-4 px-6 flex flex-col gap-3 font-semibold text-xs uppercase lg:hidden select-none">
-          <a href="#" onClick={(e) => handleNavClick('home', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Trang chủ</a>
-          <a href="#" onClick={(e) => handleNavClick('equipments', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Danh sách thiết bị</a>
+          <a href="#" onClick={(e) => handleNavClick('equipments', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Mẫu thiết bị</a>
           {user && (
             <>
-              <a href="#" onClick={(e) => handleNavClick('orders', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Đơn thuê của tôi</a>
-              <a href="#" onClick={(e) => handleNavClick('profile', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Tài khoản cá nhân</a>
+              <a href="#" onClick={(e) => handleNavClick('verification', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Hồ sơ xác minh</a>
+              <a href="#" onClick={(e) => handleNavClick('cart', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Giỏ hàng</a>
+              <a href="#" onClick={(e) => handleNavClick('orders', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Đơn hàng</a>
             </>
           )}
         </div>
