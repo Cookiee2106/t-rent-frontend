@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ClipboardList, Calendar, DollarSign, Wallet, CheckCircle2, Clock, ShieldAlert, ArrowRight, Star, AlertCircle } from 'lucide-react';
+import { ClipboardList, Calendar, CheckCircle2, Clock, ArrowRight, AlertCircle, XCircle } from 'lucide-react';
 
 export default function Orders({
   orders,
@@ -11,14 +11,17 @@ export default function Orders({
   const [activeTab, setActiveTab] = useState('all');
 
   const tabs = [
-    { id: 'all', name: 'Tất cả' },
-    { id: 'pending', name: 'Chờ thanh toán cọc' },
-    { id: 'active', name: 'Đã giữ chỗ / Thuê' },
-    { id: 'completed', name: 'Đã hoàn tất vẹn' }
+    { id: 'all', name: 'Tất cả đơn' },
+    { id: 'pending', name: 'Chờ đặt cọc' },
+    { id: 'paid', name: 'Đã cọc giữ chỗ' },
+    { id: 'completed', name: 'Đã hoàn tất dã quầy' },
+    { id: 'cancelled', name: 'Đã hủy' }
   ];
 
+  // Lọc danh sách đơn hàng
   const filteredOrders = orders.filter((order) => {
     if (activeTab === 'all') return true;
+    if (activeTab === 'paid') return order.status === 'paid' || order.status === 'active';
     return order.status === activeTab;
   });
 
@@ -26,51 +29,58 @@ export default function Orders({
     switch (status) {
       case 'pending':
         return {
-          bg: 'bg-amber-50 text-amber-700 border-amber-250',
+          bg: 'bg-amber-50 text-amber-800 border-amber-200',
           label: 'Chờ thanh toán cọc',
-          icon: <Clock className="w-3.5 h-3.5" />
+          icon: <Clock className="w-3.5 h-3.5 text-amber-600" />
         };
+      case 'paid':
       case 'active':
         return {
-          bg: 'bg-green-50 text-green-700 border-green-250',
-          label: 'Đã giữ chỗ / Đang thuê',
-          icon: <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+          bg: 'bg-emerald-50 text-emerald-800 border-emerald-250',
+          label: 'Đã đặt cọc giữ chỗ',
+          icon: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
         };
       case 'completed':
         return {
-          bg: 'bg-blue-50 text-blue-700 border-blue-250',
-          label: 'Đã hoàn tất thành công',
-          icon: <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+          bg: 'bg-sky-50 text-sky-800 border-sky-200',
+          label: 'Đã hoàn tất dã ngoại bàn giao',
+          icon: <CheckCircle2 className="w-3.5 h-3.5 text-sky-650" />
+        };
+      case 'cancelled':
+        return {
+          bg: 'bg-rose-50 text-rose-800 border-rose-200',
+          label: 'Đã hủy đơn hàng',
+          icon: <XCircle className="w-3.5 h-3.5 text-rose-600" />
         };
       default:
         return {
-          bg: 'bg-gray-50 text-gray-700 border-gray-250',
-          label: 'Trạng thái lưu chuyển',
+          bg: 'bg-slate-50 text-slate-700 border-slate-200',
+          label: 'Chờ xử lý',
           icon: <Clock className="w-3.5 h-3.5" />
         };
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-8 py-10 animate-fade-in font-sans">
+    <div className="max-w-5xl mx-auto px-4 md:px-8 py-10 animate-fade-in text-left font-sans" id="orders-list-screen">
       
-      {/* Header element */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 select-none">
+      {/* Tiêu đề & Danh mục lọc Tab */}
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-8 border-b border-slate-100 pb-5">
         <div>
-          <h1 className="text-3xl font-black text-[#00236f] font-sans">ĐƠN THUÊ CỦA TÔI</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Rà sát lịch bàn giao, thời gian thuê máy, hóa đơn cọc, và ký hợp đồng lưu động.</p>
+          <h1 className="text-xl font-black text-[#00236f] uppercase tracking-wide">Danh Sách Đơn Hàng</h1>
+          <p className="text-xs text-slate-400 mt-1">Theo dõi tiến trình bảo lộc giữ chỗ, bàn lưu bàn giao, hoàn trả thiết bị camera</p>
         </div>
 
-        {/* Tab filters matching Mockup 9 */}
-        <div className="flex flex-wrap bg-white p-1 rounded-xl border border-[#c5c5d3] shadow-xs shrink-0 font-bold">
+        {/* Tabs lọc */}
+        <div className="flex flex-wrap bg-slate-100 p-1 rounded-xl border border-slate-250/60 shadow-inner font-bold text-xs">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${
+              className={`px-3 py-1.5 rounded-lg transition text-[11px] font-black ${
                 activeTab === tab.id
-                  ? 'bg-[#00236f] text-white shadow-sm'
-                  : 'text-[#444651] hover:text-[#00236f]'
+                  ? 'bg-white text-[#00236f] shadow-sm'
+                  : 'text-slate-500 hover:text-[#00236f]'
               }`}
             >
               {tab.name}
@@ -80,122 +90,89 @@ export default function Orders({
       </div>
 
       {filteredOrders.length === 0 ? (
-        <div className="text-center py-20 bg-white border border-[#c5c5d3] rounded-2xl shadow-xs">
-          <ClipboardList className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-lg font-bold text-gray-800">Không tìm thấy đơn hàng tương ứng nào</p>
-          <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto mb-6">
-            Bạn chưa thực hiện bất kỳ giao dịch ký gửi bảo chứng nào, hoặc trạng thái duyệt lọc trên trống rỗng.
-          </p>
+        <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <ClipboardList className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-sm font-bold text-slate-800">Không tìm thấy đơn hàng nào khớp điều kiện</p>
+          <p className="text-xs text-slate-400 mt-1 mb-6">Bạn chưa khởi tạo giao dịch bảo cọc thiết bị ảnh nào.</p>
           <button
             onClick={() => setActivePage('equipments')}
-            className="px-6 py-2.5 bg-[#00236f] text-white font-black text-xs rounded-lg hover:bg-[#fea619] hover:text-[#2a1700] transition"
+            className="px-5 py-2.5 bg-[#00236f] text-white font-extrabold text-xs rounded-xl hover:bg-[#fea619] hover:text-[#2a1700] transition"
           >
-            QUAY LẠI CHỌN THIẾT BỊ THUÊ
+            Thuê thiết bị ngay
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6">
+        <div className="space-y-4">
           {filteredOrders.map((order) => {
             const st = getStatusStyle(order.status);
-            const totalCọcDựTính = order.totalPrice + order.deposit;
+            // Tiền thuê
+            const totalRent = order.totalPrice || 0;
+            // Tiền cọc
+            const totalDeposit = order.deposit || 0;
 
             return (
               <div
                 key={order.id}
-                className="bg-white border border-[#c5c5d3] rounded-2xl overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col md:flex-row shadow-xs"
+                onClick={() => onSelectOrder(order)}
+                className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-[#00236f] transition p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 cursor-pointer shadow-sm animate-fade-in"
               >
-                {/* Visual pic leftmost preview cover */}
-                <div className="w-full md:w-48 bg-gray-50 flex items-center justify-center p-4 border-b md:border-b-0 md:border-r border-gray-100 shrink-0">
-                  <div className="w-28 h-28 bg-white border border-gray-150 rounded-xl flex items-center justify-center p-2.5 shadow-inner overflow-hidden">
-                    <img
-                      src={order.equipment.image}
-                      alt={order.equipment.name}
-                      className="w-full h-full object-cover rounded"
-                    />
-                  </div>
-                </div>
-
-                {/* Main Content card body right */}
-                <div className="p-6 flex-grow flex flex-col justify-between space-y-4">
-                  {/* Top line ID & chip */}
-                  <div className="flex flex-wrap justify-between items-center gap-2 border-b border-gray-50 pb-2.5">
-                    <span className="text-xs font-black text-[#00236f] uppercase">
-                      Mã đơn: #{order.order_code || order.id}
+                
+                {/* Info block */}
+                <div className="space-y-3 flex-grow text-left">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="text-xs font-black text-[#00236f] font-mono">
+                      #{order.order_code || order.id}
                     </span>
-                    <span className={`inline-flex items-center gap-1 px-3 py-1 text-[11px] font-extrabold border rounded-full ${st.bg}`}>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${st.bg}`}>
                       {st.icon}
                       {st.label}
                     </span>
+                    
+                    {/* Trạng thái thanh toán cọc */}
+                    <span className={`text-[10px] px-2 py-0.5 rounded border font-bold ${
+                      order.status === 'pending' || order.status === 'cancelled'
+                        ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    }`}>
+                      {order.status === 'pending' ? 'Chưa thanh toán cọc' : order.status === 'cancelled' ? 'Hủy đặt cọc' : 'Đã thanh toán cọc'}
+                    </span>
                   </div>
 
-                  {/* Mid block information */}
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                    <div className="md:col-span-7 space-y-1">
-                      <h4 className="text-sm font-black text-gray-900 leading-snug">
-                        {order.equipment.name}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+                    <div className="space-y-1">
+                      <h4 className="font-extrabold text-[#00236f] leading-snug">
+                        {order.equipment?.name || 'Mẫu thiết bị camera cao cấp'}
                       </h4>
-                      <p className="text-[11.5px] text-gray-450 font-semibold flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-[#00236f]" />
-                        Kỳ hạn đặt: {order.startDate} đến {order.endDate} ({order.rental_days || 2} ngày thuê)
+                      <p className="text-[11px] text-slate-450 font-bold flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        Kỳ thuê: {order.startDate} đến {order.endDate} ({order.rental_days || 1} ngày thuê)
                       </p>
                     </div>
 
-                    <div className="md:col-span-5 text-left md:text-right text-xs">
-                      <div className="text-gray-400 font-bold block">Tổng tiền cọc dự dự thảo:</div>
-                      <strong className="text-sm font-black text-amber-600 block">
-                        {totalCọcDựTính.toLocaleString('vi-VN')} VNĐ
-                      </strong>
-                      <span className="text-[10px] text-gray-400 block font-semibold leading-none mt-0.5">
-                        (Thuê: {order.totalPrice.toLocaleString('vi-VN')}đ + Ký: {order.deposit.toLocaleString('vi-VN')}đ)
-                      </span>
+                    <div className="text-left sm:text-right space-y-0.5">
+                      <div className="text-slate-400 block text-[10px] uppercase font-bold">Biểu phí chi tiết:</div>
+                      <div className="text-slate-800 font-bold">
+                        Đóng cọc giữ chỗ: <span className="text-amber-600 font-black font-mono">{(totalRent + totalDeposit).toLocaleString('vi-VN')} VNĐ</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 block font-semibold leading-none">
+                        (Khấu trừ: Thuê {totalRent.toLocaleString('vi-VN')}đ + Cọc {totalDeposit.toLocaleString('vi-VN')}đ)
+                      </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Actions footer */}
-                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
-                    <div className="text-[10px] text-gray-400 font-bold uppercase select-none tracking-tight">
-                      Giao dịch tự động bảo bảo lưu bởi Vietcombank
-                    </div>
-
-                    {/* Sub actions navigation hooks */}
-                    <div className="flex gap-2 w-full sm:w-auto justify-end">
-                      {order.status === 'pending' && (
-                        <button
-                          onClick={() => {
-                            if (confirm('Bạn chắc chắn có nhu cầu hủy yêu cầu thuê máy này không?')) {
-                              onCancelOrder(order.id);
-                            }
-                          }}
-                          className="px-4 py-2 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs font-bold transition focus:outline-none"
-                        >
-                          Hủy đơn
-                        </button>
-                      )}
-
-                      {order.status === 'active' && (
-                        <button
-                          onClick={() => {
-                            if (confirm('Bạn muốn gửi lệnh hoàn trả thiết bị này lên hệ thống?')) {
-                              onReturnEquipment(order.id);
-                              alert('Trà thiết bị thành công! Showroom đang tiến hành kiểm kiểm quầy và hoàn lại cọc 100% tài sản trong 5 phút!');
-                            }
-                          }}
-                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition focus:outline-none"
-                        >
-                          Hoàn trả thiết bị
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => onSelectOrder(order)}
-                        className="px-4 py-2 bg-[#00236f] text-white hover:bg-[#fea619] hover:text-[#2a1700] rounded-lg text-xs font-black transition flex items-center gap-1 shrink-0"
-                      >
-                        Chi tiết
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                  </div>
+                {/* Button actions wrapper */}
+                <div className="shrink-0 flex self-stretch justify-end md:items-center">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectOrder(order);
+                    }}
+                    className="p-2.5 bg-slate-50 hover:bg-[#00236f] text-[#00236f] hover:text-white rounded-xl border border-slate-200 flex items-center gap-1 transition text-xs font-black shadow-inner"
+                  >
+                    Chi tiết
+                    
+                  </button>
                 </div>
 
               </div>
@@ -203,6 +180,7 @@ export default function Orders({
           })}
         </div>
       )}
+
     </div>
   );
 }

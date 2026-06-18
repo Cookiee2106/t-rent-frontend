@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { ShieldCheck, User, Eye, Lock, ClipboardList, CreditCard, UploadCloud, Info, AlertCircle, FileText } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  ShieldCheck, 
+  User, 
+  CreditCard, 
+  UploadCloud, 
+  AlertCircle, 
+  FileText, 
+  ArrowLeft, 
+  Check, 
+  RefreshCw 
+} from 'lucide-react';
 
 export default function Verification({
   user,
@@ -7,258 +18,501 @@ export default function Verification({
   onVerifySubmit,
   setActivePage
 }) {
+  // Trạng thái hồ sơ: 'Chưa gửi', 'Chờ duyệt', 'Đã duyệt', 'Bị từ chối'
+  const [kycStatus, setKycStatus] = useState(userVerified ? 'Đã duyệt' : 'Chưa gửi');
+  
+  // Chế độ màn hình: 'view' (Xem hồ sơ), 'submit' (Gửi hồ sơ), 'edit_profile' (Cập nhật hồ sơ cá nhân)
+  const [currentMode, setCurrentMode] = useState('view');
+  
+  // Thông tin cá nhân
+  const [fullName, setFullName] = useState(user?.name || 'Nguyễn Văn A');
+  const [phone, setPhone] = useState(user?.phone || '0901 234 567');
   const [cccdNumber, setCccdNumber] = useState('021094002934');
-  const [fullName, setFullName] = useState(user?.name || 'Khách hàng Demo');
-  const [permanentAddress, setPermanentAddress] = useState('125 Hai Bà Trưng, Quận 1, TP. Hồ Chí Minh');
-  const [agreed, setAgreed] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState({ front: false, back: false, portrait: false });
+  const [address, setAddress] = useState('125 Hai Bà Trưng, Quận 1, TP. Hồ Chí Minh');
+  
+  // Lý do từ chối nếu có
+  const [rejectionReason, setRejectionReason] = useState('Ảnh chụp mặt sau của thẻ CCCD bị nhòe mờ, hiển thị không rõ số ID.');
 
-  const handleSimulatedUpload = (field) => {
-    setUploadProgress(prev => ({ ...prev, [field]: 'uploading' }));
-    setTimeout(() => {
-      setUploadProgress(prev => ({ ...prev, [field]: 'done' }));
-    }, 800);
+  // Form gửi hồ sơ xác minh
+  const [frontImage, setFrontImage] = useState(null);
+  const [backImage, setBackImage] = useState(null);
+  const [submitCccdNumber, setSubmitCccdNumber] = useState('021094002934');
+  const [uploadError, setUploadError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form cập nhật hồ sơ cá nhân
+  const [editFullName, setEditFullName] = useState(fullName);
+  const [editPhone, setEditPhone] = useState(phone);
+  const [editAddress, setEditAddress] = useState(address);
+  const [editCccdNumber, setEditCccdNumber] = useState(cccdNumber);
+
+  // Bộ điều chỉnh trạng thái nhanh phục vụ chạy thử nghiệm
+  const changeMockKycStatus = (status) => {
+    setKycStatus(status);
+    setCurrentMode('view');
+    setSuccessMsg(null);
+    setUploadError(null);
+    if (status === 'Đã duyệt') {
+      onVerifySubmit(); 
+    }
   };
 
-  const handleSubmit = (e) => {
+  // Giả lập tải ảnh
+  const handleUploadSimulate = (side) => {
+    setUploadError(null);
+    if (side === 'front') {
+      setFrontImage('cccd_front_preview.jpg');
+    } else if (side === 'back') {
+      setBackImage('cccd_back_preview.jpg');
+    }
+  };
+
+  // Gửi hồ sơ xác minh
+  const handleKycSubmissionSubmit = (e) => {
     e.preventDefault();
-    if (!agreed) {
-      alert('Quý khách vui lòng tích chọn đồng ý cam kết tính chính xác trước!');
+    setUploadError(null);
+    setSuccessMsg(null);
+
+    if (!submitCccdNumber || submitCccdNumber.length !== 12) {
+      setUploadError('Số định danh căn cước công dân sai định dạng (yêu cầu 12 chữ số).');
       return;
     }
-    if (!uploadProgress.front || !uploadProgress.back || !uploadProgress.portrait) {
-      alert('Vui lòng đính kèm đầy đủ hình ảnh 2 mặt CCCD và chân dung để hoàn tất duyệt tự động!');
+
+    if (!frontImage || !backImage) {
+      setUploadError('Vui lòng tải lên ảnh mặt trước và mặt sau của giấy tờ định danh.');
       return;
     }
 
     setIsSubmitting(true);
+
     setTimeout(() => {
       setIsSubmitting(false);
-      onVerifySubmit();
-      alert('Gửi hồ sơ thành công! Hệ thống AI đã thẩm định: Hồ sơ của quý khách đã được DUYỆT ĐÃ XÁC MINH tự động lập tức!');
-    }, 1200);
+      setKycStatus('Chờ duyệt');
+      setCccdNumber(submitCccdNumber);
+      setCurrentMode('view');
+      setSuccessMsg('Gửi hồ sơ xác minh thành công! Hồ sơ của bạn đang được chờ kiểm duyệt.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 1000);
+  };
+
+  // Lưu cập nhật hồ sơ cá nhân
+  const handleSaveProfile = (e) => {
+    e.preventDefault();
+    if (!editFullName.trim() || !editPhone.trim() || !editAddress.trim() || !editCccdNumber.trim()) {
+      alert('Vui lòng điền đầy đủ thông tin hồ sơ.');
+      return;
+    }
+    if (editCccdNumber.length !== 12) {
+      alert('Số định danh CCCD phải đủ 12 chữ số.');
+      return;
+    }
+
+    setFullName(editFullName);
+    setPhone(editPhone);
+    setAddress(editAddress);
+    setCccdNumber(editCccdNumber);
+    setCurrentMode('view');
+    setSuccessMsg('Đã lưu thông tin hồ sơ cá nhân thành công.');
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 animate-fade-in">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div className="max-w-4xl mx-auto px-4 md:px-8 py-10 animate-fade-in font-sans" id="verification-screen">
+      
+      {/* Simulation Helper Banner */}
+      <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+        <p className="text-xs font-bold text-[#00236f] mb-2 flex items-center gap-1 leading-none">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+          Khu vực thử nghiệm trạng thái hồ sơ của người dùng:
+        </p>
+        <div className="flex flex-wrap gap-2 text-xs pt-1">
+          <button 
+            type="button" 
+            onClick={() => changeMockKycStatus('Chưa gửi')} 
+            className={`px-3 py-1.5 rounded-lg border font-bold transition-all duration-150 ${kycStatus === 'Chưa gửi' ? 'bg-[#00236f] text-white border-[#00236f]' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+          >
+            Chưa gửi
+          </button>
+          <button 
+            type="button" 
+            onClick={() => changeMockKycStatus('Chờ duyệt')} 
+            className={`px-3 py-1.5 rounded-lg border font-bold transition-all duration-150 ${kycStatus === 'Chờ duyệt' ? 'bg-amber-550 text-amber-900 bg-amber-100 border-amber-300' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+          >
+            Chờ duyệt
+          </button>
+          <button 
+            type="button" 
+            onClick={() => changeMockKycStatus('Đã duyệt')} 
+            className={`px-3 py-1.5 rounded-lg border font-bold transition-all duration-150 ${kycStatus === 'Đã duyệt' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+          >
+            Đã duyệt
+          </button>
+          <button 
+            type="button" 
+            onClick={() => changeMockKycStatus('Bị từ chối')} 
+            className={`px-3 py-1.5 rounded-lg border font-bold transition-all duration-150 ${kycStatus === 'Bị từ chối' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+          >
+            Bị từ chối
+          </button>
+        </div>
+      </div>
+
+      <AnimatePresence mode="wait">
         
-        {/* LHS Side Tab links (Col 3.5) */}
-        <div className="lg:col-span-3 space-y-3.5 select-none font-sans">
-          <div className="bg-white border border-[#c5c5d3] rounded-2xl p-5 shadow-xs text-center space-y-4">
-            {/* User profile avatar info layout */}
-            <div className="w-20 h-20 bg-[#00236f]/10 border-2 border-[#00236f] text-[#00236f] rounded-full flex items-center justify-center font-black mx-auto text-2xl relative">
-              {fullName.charAt(0)}
-              {userVerified && (
-                <span className="absolute bottom-0 right-0 bg-[#fea619] text-[#2a1700] rounded-full p-1 border-2 border-white shadow-md">
-                  <ShieldCheck className="w-4.5 h-4.5" />
-                </span>
+        {/* MODE: VIEW PROFILE & KYC STATUS */}
+        {currentMode === 'view' && (
+          <motion.div 
+            key="view-kyc"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-white border border-[#c5c5d3] rounded-2xl p-6 md:p-8 space-y-6 text-left shadow-sm"
+          >
+            <div className="border-b border-slate-100 pb-5 flex flex-wrap justify-between items-center gap-4">
+              <div>
+                <h2 className="text-xl font-extrabold text-[#00236f]">Hồ sơ xác minh thông tin</h2>
+                <p className="text-xs text-slate-400 mt-1 font-semibold">Theo dõi trạng thái xác minh danh tính tài khoản tại T-Rent</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-400">Trạng thái xác minh:</span>
+                {kycStatus === 'Chưa gửi' && (
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-600 uppercase tracking-wider border border-slate-200">Chưa gửi</span>
+                )}
+                {kycStatus === 'Chờ duyệt' && (
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-50 text-amber-800 uppercase tracking-wider animate-pulse border border-amber-200">Chờ duyệt</span>
+                )}
+                {kycStatus === 'Đã duyệt' && (
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 uppercase tracking-wider border border-emerald-250 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    Đã duyệt
+                  </span>
+                )}
+                {kycStatus === 'Bị từ chối' && (
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-50 text-rose-800 uppercase tracking-wider border border-rose-250">Bị từ chối</span>
+                )}
+              </div>
+            </div>
+
+            {/* Thông báo thành công */}
+            {successMsg && (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-lg flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{successMsg}</span>
+              </div>
+            )}
+
+            {/* Lý do từ chối nếu có */}
+            {kycStatus === 'Bị từ chối' && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg flex gap-3 text-xs text-rose-800 font-semibold leading-relaxed">
+                <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block text-rose-950 font-bold mb-1 uppercase tracking-wider text-[10px]">Lý do từ chối hồ sơ:</strong>
+                  <span>{rejectionReason}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Thông tin hồ sơ hiển thị */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-extrabold text-[#00236f] uppercase tracking-wider">Thông tin cá nhân</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="bg-slate-50 p-4 rounded-xl space-y-1 border border-slate-100">
+                  <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider">Họ và tên</span>
+                  <strong className="text-slate-800 text-sm font-bold">{fullName}</strong>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-xl space-y-1 border border-slate-100">
+                  <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider">Số điện thoại</span>
+                  <strong className="text-slate-800 text-sm font-bold font-mono">{phone}</strong>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-xl space-y-1 md:col-span-2 border border-slate-100">
+                  <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider">Địa chỉ</span>
+                  <strong className="text-slate-800 text-sm font-bold">{address}</strong>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-xl space-y-1 border border-slate-100">
+                  <span className="text-slate-400 font-bold block text-[9px] uppercase tracking-wider">Số giấy tờ định danh (CCCD)</span>
+                  <strong className="text-slate-800 text-sm font-bold font-mono">{cccdNumber || 'Chưa cung cấp'}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Tài liệu định danh đã gửi */}
+            {(kycStatus === 'Đã duyệt' || kycStatus === 'Chờ duyệt') && (
+              <div className="space-y-4 pt-5 border-t border-slate-100">
+                <h3 className="text-xs font-extrabold text-[#00236f] uppercase tracking-wider">Ảnh giấy tờ đã gửi</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px] text-center">
+                    <FileText className="w-8 h-8 text-[#00236f] mb-2" />
+                    <span className="text-xs font-bold text-slate-700">Mặt trước CCCD</span>
+                    <span className="text-[10px] text-slate-400 mt-1 font-mono">{cccdNumber}_front.jpg</span>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[120px] text-center">
+                    <FileText className="w-8 h-8 text-[#00236f] mb-2" />
+                    <span className="text-xs font-bold text-slate-700">Mặt sau CCCD</span>
+                    <span className="text-[10px] text-slate-400 mt-1 font-mono">{cccdNumber}_back.jpg</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Nhóm nút hành động */}
+            <div className="pt-6 border-t border-slate-150 flex flex-wrap justify-between items-center gap-4">
+              <button 
+                type="button"
+                onClick={() => {
+                  setEditFullName(fullName);
+                  setEditPhone(phone);
+                  setEditAddress(address);
+                  setEditCccdNumber(cccdNumber);
+                  setCurrentMode('edit_profile');
+                }}
+                className="px-5 py-2.5 border border-slate-200 text-[#00236f] hover:bg-slate-50 font-bold rounded-lg text-xs transition-all"
+              >
+                Cập nhật hồ sơ cá nhân
+              </button>
+
+              {(kycStatus === 'Chưa gửi' || kycStatus === 'Bị từ chối') && (
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setFrontImage(null);
+                    setBackImage(null);
+                    setSubmitCccdNumber(cccdNumber);
+                    setUploadError(null);
+                    setCurrentMode('submit');
+                  }}
+                  className="px-5 py-2.5 bg-[#00236f] hover:bg-blue-900 text-white font-extrabold rounded-lg text-xs transition shadow-sm"
+                >
+                  Gửi hồ sơ xác minh
+                </button>
               )}
             </div>
-            <div>
-              <h3 className="text-base font-black text-[#00236f] leading-snug">{fullName}</h3>
-              <p className="text-[10px] text-gray-500 font-medium">{user?.email || 'guest@t-rent.vn'}</p>
-            </div>
-            {/* Verified Status Banner */}
-            {userVerified ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 border border-green-200 text-green-700 text-[10.5px] font-black rounded-full shadow-sm">
-                <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
-                ĐÃ XÁC MINH HỒ SƠ
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200 text-amber-700 text-[10.5px] font-bold rounded-full">
-                ⚠️ CHƯA XÁC MINH DANH TÍNH
-              </span>
-            )}
-          </div>
+          </motion.div>
+        )}
 
-          <div className="bg-white border border-[#c5c5d3] rounded-2xl overflow-hidden shadow-xs">
-            <div className="flex flex-col text-xs font-bold divide-y divide-gray-100 text-gray-650">
-              <button
-                onClick={() => setActivePage('profile')}
-                className="flex items-center gap-3 px-5 py-4 hover:bg-gray-50 text-left transition text-gray-700"
-              >
-                <User className="w-4 h-4 text-[#00236f]" />
-                Thông tin cá nhân tài khoản
-              </button>
-              <button
-                onClick={() => setActivePage('verification')}
-                className="flex items-center gap-3 px-5 py-4 bg-[#00236f]/5 text-[#00236f] font-black text-left border-l-4 border-[#00236f]"
-              >
-                <CreditCard className="w-4 h-4 text-[#00236f]" />
-                Hồ sơ pháp lý xác minh 
-              </button>
-              <button
-                onClick={() => setActivePage('orders')}
-                className="flex items-center gap-3 px-5 py-4 hover:bg-gray-50 text-left transition text-gray-700"
-              >
-                <ClipboardList className="w-4 h-4 text-[#00236f]" />
-                Đơn hàng thuê của tôi
-              </button>
-              <button
-                onClick={() => alert('Chức năng Lịch sử giao dịch ví thanh toán đang được đồng hành xây dựng!')}
-                className="flex items-center gap-3 px-5 py-4 hover:bg-gray-50 text-left transition text-gray-700"
-              >
-                <FileText className="w-4 h-4 text-[#00236f]" />
-                Lịch sử thanh toán & Hợp đồng
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* RHS Form panel Details (Col 8.5) */}
-        <div className="lg:col-span-9 bg-white border border-[#c5c5d3] rounded-2xl p-6 md:p-8 shadow-xs">
-          <div className="border-b border-gray-150 pb-4 mb-6">
-            <h2 className="text-xl font-black text-[#00236f] font-display flex items-center gap-2">
-              <CreditCard className="text-[#fea619] w-6 h-6" />
-              NÂNG CẤP HỒ SƠ PHÁP LÝ XÁC MINH 
-            </h2>
-            <p className="text-xs text-gray-500 mt-1">
-              Kê khai danh tính giúp tối giản hóa thủ tục thế cọc giữ chỗ, hỗ trợ nhận trang bị nhanh chóng không cầm cố giấy tờ gốc.
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            
-            {/* Direct Warning banner */}
-            {!userVerified && (
-              <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 flex gap-3 text-xs text-amber-900 leading-relaxed font-medium">
-                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-                <div>
-                  <span className="font-extrabold block text-amber-950 mb-0.5">⚠️ Quy chế bảo mật nghiêm ngặt</span>
-                  T-Rent cam kết 100% hình ảnh căn cước công dân cung cấp chỉ phục vụ lập hợp đồng dân sự đối chiếu nhận máy chụp ảnh dã nghiệp, hoàn toàn được an ninh số hóa bảo mật tối tân.
-                </div>
+        {/* MODE: EDIT PROFILE */}
+        {currentMode === 'edit_profile' && (
+          <motion.div 
+            key="edit-profile"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            className="bg-white border border-[#c5c5d3] rounded-2xl p-6 md:p-8 space-y-6 text-left shadow-sm"
+          >
+            <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-extrabold text-[#00236f]">Cập nhật hồ sơ cá nhân</h2>
+                <p className="text-xs text-slate-400 mt-1 font-semibold">Chỉnh sửa thông tin liên hệ và lý lịch pháp lý cá nhân</p>
               </div>
-            )}
-
-            {/* Inputs block */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-              <div className="space-y-1.5">
-                <label className="text-[10.5px] font-bold text-gray-500 uppercase block">Số Căn cước công dân (CMND / CCCD):</label>
-                <input
-                  type="text"
-                  required
-                  value={cccdNumber}
-                  onChange={(e) => setCccdNumber(e.target.value)}
-                  placeholder="Nhập 12 chữ số trên thẻ CCCD chính thống"
-                  className="w-full h-11 px-3 bg-gray-50 border border-gray-300 focus:border-[#00236f] focus:outline-none rounded-lg text-xs font-semibold"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10.5px] font-bold text-gray-500 uppercase block">Họ và tên ghi trên thẻ căn cước:</label>
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Họ tên viết hoa có dấu chính chủ"
-                  className="w-full h-11 px-3 bg-gray-50 border border-gray-300 focus:border-[#00236f] focus:outline-none rounded-lg text-xs font-semibold"
-                />
-              </div>
-
-              <div className="md:col-span-2 space-y-1.5">
-                <label className="text-[10.5px] font-bold text-gray-500 uppercase block">Địa chỉ thường trú thiết lập trên hộ khẩu:</label>
-                <input
-                  type="text"
-                  required
-                  value={permanentAddress}
-                  onChange={(e) => setPermanentAddress(e.target.value)}
-                  placeholder="Ghi chi tiết số nhà, phố phường, quận huyện, tỉnh thành phố"
-                  className="w-full h-11 px-3 bg-gray-50 border border-gray-300 focus:border-[#00236f] focus:outline-none rounded-lg text-xs font-semibold"
-                />
-              </div>
-            </div>
-
-            {/* Upload fields layout */}
-            <div className="space-y-4 pt-4 border-t border-gray-100">
-              <h3 className="text-xs font-black text-[#00236f] uppercase tracking-wider block mb-3">Hình ảnh pháp lý CMND/CCCD</h3>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs select-none">
+              <button 
+                type="button" 
+                onClick={() => setCurrentMode('view')}
+                className="p-1 text-slate-400 hover:text-slate-800 rounded-lg"
+              >Quay l?i
                 
-                {/* Front Upload */}
-                <div className="border border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 rounded-xl p-4 text-center space-y-2 cursor-pointer transition flex flex-col items-center justify-center min-h-[140px]" onClick={() => handleSimulatedUpload('front')}>
-                  <UploadCloud className="w-8 h-8 text-gray-400 shrink-0" />
-                  <span className="font-extrabold text-[10.5px] text-gray-700 block">Mặt trước CCCD/CMND</span>
-                  <span className="text-[9.5px] text-gray-400 block">Chọn file ảnh chụp rõ nét</span>
-
-                  {uploadProgress.front === 'uploading' && (
-                    <span className="text-[10px] text-blue-500 font-bold animate-pulse">Đang nạp file...</span>
-                  )}
-                  {uploadProgress.front === 'done' && (
-                    <span className="text-[10px] text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200 inline-flex items-center gap-1 font-bold">
-                       Đã tệp lên ✓
-                    </span>
-                  )}
-                </div>
-
-                {/* Back Upload */}
-                <div className="border border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 rounded-xl p-4 text-center space-y-2 cursor-pointer transition flex flex-col items-center justify-center min-h-[140px]" onClick={() => handleSimulatedUpload('back')}>
-                  <UploadCloud className="w-8 h-8 text-gray-400 shrink-0" />
-                  <span className="font-extrabold text-[10.5px] text-gray-700 block">Mặt sau CCCD/CMND</span>
-                  <span className="text-[9.5px] text-gray-400 block">Chọn file ảnh chụp rõ nét</span>
-
-                  {uploadProgress.back === 'uploading' && (
-                    <span className="text-[10px] text-blue-500 font-bold animate-pulse">Đang nạp file...</span>
-                  )}
-                  {uploadProgress.back === 'done' && (
-                    <span className="text-[10px] text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200 inline-flex items-center gap-1 font-bold">
-                       Đã tệp lên ✓
-                    </span>
-                  )}
-                </div>
-
-                {/* Portrait CMND */}
-                <div className="border border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 rounded-xl p-4 text-center space-y-2 cursor-pointer transition flex flex-col items-center justify-center min-h-[140px]" onClick={() => handleSimulatedUpload('portrait')}>
-                  <UploadCloud className="w-8 h-8 text-gray-400 shrink-0" />
-                  <span className="font-extrabold text-[10.5px] text-gray-700 block">Ảnh chân dung kề mặt</span>
-                  <span className="text-[9.5px] text-gray-400 block">Chân dung rõ nét cầm CCCD</span>
-
-                  {uploadProgress.portrait === 'uploading' && (
-                    <span className="text-[10px] text-blue-500 font-bold animate-pulse">Đang nạp file...</span>
-                  )}
-                  {uploadProgress.portrait === 'done' && (
-                    <span className="text-[10px] text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200 inline-flex items-center gap-1 font-bold">
-                       Đã tệp lên ✓
-                    </span>
-                  )}
-                </div>
-
-              </div>
-            </div>
-
-            {/* Checkbox */}
-            <div className="pt-4 border-t border-gray-100">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  required
-                  checked={agreed}
-                  onChange={(e) => setAgreed(e.target.checked)}
-                  className="mt-0.5 w-4.5 h-4.5 accent-[#00236f] rounded"
-                />
-                <span className="text-xs text-[#444651] leading-snug font-medium select-none">
-                  Tôi long trọng cam kết toàn bộ các dữ liệu, thông tin và tệp đính kèm trên hoàn toàn do chính tôi đăng ký pháp lý sử dụng, hoàn trả đầy đủ trách nhiệm trước quy trình giao kết dân sự của T-Rent.
-                </span>
-              </label>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex justify-end gap-3.5 pt-4">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-6 py-3 bg-[#00236f] text-white hover:bg-[#fea619] hover:text-[#2a1700] text-xs font-black rounded-lg transition duration-200 flex items-center justify-center gap-1.5 shadow"
-              >
-                Gửi hồ sơ xác minh nhận máy
               </button>
             </div>
 
-          </form>
-        </div>
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-500 font-bold uppercase text-[10px]">Họ và tên</label>
+                  <input 
+                    type="text"
+                    required
+                    value={editFullName}
+                    onChange={(e) => setEditFullName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-[#00236f] font-semibold text-slate-800"
+                  />
+                </div>
 
-      </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-500 font-bold uppercase text-[10px]">Số điện thoại</label>
+                  <input 
+                    type="tel"
+                    required
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-[#00236f] font-mono font-semibold text-slate-800"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5 md:col-span-2">
+                  <label className="text-slate-500 font-bold uppercase text-[10px]">Địa chỉ liên lạc</label>
+                  <input 
+                    type="text"
+                    required
+                    value={editAddress}
+                    onChange={(e) => setEditAddress(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-[#00236f] font-semibold text-slate-800"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-500 font-bold uppercase text-[10px]">Số định danh cá nhân (CCCD 12 số)</label>
+                  <input 
+                    type="text"
+                    required
+                    maxLength={12}
+                    value={editCccdNumber}
+                    onChange={(e) => setEditCccdNumber(e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-[#00236f] font-mono font-semibold text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setCurrentMode('view')}
+                  className="px-5 py-2.5 border border-slate-200 hover:bg-slate-50 font-bold text-slate-700 rounded-lg text-xs transition"
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit"
+                  className="px-6 py-2.5 bg-[#fea619] hover:bg-[#fea619]/90 text-[#2a1700] font-black rounded-lg text-xs transition"
+                >
+                  Lưu cập nhật
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+
+        {/* MODE: SUBMIT DOCUMENTS */}
+        {currentMode === 'submit' && (
+          <motion.div 
+            key="submit-kyc"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            className="bg-white border border-[#c5c5d3] rounded-2xl p-6 md:p-8 space-y-6 text-left shadow-sm"
+          >
+            <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-extrabold text-[#00236f]">Gửi hồ sơ xác minh</h2>
+                <p className="text-xs text-slate-400 mt-1 font-semibold">Tải lên CCCD hợp lệ để showroom T-Rent kích hoạt quyền thuê thiết bị</p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setCurrentMode('view')}
+                className="p-1 text-slate-400 hover:text-slate-800 rounded-lg"
+              >Quay l?i
+                
+              </button>
+            </div>
+
+            {uploadError && (
+              <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 font-semibold text-xs rounded-lg flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                <span>{uploadError}</span>
+              </div>
+            )}
+
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+              <span className="text-[10px] font-black uppercase text-slate-400 block mb-2">Thông tin hồ sơ đăng ký đối chiếu</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-4">
+                <div>
+                  <span className="text-slate-400 block font-bold text-[10px]">Họ tên:</span>
+                  <strong className="text-slate-800">{fullName}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-bold text-[10px]">Số điện thoại:</span>
+                  <strong className="text-slate-800 font-mono">{phone}</strong>
+                </div>
+                <div className="sm:col-span-2">
+                  <span className="text-slate-400 block font-bold text-[10px]">Địa chỉ:</span>
+                  <strong className="text-slate-800">{address}</strong>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleKycSubmissionSubmit} className="space-y-6">
+              
+              <div className="space-y-1.5 text-xs">
+                <label className="text-slate-500 block font-bold text-[10px] uppercase">Số định danh CCCD (Yêu cầu chính xác 12 chữ số):</label>
+                <input 
+                  type="text"
+                  required
+                  maxLength={12}
+                  placeholder="Nhập 12 số CCCD"
+                  value={submitCccdNumber}
+                  onChange={(e) => setSubmitCccdNumber(e.target.value.replace(/\D/g, ''))}
+                  className="w-full bg-white border border-slate-200 text-[#111827] font-semibold rounded-lg py-2.5 px-3 focus:ring-1 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-slate-500 block font-bold text-[10px] uppercase">Hình ảnh giấy tờ tùy thân (Mặt trước & Mặt sau):</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  
+                  {/* Front Card Upload */}
+                  <div 
+                    onClick={() => handleUploadSimulate('front')}
+                    className={`border-2 border-dashed rounded-xl p-5 text-center flex flex-col items-center justify-center min-h-[140px] cursor-pointer transition-all ${
+                      frontImage ? 'border-emerald-250 bg-emerald-50/15' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    <UploadCloud className={`w-8 h-8 mb-2 ${frontImage ? 'text-emerald-500' : 'text-slate-400'}`} />
+                    <span className="text-xs font-extrabold text-slate-700">Mặt trước CCCD</span>
+                    <span className="text-[10px] text-slate-400 mt-1">Hỗ trợ JPG, PNG</span>
+                    {frontImage && (
+                      <span className="mt-2 inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-250 font-bold px-2 py-0.5 rounded text-[10px]">
+                        <Check className="w-3.5 h-3.5" /> Đã chọn
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Back Card Upload */}
+                  <div 
+                    onClick={() => handleUploadSimulate('back')}
+                    className={`border-2 border-dashed rounded-xl p-5 text-center flex flex-col items-center justify-center min-h-[140px] cursor-pointer transition-all ${
+                      backImage ? 'border-emerald-250 bg-emerald-50/15' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    <UploadCloud className={`w-8 h-8 mb-2 ${backImage ? 'text-emerald-500' : 'text-slate-400'}`} />
+                    <span className="text-xs font-extrabold text-slate-700">Mặt sau CCCD</span>
+                    <span className="text-[10px] text-slate-400 mt-1">Hỗ trợ JPG, PNG</span>
+                    {backImage && (
+                      <span className="mt-2 inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-250 font-bold px-2 py-0.5 rounded text-[10px]">
+                        <Check className="w-3.5 h-3.5" /> Đã chọn
+                      </span>
+                    )}
+                  </div>
+
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-slate-100 flex justify-end gap-3.5">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setUploadError(null);
+                    setCurrentMode('view');
+                  }}
+                  className="px-5 py-2.5 border border-slate-200 hover:bg-slate-50 font-bold text-slate-700 rounded-lg text-xs transition"
+                >
+                  Hủy
+                </button>
+                
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 bg-[#fea619] hover:bg-[#fea619]/90 text-[#2a1700] font-black rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Đang gửi hồ sơ...' : 'Gửi hồ sơ xác minh'}
+                </button>
+              </div>
+
+            </form>
+          </motion.div>
+        )}
+
+      </AnimatePresence>
+
     </div>
   );
 }
