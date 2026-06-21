@@ -377,10 +377,12 @@ export default function PrepareEquipment({ orderCode = '#ORD-5001', onGoBack }) 
           >
             {isFinished ? (
               <>
+                <CheckCheck className="w-4 h-4" />
                 Hoàn tất chuẩn bị
               </>
             ) : (
               <>
+                <Save className="w-4 h-4" />
                 Lưu chuẩn bị thiết bị
               </>
             )}
@@ -406,8 +408,8 @@ export default function PrepareEquipment({ orderCode = '#ORD-5001', onGoBack }) 
               <button 
                 onClick={() => setIsModalOpen(false)} 
                 className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 transition-all text-slate-400"
-              >??ng
-                
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
 

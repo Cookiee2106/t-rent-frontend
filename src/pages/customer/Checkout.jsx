@@ -471,8 +471,8 @@ export default function Checkout({
                   type="button" 
                   onClick={() => setShowTermsModal(false)}
                   className="p-1 hover:bg-slate-100 rounded text-slate-400"
-                >??ng
-                  
+                >
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 

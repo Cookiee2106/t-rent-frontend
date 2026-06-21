@@ -1,1255 +1,1440 @@
 import React, { useState } from 'react';
 import { 
   Search, 
-  Calendar, 
-  ChevronRight, 
-  CheckCircle, 
-  FileCheck2, 
-  X, 
-  Clock, 
-  CreditCard, 
-  ShieldCheck, 
-  AlertTriangle, 
-  Download, 
-  Eye, 
-  Info,
+  Trash2, 
+  Edit3, 
   ArrowLeft,
+  Settings,
+  ShieldCheck,
+  Check,
   Upload,
-  FileText,
-  BadgeAlert,
-  Sliders,
-  DollarSign,
-  Wrench,
-  CheckCircle2,
-  Trash2,
-  Image as ImageIcon
+  UploadCloud,
+  FileText
 } from 'lucide-react';
 
-const INITIAL_RENTAL_ORDERS = [
+const formatVND = (value) => {
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+};
+
+// Danh sách các thiết bị vật lý rảnh trong kho để đối chiếu mẫu
+const MOCK_PHYSICAL_ASSETS_IN_STOCK = [
+  { serial: 'SN-A74-884910', modelName: 'Sony Alpha A7 IV', category: 'Máy ảnh' },
+  { serial: 'SN-A74-110022', modelName: 'Sony Alpha A7 IV', category: 'Máy ảnh' },
+  { serial: 'SN-EOSR5-554401', modelName: 'Canon EOS R5', category: 'Máy ảnh' },
+  { serial: 'SN-LENS-2470GM', modelName: 'Sony FE 24-70mm f/2.8 GM ii', category: 'Ống kính' }
+];
+
+// Danh sách tương tác phụ kiện khả dụng
+const MOCK_ACCESSORIES_FOR_ALLOCATION = [
+  { id: 'ACC-01', name: 'Pin Sony NP-FZ100', modelName: 'Sony Alpha A7 IV' },
+  { id: 'ACC-02', name: 'Bộ sạc đôi đa năng', modelName: 'Sony Alpha A7 IV' },
+  { id: 'ACC-03', name: 'Thẻ nhớ SanDisk 128GB V60', modelName: 'Sony Alpha A7 IV' },
+  { id: 'ACC-05', name: 'Pin Canon LP-E6N', modelName: 'Canon EOS R5' },
+  { id: 'ACC-04', name: 'Lens Filter Phi 67mm', modelName: 'Sony FE 24-70mm f/2.8 GM ii' }
+];
+
+// MOCK TRƯỜNG DỮ LIỆU ĐÒN BÀN GIAO MỚI (CHỌN TÀI SẢN CỤ THỂ)
+const MOCK_BODIES_IN_STOCK = [
+  { assetCode: 'BODY001', serial: 'SN-A7IV-001', modelName: 'Sony A7 IV', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'BODY002', serial: 'SN-A7IV-002', modelName: 'Sony A7 IV', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'BODY001_A7', serial: 'SN-A7IV-001', modelName: 'Sony Alpha A7 IV', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'BODY002_A7', serial: 'SN-A7IV-002', modelName: 'Sony Alpha A7 IV', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'FUJI001', serial: 'SN-FUJI-001', modelName: 'Fuji X-T5', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'FUJI002', serial: 'SN-FUJI-001', modelName: 'Fuji X-T5', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'FUJI003', serial: 'SN-FUJI-002', modelName: 'Fuji X-T5', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'CANON001', serial: 'SN-EOSR5-554401', modelName: 'Canon EOS R5', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'CANON002', serial: 'SN-EOSR5-554402', modelName: 'Canon EOS R5', status: 'Sẵn sàng', condition: 'Tốt' }
+];
+
+const MOCK_COMPONENTS_IN_STOCK = [
+  { assetCode: 'PIN003', serial: 'SN-PIN-S001', componentName: 'Pin NP-FZ100', modelName: 'Sony Alpha A7 IV', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'PIN004', serial: 'SN-PIN-S002', componentName: 'Pin NP-FZ100', modelName: 'Sony Alpha A7 IV', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'LEN005', serial: 'SN-LEN-S001', componentName: 'Lens 24-70 GM', modelName: 'Sony Alpha A7 IV', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'LEN006', serial: 'SN-LEN-S002', componentName: 'Lens 24-70 GM', modelName: 'Sony Alpha A7 IV', status: 'Sẵn sàng', condition: 'Tốt' },
+
+  { assetCode: 'PIN003_A7', serial: 'SN-PIN-S001', componentName: 'Pin NP-FZ100', modelName: 'Sony A7 IV', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'PIN004_A7', serial: 'SN-PIN-S002', componentName: 'Pin NP-FZ100', modelName: 'Sony A7 IV', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'LEN005_A7', serial: 'SN-LEN-S001', componentName: 'Lens 24-70 GM', modelName: 'Sony A7 IV', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'LEN006_A7', serial: 'SN-LEN-S002', componentName: 'Lens 24-70 GM', modelName: 'Sony A7 IV', status: 'Sẵn sàng', condition: 'Tốt' },
+
+  { assetCode: 'PIN008', serial: 'SN-PIN-F001', componentName: 'Pin Fuji NP-W235', modelName: 'Fuji X-T5', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'PIN009', serial: 'SN-PIN-F002', componentName: 'Pin Fuji NP-W235', modelName: 'Fuji X-T5', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'LEN012', serial: 'SN-LEN-F001', componentName: 'Lens XF 35mm', modelName: 'Fuji X-T5', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'LEN013', serial: 'SN-LEN-F002', componentName: 'Lens XF 35mm', modelName: 'Fuji X-T5', status: 'Sẵn sàng', condition: 'Tốt' },
+
+  { assetCode: 'PIN-C1', serial: 'SN-PIN-C1', componentName: 'Pin Canon LP-E6N', modelName: 'Canon EOS R5', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'PIN-C2', serial: 'SN-PIN-C2', componentName: 'Pin Canon LP-E6N', modelName: 'Canon EOS R5', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'LEN-C1', serial: 'SN-LEN-C1', componentName: 'Lens Canon RF 24-70mm f/2.8 L IS USM', modelName: 'Canon EOS R5', status: 'Sẵn sàng', condition: 'Tốt' },
+  { assetCode: 'LEN-C2', serial: 'SN-LEN-C2', componentName: 'Lens Canon RF 24-70mm f/2.8 L IS USM', modelName: 'Canon EOS R5', status: 'Sẵn sàng', condition: 'Tốt' }
+];
+
+const MOCK_QUANTITY_IN_STOCK = {
+  'Túi Sony': 12,
+  'Túi đựng Sony Pro': 12,
+  'Túi Fuji': 8,
+  'Túi da Fujifilm': 8,
+  'Túi chống sốc Canon': 15,
+  'Mặc định': 10
+};
+
+const GET_PRODUCT_COMPONENTS_MAP = (productName) => {
+  const pName = productName || '';
+  if (pName.includes('Sony Alpha A7 IV') || pName.includes('Sony A7 IV')) {
+    return [
+      { name: 'Pin NP-FZ100', type: 'IDENTIFIED_ASSET', required: true },
+      { name: 'Lens 24-70 GM', type: 'IDENTIFIED_ASSET', required: true },
+      { name: 'Túi Sony', type: 'QUANTITY', required: true, defaultQty: 1, maxQtyAvailable: 12 }
+    ];
+  }
+  if (pName.includes('Canon EOS R5')) {
+    return [
+      { name: 'Pin Canon LP-E6N', type: 'IDENTIFIED_ASSET', required: true },
+      { name: 'Lens Canon RF 24-70mm f/2.8 L IS USM', type: 'IDENTIFIED_ASSET', required: true },
+      { name: 'Túi chống sốc Canon', type: 'QUANTITY', required: true, defaultQty: 1, maxQtyAvailable: 15 }
+    ];
+  }
+  if (pName.includes('Fuji X-T5')) {
+    return [
+      { name: 'Pin Fuji NP-W235', type: 'IDENTIFIED_ASSET', required: true },
+      { name: 'Lens XF 35mm', type: 'IDENTIFIED_ASSET', required: true },
+      { name: 'Túi Fuji', type: 'QUANTITY', required: true, defaultQty: 1, maxQtyAvailable: 8 }
+    ];
+  }
+  return [
+    { name: `Pin sạc cho ${pName}`, type: 'IDENTIFIED_ASSET', required: true },
+    { name: `Lồng bảo vệ cho ${pName}`, type: 'IDENTIFIED_ASSET', required: true },
+    { name: `Túi đựng tiêu chuẩn`, type: 'QUANTITY', required: true, defaultQty: 1, maxQtyAvailable: 10 }
+  ];
+};
+
+// Danh sách đơn hàng trạng thái khớp DB định nghĩa
+const INITIAL_ORDERS = [
   {
-    orderCode: 'TR-ORD-001',
+    orderCode: 'ORD001',
     customerName: 'Nguyễn Văn A',
-    customerPhone: '0901 234 567',
-    customerEmail: 'van.a@example.com',
-    customerVerification: 'Đã xác minh (Mức III)',
-    startDate: '2026-06-15',
-    endDate: '2026-06-18',
+    customerPhone: '0901 123 456',
+    customerEmail: 'an.nv@gmail.com',
+    customerVerification: 'Đã xác minh (CCCD Đạt)',
+    startDate: '2026-06-20',
+    endDate: '2026-06-23',
     equipments: [
-      { id: 'eq-1', name: 'Sony Alpha A7 IV', qty: 1, price: 800000, deposit: 5000000, allocatedAssetId: '' }
+      { id: 'eq-1', name: 'Sony Alpha A7 IV', qty: 1, price: 500000, deposit: 30000000, allocatedSerial: '', allocatedAccessories: [] },
+      { id: 'eq-2', name: 'Fuji X-T5', qty: 1, price: 400000, deposit: 25000000, allocatedSerial: '', allocatedAccessories: [] }
     ],
-    totalPrice: 2400000,
-    deposit: 5000000,
-    escrowStatus: 'Đã khóa', // Đã khóa (paid deposit), Chờ thanh toán, Đã hoàn trả
-    contractStatus: 'Đã ký',
-    status: 'ACTIVE', // ACTIVE (Waiting handover), RENTING (Active rental), COMPLETED, PENDING_DEPOSIT
-    paperContract: null,
-    rentPaid: false,
+    totalPrice: 2700000,
+    deposit: 55000000,
+    status: 'Đã đặt cọc', // Chờ bàn giao (Waiting), Đã đặt cọc (Deposited), Đang thuê (RENTING), Đã trả máy (RETURNED), Hoàn thành (COMPLETED), Đã hủy (CANCELLED)
     handoverPhotos: [],
-    handoverSlip: null,
-    returnPhotos: [],
-    returnSlip: null,
-    fines: 0,
-    fineReason: '',
-    notes: 'Khách thuê chụp studio cưới, ưu tiên máy sạch bảo dưỡng chuẩn.'
+    handoverSlipCode: ''
   },
   {
-    orderCode: 'TR-ORD-002',
-    customerName: 'Trần Thị B',
-    customerPhone: '0988 777 666',
-    customerEmail: 'thib@example.com',
-    customerVerification: 'Đã xác minh (Mức II)',
-    startDate: '2026-06-20',
-    endDate: '2026-06-22',
+    orderCode: 'TR-ORD-5001',
+    customerName: 'Nguyễn Văn An',
+    customerPhone: '0901 234 567',
+    customerEmail: 'an.nv@gmail.com',
+    customerVerification: 'Đã xác minh (CCCD Đạt)',
+    startDate: '2026-06-25',
+    endDate: '2026-06-27',
     equipments: [
-      { id: 'eq-2', name: 'Canon EOS R6 Mark II', qty: 1, price: 750000, deposit: 5000000, allocatedAssetId: '' }
+      { id: 'eq-1b', name: 'Sony Alpha A7 IV', qty: 1, price: 500000, deposit: 30000000, allocatedSerial: '', allocatedAccessories: [] }
     ],
-    totalPrice: 1500000,
-    deposit: 5000000,
-    escrowStatus: 'Chờ thanh toán',
-    contractStatus: 'Chưa có',
-    status: 'PENDING_DEPOSIT',
-    paperContract: null,
-    rentPaid: false,
+    totalPrice: 1000000,
+    deposit: 30000000,
+    status: 'Chờ bàn giao', 
     handoverPhotos: [],
-    handoverSlip: null,
-    returnPhotos: [],
-    returnSlip: null,
-    fines: 0,
-    fineReason: '',
-    notes: 'Liên hệ trước 1 ngày để dán tem chuẩn bị thêm lens kit sườn phụ trợ.'
+    handoverSlipCode: ''
+  },
+  {
+    orderCode: 'TR-ORD-5002',
+    customerName: 'Trần Thị Mỹ Duyên',
+    customerPhone: '0988 777 666',
+    customerEmail: 'duyen.ttm@gmail.com',
+    customerVerification: 'Đã xác minh (CCCD Đạt)',
+    startDate: '2026-06-22',
+    endDate: '2026-06-24',
+    equipments: [
+      { id: 'eq-2', name: 'Canon EOS R5', qty: 1, price: 900000, deposit: 60000000, allocatedSerial: 'SN-EOSR5-554401', allocatedAccessories: ['Pin Canon LP-E6N'] }
+    ],
+    totalPrice: 1800000,
+    deposit: 60000000,
+    status: 'Đang thuê',
+    handoverPhotos: ['banner_camera_check.png'],
+    handoverSlipCode: 'HOS-5002'
+  },
+  {
+    orderCode: 'TR-ORD-5003',
+    customerName: 'Hoàng Minh Tuấn',
+    customerPhone: '0912 345 678',
+    customerEmail: 'tuan.hm@gmail.com',
+    customerVerification: 'Đã xác minh (CCCD Đạt)',
+    startDate: '2026-06-28',
+    endDate: '2026-06-30',
+    equipments: [
+      { id: 'eq-3', name: 'Sony Alpha A7 IV', qty: 2, price: 500000, deposit: 30000000, allocatedSerial: '', allocatedAccessories: [] },
+      { id: 'eq-4', name: 'Fuji X-T5', qty: 1, price: 400000, deposit: 25000000, allocatedSerial: '', allocatedAccessories: [] }
+    ],
+    totalPrice: 2800000,
+    deposit: 85000000,
+    status: 'Chờ bàn giao',
+    handoverPhotos: [],
+    handoverSlipCode: ''
   }
 ];
 
-export default function BookedOrders({ onAddNotification, userRole = 'staff' }) {
-  const [orders, setOrders] = useState(INITIAL_RENTAL_ORDERS);
-  const [activeSubTab, setActiveSubTab] = useState('orders'); // orders, transactions
-  const [activeView, setActiveView] = useState('list'); // list, detail
+export default function BookedOrders() {
+  const [orders, setOrders] = useState(INITIAL_ORDERS);
+  const [activeView, setActiveView] = useState('list'); // 'list' | 'detail' | 'handover'
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  // Search filter options
-  const [searchCode, setSearchCode] = useState('');
-  const [searchName, setSearchName] = useState('');
+  // Chọn tài sản cụ thể dạng danh sách accordion mở rộng cho bộ thiết bị
+  const [unitHandoverSelections, setUnitHandoverSelections] = useState([]);
+  const [highlightedBlockIndex, setHighlightedBlockIndex] = useState(-1);
+
+  // Bộ lọc tìm kiếm danh sách mới theo yêu cầu:
+  // Mã đơn hàng, Tên khách hàng, Ngày nhận, Ngày trả, Trạng thái đơn hàng
+  const [filterCode, setFilterCode] = useState('');
+  const [filterCustomer, setFilterCustomer] = useState('');
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  // Handover state controllers (Screen 20 to 24)
-  const [allocateInput, setAllocateInput] = useState('AST0401'); // Mock physical asset selection
-  const [mockContractFile, setMockContractFile] = useState('');
-  const [mockHandoverFiles, setMockHandoverFiles] = useState([]);
-  
-  // Return check-in controllers (Screen 25 to 29)
-  const [mockReturnFiles, setMockReturnFiles] = useState([]);
-  const [isCheckInMode, setIsCheckInMode] = useState(false);
-  const [returnStatus, setReturnStatus] = useState('normal'); // normal, late, damaged, missing
-  const [damageFine, setDamageFine] = useState(0);
-  const [damageNotes, setDamageNotes] = useState('');
-  const [lateDays, setLateDays] = useState(0);
-  const [missingFine, setMissingFine] = useState(0);
+  // Trạng thái Form lập phiếu bàn giao
+  const [hoName, setHoName] = useState('');
+  const [hoEmail, setHoEmail] = useState('');
+  const [hoPhone, setHoPhone] = useState('');
+  const [hoVerification, setHoVerification] = useState('');
 
-  // User-requested specific Modals & States
-  const [showHandoverModal, setShowHandoverModal] = useState(false);
-  const [handoverSerial, setHandoverSerial] = useState('AST0401');
-  const [showReturnModal, setShowReturnModal] = useState(false);
-  const [returnQualityNote, setReturnQualityNote] = useState('Linh kiện bình thường, hao mòn 1-2%, thấu kính ngoài sạch bụi.');
-  const [showDeductModal, setShowDeductModal] = useState(false);
-  const [deductAmount, setDeductAmount] = useState(200000);
-  const [deductReason, setDeductReason] = useState('Trầy dăm nhẹ sườn bảo vệ tay cầm của máy');
+  const [hoCode, setHoCode] = useState('');
+  const [hoStartDate, setHoStartDate] = useState('');
+  const [hoEndDate, setHoEndDate] = useState('');
+  const [hoDays, setHoDays] = useState(1);
+  const [hoTotalPrice, setHoTotalPrice] = useState(0);
+  const [hoDeposit, setHoDeposit] = useState(0);
+  const [hoStatus, setHoStatus] = useState('');
 
-  // Toast Box
-  const [toast, setToast] = useState(null);
+  // Khu vực chọn tài sản cụ thể:
+  const [hoAssetCode, setHoAssetCode] = useState('');
+  const [hoAssetName, setHoAssetName] = useState('');
+  const [hoAssetSerial, setHoAssetSerial] = useState('');
+  const [hoAssetDesc, setHoAssetDesc] = useState('');
+  const [hoAssetStateBefore, setHoAssetStateBefore] = useState('');
+  const [hoAssetStatusMsg, setHoAssetStatusMsg] = useState('');
+
+  // Phụ kiện đi kèm
+  const [hoAccName, setHoAccName] = useState('');
+  const [hoAccQtyNeeded, setHoAccQtyNeeded] = useState(1);
+  const [hoAccQtyActual, setHoAccQtyActual] = useState(1);
+  const [hoAccNotes, setHoAccNotes] = useState('');
+
+  // File hợp đồng giấy
+  const [hoContractFile, setHoContractFile] = useState(null); // { name, type, size }
+  // Ảnh bàn giao
+  const [hoHandoverFile, setHoHandoverFile] = useState(null); // { name, type, size }
+
+  // Ghi chú bàn giao
+  const [hoNotes, setHoNotes] = useState('');
+
+  const [toastMsg, setToastMsg] = useState(null);
+
   const triggerToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3500);
   };
 
   const handleOpenDetail = (ord) => {
     setSelectedOrder(ord);
-    // Reset wizard states
-    setAllocateInput(ord.equipments[0].allocatedAssetId || 'AST0401');
-    setMockContractFile(ord.paperContract || '');
-    setMockHandoverFiles(ord.handoverPhotos || []);
-    setMockReturnFiles(ord.returnPhotos || []);
-    setIsCheckInMode(false);
-    setReturnStatus('normal');
-    setDamageFine(0);
-    setDamageNotes('');
-    setLateDays(0);
-    setMissingFine(0);
     setActiveView('detail');
   };
 
-  // HANDOVER PROGRESS HOOKS
-  const handleAllocateAsset = () => {
-    if (!allocateInput.trim()) {
-      alert('Vui lòng gõ mã tài sản vật lý (AST...) khả dụng!');
+  const computedDays = (st, en) => {
+    const d1 = new Date(st);
+    const d2 = new Date(en);
+    if (isNaN(d1) || isNaN(d2)) return 1;
+    const diff = Math.abs(d2 - d1);
+    return Math.ceil(diff / (1000 * 60 * 60 * 24)) || 1;
+  };
+
+  // Bắt đầu Lập phiếu bàn giao từ danh sách
+  const handleStartHandoverDirect = (o) => {
+    if (o.status !== 'Chờ bàn giao' && o.status !== 'Đã đặt cọc') {
+      alert('Đơn hàng chưa đủ điều kiện lập phiếu bàn giao');
       return;
     }
-    const updated = {
-      ...selectedOrder,
-      equipments: selectedOrder.equipments.map(eq => ({ ...eq, allocatedAssetId: allocateInput }))
-    };
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    triggerToast(`Đã chọn gán tài sản ${allocateInput} cho cấu phần đơn hàng.`);
+    
+    setSelectedOrder(o);
+    
+    // Nạp thông tin khách hàng
+    setHoName(o.customerName || '');
+    setHoEmail(o.customerEmail || '');
+    setHoPhone(o.customerPhone || '');
+    setHoVerification(o.customerVerification || 'Chưa xác minh');
+
+    // Nạp thông tin đơn hàng
+    setHoCode(o.orderCode || '');
+    setHoStartDate(o.startDate || '');
+    setHoEndDate(o.endDate || '');
+    setHoDays(computedDays(o.startDate, o.endDate));
+    setHoTotalPrice(o.totalPrice || 0);
+    setHoDeposit(o.deposit || 0);
+    setHoStatus(o.status || '');
+
+    // Reset upload và ghi chú
+    setHoContractFile(null);
+    setHoHandoverFile(null);
+    setHoNotes('Thiết bị chuẩn sạch chuẩn khớp tem niêm phong niêm yết.');
+
+    // Khởi tạo các combo chọn tài sản cho từng bộ thiết bị trong đơn hàng (Flat list)
+    const initialSelections = [];
+    o.equipments.forEach((eq, eqIdx) => {
+      const componentSchemas = GET_PRODUCT_COMPONENTS_MAP(eq.name);
+      
+      for (let i = 0; i < eq.qty; i++) {
+        // Tự động gán cho phụ kiện đi kèm loại Identified Asset (bắt đầu bằng rỗng)
+        const includedSelections = componentSchemas.map((schema, sIdx) => {
+          if (schema.type === 'IDENTIFIED_ASSET') {
+            return {
+              includedItemName: schema.name,
+              managementType: 'IDENTIFIED_ASSET',
+              assetId: '', // Bắt đầu bằng rỗng để hiển thị 0/4 thành phần ban đầu
+              stateBefore: 'Tốt',
+              notes: 'Sẵn sàng bàn giao',
+              required: schema.required
+            };
+          } else {
+            return {
+              includedItemName: schema.name,
+              managementType: 'QUANTITY',
+              quantity: schema.defaultQty || 1, // Số lượng mặc định: 1
+              stateBefore: '-',
+              notes: 'Bàn giao đủ phụ kiện',
+              required: schema.required
+            };
+          }
+        });
+
+        initialSelections.push({
+          orderItemId: eq.id || `eq-${eqIdx}-${Date.now()}`,
+          productName: eq.name,
+          unitIndex: i + 1,
+          bodyAssetId: '', // Máy chính bắt đầu bằng rỗng để hiển thị 0/4 thành phần ban đầu
+          bodyStateBefore: 'Tốt',
+          bodyNotes: 'Kiểm tra khớp sê-ri chuẩn',
+          includedSelections
+        });
+      }
+    });
+
+    setUnitHandoverSelections(initialSelections);
+    setHighlightedBlockIndex(-1);
+    setActiveView('handover');
   };
 
-  const handleUploadPaperContract = () => {
-    const filename = `HD_giay_${selectedOrder.orderCode}_signed.pdf`;
-    const updated = { ...selectedOrder, paperContract: filename };
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    triggerToast(`Đã tải lên tệp hợp đồng giấy thành công: ${filename}`);
-  };
+  // Hàm tự kiểm nghiệm từng ProductSection
+  const validateUnitBlock = (block, allBlocks) => {
+    // 1. Kiểm tra đã chọn body chính chưa
+    if (!block.bodyAssetId) return 'Chưa chọn đủ';
 
-  const handleConfirmRentPaid = () => {
-    const updated = { ...selectedOrder, rentPaid: true };
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    triggerToast('Đã xác ghi nhận thanh toán đủ tiền thuê thực tế tại showroom.');
-  };
-
-  const handleUploadHandoverPhotos = () => {
-    const photos = ['img_truoc_ban_giao.png', 'img_sau_giam_sat.png'];
-    const updated = { ...selectedOrder, handoverPhotos: photos };
-    setMockHandoverFiles(photos);
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    triggerToast('Đã tải lên 2 ảnh gối giám sát trạng thái sường máy bàn bàn giao.');
-  };
-
-  const handleGenerateHandoverSlip = () => {
-    // Validate prerequisites
-    const hasAsset = selectedOrder.equipments.every(e => e.allocatedAssetId);
-    if (!hasAsset) {
-      alert('⚠️ Bạn chưa chọn gán mã tài sản vật lý cụ thể (Số Serial) cho đơn hàng!');
-      return;
+    // Đánh giá xem body đó có khả dụng không
+    const matchedBody = MOCK_BODIES_IN_STOCK.find(b => b.assetCode === block.bodyAssetId);
+    if (!matchedBody || matchedBody.status !== 'Sẵn sàng') {
+      return 'Thiếu tài sản';
     }
-    if (!selectedOrder.paperContract) {
-      alert('⚠️ Chưa upload đính kèm bản sao hợp đồng giấy ký nhận!');
-      return;
-    }
-    if (!selectedOrder.rentPaid) {
-      alert('⚠️ Khách hàng chưa hoàn tất thanh toán tiền thuê!');
-      return;
-    }
-    if (selectedOrder.handoverPhotos.length === 0) {
-      alert('⚠️ Chưa chụp ảnh giám sát bàn giao vỏ bọc lót của máy ảnh!');
-      return;
+
+    // Kiểm tra trùng sê-ri body
+    const bodyCollision = allBlocks.some(other => other !== block && other.bodyAssetId === block.bodyAssetId);
+    if (bodyCollision) return 'Chưa chọn đủ';
+
+    // 2. Đi qua các thành phần phụ kiện
+    for (const comp of block.includedSelections) {
+      if (comp.managementType === 'IDENTIFIED_ASSET') {
+        if (comp.required && !comp.assetId) {
+          return 'Chưa chọn đủ';
+        }
+
+        if (comp.assetId) {
+          const matchedComp = MOCK_COMPONENTS_IN_STOCK.find(c => c.assetCode === comp.assetId);
+          if (!matchedComp || matchedComp.status !== 'Sẵn sàng') {
+            return 'Thiếu tài sản'; // Phụ kiện không còn sẵn sàng
+          }
+
+          // Kiểm tra trùng serial phụ kiện giữa các bộ hoặc dòng khác
+          const compCollision = allBlocks.some(otherBlock => {
+            return otherBlock.includedSelections.some(otherComp => {
+              if (otherBlock === block && otherComp === comp) return false;
+              return otherComp.assetId === comp.assetId && otherComp.assetId !== '';
+            });
+          });
+
+          if (compCollision) return 'Chưa chọn đủ';
+        }
+      } else {
+        // Loại Số lượng
+        if (comp.required && (comp.quantity === undefined || comp.quantity < 1)) {
+          return 'Chưa chọn đủ';
+        }
+        const limitAvailable = MOCK_QUANTITY_IN_STOCK[comp.includedItemName] || MOCK_QUANTITY_IN_STOCK['Mặc định'];
+        if (comp.quantity > limitAvailable) {
+          return 'Thiếu tài sản'; // Vượt quá tồn kho khả dụng
+        }
+      }
     }
 
-    const slip = {
-      slipCode: `HDO-SLIP-${selectedOrder.orderCode}`,
-      time: new Date().toLocaleString('vi-VN'),
-      officer: 'Nguyễn Văn B (Vận hành kho)'
-    };
+    return 'Đã chọn đủ';
+  };
 
-    const updated = {
-      ...selectedOrder,
-      status: 'RENTING',
-      handoverSlip: slip
-    };
+  // Khi bấm nút "Kiểm tra tài sản đã chọn" ở cuối khu vực chọn tài sản
+  const handleCheckSelections = () => {
+    let errors = [];
+    let firstErrorIdx = -1;
 
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    triggerToast(`🎉 Lập phiếu bàn giao ${slip.slipCode} thành công! Đơn chuyển sang: ĐANG THUÊ.`);
-    if (onAddNotification) {
-      onAddNotification(`Đã cấp phát bàn giao thành công đơn hàng ${selectedOrder.orderCode}.`);
+    unitHandoverSelections.forEach((block, idx) => {
+      const cleanName = block.productName.includes('Sony') ? 'Sony A7 IV' : (block.productName.includes('Fuji') ? 'Fuji X-T5' : block.productName);
+      const blockLabel = `${cleanName} #${block.unitIndex}`;
+      
+      // Kiểm tra body chính
+      if (!block.bodyAssetId) {
+        errors.push(`Vui lòng chọn body chính cho ${blockLabel}`);
+        if (firstErrorIdx === -1) firstErrorIdx = idx;
+      } else {
+        const body = MOCK_BODIES_IN_STOCK.find(b => b.assetCode === block.bodyAssetId);
+        if (!body) {
+          errors.push(`Vui lòng chọn body chính cho ${blockLabel}`);
+          if (firstErrorIdx === -1) firstErrorIdx = idx;
+        } else {
+          const duplicated = unitHandoverSelections.some(other => other !== block && other.bodyAssetId === block.bodyAssetId);
+          if (duplicated) {
+            errors.push(`Tài sản này đã được chọn trong bộ khác`);
+            if (firstErrorIdx === -1) firstErrorIdx = idx;
+          }
+        }
+      }
+
+      // Kiểm tra thành phần đi kèm
+      block.includedSelections.forEach(comp => {
+        if (comp.managementType === 'IDENTIFIED_ASSET') {
+          if (comp.required && !comp.assetId) {
+            errors.push(`Vui lòng chọn đủ thành phần đi kèm cho ${blockLabel}`);
+            if (firstErrorIdx === -1) firstErrorIdx = idx;
+          } else if (comp.assetId) {
+            const duplicatedComp = unitHandoverSelections.some(otherBlock => {
+              return otherBlock.includedSelections.some(otherComp => {
+                if (otherBlock === block && otherComp === comp) return false;
+                return otherComp.assetId === comp.assetId && otherComp.assetId !== '';
+              });
+            });
+            if (duplicatedComp) {
+              errors.push(`Tài sản này đã được chọn trong bộ khác`);
+              if (firstErrorIdx === -1) firstErrorIdx = idx;
+            }
+          }
+        } else {
+          // Số lượng
+          if (comp.required && (comp.quantity === undefined || comp.quantity < 1)) {
+            errors.push(`Vui lòng chọn đủ thành phần đi kèm cho ${blockLabel}`);
+            if (firstErrorIdx === -1) firstErrorIdx = idx;
+          } else {
+            const limit = MOCK_QUANTITY_IN_STOCK[comp.includedItemName] || MOCK_QUANTITY_IN_STOCK['Mặc định'];
+            if (comp.quantity > limit) {
+              errors.push(`Số lượng phụ kiện bàn giao vượt quá số lượng khả dụng`);
+              if (firstErrorIdx === -1) firstErrorIdx = idx;
+            }
+          }
+        }
+      });
+    });
+
+    if (errors.length > 0) {
+      alert(errors[0]); // Hiển thị lỗi đầu tiên rõ ràng nhất
+      setHighlightedBlockIndex(firstErrorIdx);
+      triggerToast("Kiểm tra thấy thông tin chưa chọn đủ.");
+      return false;
+    } else {
+      setHighlightedBlockIndex(-1);
+      alert("Đã chọn đủ tài sản cụ thể cho đơn hàng");
+      triggerToast("Đã chọn đủ tài sản cụ thể cho đơn hàng");
+      return true;
     }
   };
 
-  // CHECK-IN / RETURN PROGRESS HOOKS
-  const handleUploadReturnPhotos = () => {
-    const photos = ['img_tra_lens_mat_truoc.png', 'img_tra_lens_mat_sau.png'];
-    const updated = { ...selectedOrder, returnPhotos: photos };
-    setMockReturnFiles(photos);
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    triggerToast('Đã upload thành công ảnh hiện trạng trả máy của khách.');
+  // Giả lập chọn nhanh sê-ri bộ
+  const handleSelectAssetModel = (asset) => {
+    // Không làm lỗi form, gán trực tiếp cho combo đầu tiên nếu còn dùng
+    if (unitHandoverSelections.length > 0) {
+      const updated = [...unitHandoverSelections];
+      updated[0].bodyAssetId = asset.assetCode;
+      setUnitHandoverSelections(updated);
+      triggerToast(`Đã gán nhanh Máy: ${asset.serial}`);
+    }
   };
 
-  const handleProcessCheckIn = (e) => {
+  // Giả lập upload file/ảnh hợp đồng giấy
+  const handleUploadContractSimulated = () => {
+    const randomId = Math.floor(Math.random() * 9000) + 1000;
+    setHoContractFile({
+      name: `hop_dong_giay_Signed_ORD${randomId}.pdf`,
+      type: 'application/pdf',
+      size: '2.4 MB'
+    });
+    triggerToast('Tải lên file hợp đồng giấy thành công');
+  };
+
+  // Giả lập upload ảnh bàn giao
+  const handleUploadHandoverSimulated = () => {
+    const randomId = Math.floor(Math.random() * 9000) + 1000;
+    setHoHandoverFile({
+      name: `anh_khi_ban_giao_truc_tiep_${randomId}.jpg`,
+      type: 'image/jpeg',
+      size: '3.8 MB'
+    });
+    triggerToast('Tải lên ảnh bàn giao thành công');
+  };
+
+  // Xác nhận lưu Lập phiếu bàn giao
+  const handleSubmitHandover = (e) => {
     e.preventDefault();
-    if (mockReturnFiles.length === 0) {
-      alert('Vui lòng upload chụp ảnh hiện trạng trước khi làm phiếu trả kiểm định!');
+
+    // Validate 1: Đơn hàng chưa đủ điều kiện lập phiếu bàn giao
+    if (selectedOrder.status !== 'Chờ bàn giao') {
+      alert('Đơn hàng chưa đủ điều kiện lập phiếu bàn giao');
       return;
     }
 
-    let calculatedFines = 0;
-    let reason = '';
+    // Kiểm tra xem đã chọn đủ tài sản cụ thể hay chưa cho toàn bộ các combo
+    let hasEmptySelection = unitHandoverSelections.some(block => {
+      if (!block.bodyAssetId) return true;
+      return block.includedSelections.some(comp => comp.managementType === 'IDENTIFIED_ASSET' && comp.required && !comp.assetId);
+    });
 
-    if (returnStatus === 'late') {
-      calculatedFines = (lateDays * 500000);
-      reason = `Phạt rớt trễ hạn ${lateDays} ngày (@500K/đêm)`;
-    } else if (returnStatus === 'damaged') {
-      calculatedFines = parseFloat(damageFine) || 0;
-      reason = `Chi phí khôi phục hư hỏng phát sinh: ${damageNotes}`;
-    } else if (returnStatus === 'missing') {
-      calculatedFines = parseFloat(missingFine) || 0;
-      reason = 'Đền bù thất lạc hao mòn phụ trợ đi kèm';
-    }
-
-    const slip = {
-      slipId: `RTN-SLIP-${selectedOrder.orderCode}`,
-      time: new Date().toLocaleString('vi-VN'),
-      officer: 'Nguyễn Văn B (Kiểm thử kỹ thuật)'
-    };
-
-    const updated = {
-      ...selectedOrder,
-      fines: calculatedFines,
-      fineReason: reason,
-      returnSlip: slip
-    };
-
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    setIsCheckInMode(false);
-    triggerToast('Lập phiếu trả máy kiểm kê thành công!');
-  };
-
-  const handleRecordRefundFull = () => {
-    // Hoàn cọc 100%
-    const updated = {
-      ...selectedOrder,
-      status: 'COMPLETED',
-      escrowStatus: 'Đã hoàn trả'
-    };
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    triggerToast('Đã ghi nhận HOÀN CỌC 100% cho khách hàng.');
-    if (onAddNotification) {
-      onAddNotification(`Hoàn tất tất toán dứt điểm đơn hàng ${selectedOrder.orderCode}`);
-    }
-  };
-
-  const handleRecordRefundDeducted = () => {
-    // Khấu trừ cọc gộp tiền phạt suất ngoại lệ
-    const updated = {
-      ...selectedOrder,
-      status: 'COMPLETED',
-      escrowStatus: `Khấu trừ ${selectedOrder.fines.toLocaleString('vi-VN')}đ / Hoàn nốt số dư`
-    };
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    triggerToast(`Đã khấu trừ ${selectedOrder.fines.toLocaleString('vi-VN')} VND khỏi cọc ký quỹ và hoàn trả phần thừa.`);
-    if (onAddNotification) {
-      onAddNotification(`Khấu trừ hoàn tất bàn giao TR-ORD-${selectedOrder.orderCode}`);
-    }
-  };
-
-  const handleTriggerAutoMaintenance = () => {
-    alert(`⚡ Đã tự động tạo và luân chuyển hồ sơ BẢO HÀNH PHỤC HỒI cho thiết bị ${selectedOrder.equipments[0].allocatedAssetId} sang phòng Kỹ thuật lầu 1 thành công!`);
-  };
-
-  const handleActionHandover = (serialNumber) => {
-    if (!serialNumber.trim()) {
-      alert("Vui lòng cung cấp mã sê-ri / số Serial của thiết bị vật lý!");
+    if (hasEmptySelection) {
+      alert('Vui lòng chọn đủ tài sản cụ thể');
       return;
     }
-    const nowStr = new Date().toLocaleString('vi-VN');
-    const newOp = {
-      time: nowStr,
-      user: 'Nguyễn Văn B (Nhân viên vận hành)',
-      action: `Gán thiết bị sê-ri [${serialNumber}] và tiến hành bàn giao`
-    };
-    const updated = {
-      ...selectedOrder,
-      status: 'RENTING',
-      equipments: selectedOrder.equipments.map(eq => ({ ...eq, allocatedAssetId: serialNumber })),
-      operations: [...(selectedOrder.operations || [
-        { time: '15/06/2026 10:00', user: 'Lê Minh (Kỹ thuật)', action: 'Khóa tiền ký quỹ cọc giữ chỗ' },
-        { time: '15/06/2026 10:15', user: 'Nhân viên tủ quầy', action: 'Duyệt hồ sơ định danh' }
-      ]), newOp]
-    };
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    setShowHandoverModal(false);
-    triggerToast(`Đã bàn giao thiết bị ${serialNumber} và đổi trạng thái sang ĐANG THUÊ!`);
-    if (onAddNotification) {
-      onAddNotification(`Bàn giao thành công đơn hàng ${selectedOrder.orderCode}`);
-    }
-  };
 
-  const handleActionReturn = (qualityNote) => {
-    const nowStr = new Date().toLocaleString('vi-VN');
-    const newOp = {
-      time: nowStr,
-      user: 'Nguyễn Văn B (Nhân viên vận hành)',
-      action: `Nhận trả thiết bị. Ghi chú hao mòn: ${qualityNote}`
-    };
-    const updated = {
-      ...selectedOrder,
-      status: 'RETURNED',
-      operations: [...(selectedOrder.operations || [
-        { time: '15/06/2026 10:00', user: 'Lê Minh (Kỹ thuật)', action: 'Khóa tiền ký quỹ cọc giữ chỗ' },
-        { time: '15/06/2026 10:15', user: 'Nhân viên tủ quầy', action: 'Duyệt hồ sơ định danh' }
-      ]), newOp]
-    };
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    setShowReturnModal(false);
-    triggerToast(`Đã nhận trả thiết bị thành công! Trạng thái đơn đổi thành Đã trả.`);
-  };
+    // Validate trùng lặp hay không còn sẵn
+    let checkOk = true;
+    unitHandoverSelections.forEach((block) => {
+      const stateLabel = validateUnitBlock(block, unitHandoverSelections);
+      if (stateLabel !== 'Đã chọn đủ') {
+        checkOk = false;
+      }
+    });
 
-  const handleActionRefund = () => {
-    const nowStr = new Date().toLocaleString('vi-VN');
-    const newOp = {
-      time: nowStr,
-      user: 'Trần Tú (Quản trị viên)',
-      action: 'Hoàn trả cọc ký quỹ 100% tài sản sườn'
-    };
-    const updated = {
-      ...selectedOrder,
-      status: 'COMPLETED',
-      escrowStatus: 'Đã hoàn trả',
-      operations: [...(selectedOrder.operations || [
-        { time: '15/06/2026 10:00', user: 'Lê Minh (Kỹ thuật)', action: 'Khóa tiền ký quỹ cọc giữ chỗ' },
-        { time: '15/06/2026 10:15', user: 'Nhân viên tủ quầy', action: 'Duyệt hồ sơ định danh' }
-      ]), newOp]
-    };
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    triggerToast(`Đã hoàn trả 100% cọc giữ chỗ. Đơn hàng hoàn tất.`);
-  };
-
-  const handleActionDeduct = (amount, reason) => {
-    if (amount <= 0 || !reason.trim()) {
-      alert("Vui lòng điền đầy đủ Tiền phạt và Lý do khấu trừ!");
+    if (!checkOk) {
+      alert('Thông tin tài sản cụ thể chưa hợp lệ, có lỗi trùng sê-ri hoặc tài sản không sẵn sàng hoặc vượt tồn kho. Vui lòng bấm "Kiểm tra tài sản đã chọn" để biết thêm chi tiết.');
       return;
     }
-    const nowStr = new Date().toLocaleString('vi-VN');
-    const newOp = {
-      time: nowStr,
-      user: 'Trần Tú (Quản trị viên)',
-      action: `Khấu trừ cọc giữ chỗ. Phạt ${amount.toLocaleString('vi-VN')} đ. Lý do: ${reason}`
-    };
-    const updated = {
-      ...selectedOrder,
-      status: 'COMPLETED',
-      fines: amount,
-      fineReason: reason,
-      escrowStatus: `Khấu trừ ${amount.toLocaleString('vi-VN')}đ / Hoàn số dư`,
-      operations: [...(selectedOrder.operations || [
-        { time: '15/06/2026 10:00', user: 'Lê Minh (Kỹ thuật)', action: 'Khóa tiền ký quỹ cọc giữ chỗ' },
-        { time: '15/06/2026 10:15', user: 'Nhân viên tủ quầy', action: 'Duyệt hồ sơ định danh' }
-      ]), newOp]
-    };
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    setShowDeductModal(false);
-    triggerToast(`Đã lưu khấu trừ cọc thành công và chuyển trạng thái thành Hoàn tất.`);
-  };
 
-  const handleActionCancel = () => {
-    if (!window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này không?")) {
+    // Validate 3: Vui lòng upload ảnh hoặc file hợp đồng giấy (contract hoặc handover file)
+    if (!hoContractFile || !hoHandoverFile) {
+      alert('Vui lòng upload ảnh hoặc file hợp đồng giấy');
       return;
     }
-    const nowStr = new Date().toLocaleString('vi-VN');
-    const newOp = {
-      time: nowStr,
-      user: userRole === 'admin' ? 'Trần Tú (Quản trị viên)' : 'Khách hàng',
-      action: 'Hủy đơn hàng và giải phóng đặt giữ thiết bị định biên'
-    };
-    const updated = {
+
+    const generatedSlipCode = `HOS-ORD-${selectedOrder.orderCode.split('-')[2]}`;
+
+    // Gom dữ liệu chọn tài sản theo từng orderItem và bộ thiết bị
+    const handoverJson = unitHandoverSelections.map(block => ({
+      orderItemId: block.orderItemId,
+      productName: block.productName,
+      unitIndex: block.unitIndex,
+      bodyAssetId: block.bodyAssetId,
+      includedSelections: block.includedSelections.map(sel => {
+        if (sel.managementType === 'IDENTIFIED_ASSET') {
+          return {
+            includedItemName: sel.includedItemName,
+            managementType: 'IDENTIFIED_ASSET',
+            assetId: sel.assetId
+          };
+        } else {
+          return {
+            includedItemName: sel.includedItemName,
+            managementType: 'QUANTITY',
+            quantity: sel.quantity
+          };
+        }
+      })
+    }));
+
+    // Cập nhật trạng thái đơn thành 'Đang thuê'
+    const updatedOrder = {
       ...selectedOrder,
-      status: 'CANCELLED',
-      operations: [...(selectedOrder.operations || [
-        { time: '15/06/2026 10:00', user: 'Lê Minh (Kỹ thuật)', action: 'Khóa tiền ký quỹ cọc giữ chỗ' },
-        { time: '15/06/2026 10:15', user: 'Nhân viên tủ quầy', action: 'Duyệt hồ sơ định danh' }
-      ]), newOp]
+      status: 'Đang thuê',
+      handoverPhotos: [hoHandoverFile.name],
+      contractFile: hoContractFile.name,
+      handoverSlipCode: generatedSlipCode,
+      handoverSelections: handoverJson, // Gom lưu dữ liệu theo cấu trúc đề cập
+      equipments: selectedOrder.equipments.map(eq => {
+        const related = unitHandoverSelections.filter(u => u.productName === eq.name);
+        return {
+          ...eq,
+          allocatedSerial: related.map(r => {
+            const bodyObj = MOCK_BODIES_IN_STOCK.find(b => b.assetCode === r.bodyAssetId);
+            return bodyObj ? bodyObj.serial : r.bodyAssetId;
+          }).join(', '),
+          allocatedAccessories: related.flatMap(r => r.includedSelections.map(s => {
+            if (s.managementType === 'IDENTIFIED_ASSET') {
+              const compObj = MOCK_COMPONENTS_IN_STOCK.find(c => c.assetCode === s.assetId);
+              return compObj ? `${s.includedItemName} (${compObj.serial})` : `${s.includedItemName} (${s.assetId})`;
+            } else {
+              return `${s.includedItemName} (SL: ${s.quantity})`;
+            }
+          }))
+        };
+      })
     };
-    setSelectedOrder(updated);
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
-    triggerToast(`Đã hủy đơn hàng thành công.`);
+
+    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updatedOrder : o));
+    setSelectedOrder(updatedOrder);
+    setActiveView('detail');
+    triggerToast('Lập phiếu bàn giao thành công');
   };
 
-  // Filter calculations
+  // Hủy đơn hàng nếu khách chưa nhận máy
+  const handleCancelOrder = () => {
+    if (window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này và giải phóng thiết bị đặt chỗ?')) {
+      const updated = {
+        ...selectedOrder,
+        status: 'Đã hủy'
+      };
+      setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updated : o));
+      setSelectedOrder(updated);
+      triggerToast('Đã hủy đơn hàng thành công!');
+    }
+  };
+
+  // Lọc danh sách theo đúng 5 tham số được định sẵn: Mã đơn hàng, Tên khách hàng, Ngày nhận, Ngày trả, Trạng thái đơn hàng
   const filteredOrders = orders.filter(o => {
-    const matchesCode = o.orderCode.toLowerCase().includes(searchCode.toLowerCase());
-    const matchesName = o.customerName.toLowerCase().includes(searchName.toLowerCase());
+    const matchesCode = filterCode === '' || o.orderCode.toLowerCase().includes(filterCode.toLowerCase());
+    const matchesCustomer = filterCustomer === '' || o.customerName.toLowerCase().includes(filterCustomer.toLowerCase());
+    const matchesStartDate = filterStartDate === '' || o.startDate === filterStartDate;
+    const matchesEndDate = filterEndDate === '' || o.endDate === filterEndDate;
     const matchesStatus = statusFilter === '' || o.status === statusFilter;
-    return matchesCode && matchesName && matchesStatus;
+    return matchesCode && matchesCustomer && matchesStartDate && matchesEndDate && matchesStatus;
   });
 
   return (
-    <div className="space-y-6 select-none font-sans">
+    <div className="space-y-6 select-none font-sans text-left" id="booked-orders-screen">
       
-      {/* Toast Notice box */}
-      {toast && (
-        <div className="fixed top-20 right-4 bg-slate-900 border border-slate-700 text-white px-5 py-3 rounded-lg shadow-2xl z-50 animate-bounce flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-[#fea619]" />
-          <span className="text-xs font-bold">{toast}</span>
+      {/* Toast Alert */}
+      {toastMsg && (
+        <div className="fixed top-20 right-4 bg-[#0a1128] text-white px-5 py-3.5 rounded-lg shadow-2xl z-50 flex items-center gap-2 border border-slate-700 animate-slideIn">
+          <Check className="w-5 h-5 text-[#fea619]" />
+          <span className="text-xs font-bold">{toastMsg}</span>
         </div>
       )}
 
       {/* VIEW: 1. LIST ORDERS */}
       {activeView === 'list' && (
         <>
-          {/* Header row section */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 border border-slate-200 rounded-2xl shadow-xs">
+          {/* Breadcrumb */}
+          <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">
+            Trang chủ / Quản lý đơn hàng
+          </div>
+
+          <div className="flex flex-wrap justify-between items-center bg-white p-5 border border-[#c5c5d3] rounded-2xl shadow-xs gap-4 mb-4">
             <div>
-              <h2 className="text-xl font-bold text-[#00236f] flex items-center gap-2">
-                <FileCheck2 className="w-5 h-5 text-indigo-650" />
-                QUẢN LÝ ĐƠN HÀNG THUÊ THIẾT BỊ
+              <h2 className="text-xl font-bold text-[#00236f] flex items-center gap-2 uppercase tracking-wide">
+                <FileText className="w-5 h-5 text-indigo-650" />
+                Quản lý đơn hàng
               </h2>
-              <p className="text-xs text-slate-500 mt-1">Giám tháp, check-in, check-out bàn giao dán mã tem và bồi hoàn cọc ký quỹ an ninh.</p>
-            </div>
-            
-            {/* Payment vs order tab controls */}
-            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-150">
-              <button 
-                onClick={() => setActiveSubTab('orders')}
-                className={`px-3 py-1.5 text-xs font-black rounded-lg transition-colors cursor-pointer ${
-                  activeSubTab === 'orders' ? 'bg-[#00236f] text-white font-black' : 'text-slate-650'
-                }`}
-              >
-                📥 ĐƠN HÀNG THUÊ
-              </button>
-              <button 
-                onClick={() => setActiveSubTab('payments')}
-                className={`px-3 py-1.5 text-xs font-black rounded-lg transition-colors cursor-pointer ${
-                  activeSubTab === 'payments' ? 'bg-[#00236f] text-white font-black' : 'text-slate-650'
-                }`}
-              >
-                💳 LỊCH SỬ THỦ QUỸ CỌC
-              </button>
+              <p className="text-xs text-slate-500 mt-1 font-semibold">Theo dõi hồ sơ đặt chỗ thiết bị quay phim chụp hình và làm thủ tục bàn giao chuyên nghiệp</p>
             </div>
           </div>
 
-          {activeSubTab === 'orders' ? (
-            <>
-              {/* Order Lists Filters boxes */}
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 items-center text-xs">
-                <div className="relative flex-1 w-full">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input 
-                    type="text"
-                    value={searchCode}
-                    onChange={(e) => setSearchCode(e.target.value)}
-                    placeholder="Lọc chính xác mã đơn hàng (TR-ORD...)"
-                    className="w-full bg-slate-50 border-none rounded-lg pl-10 pr-4 py-2.5 outline-none font-bold"
-                  />
-                </div>
-                <div className="w-full sm:w-48">
-                  <input 
-                    type="text"
-                    value={searchName}
-                    onChange={(e) => setSearchName(e.target.value)}
-                    placeholder="Lọc theo tên khách thuê..."
-                    className="w-full border border-slate-200 rounded-lg p-2.5 outline-none bg-white text-slate-800 font-bold"
-                  />
-                </div>
-                <div className="w-full sm:w-44">
-                  <select 
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-lg py-2.5 px-2 font-bold cursor-pointer"
-                  >
-                    <option value="">Trạng thái: Tất cả</option>
-                    <option value="ACTIVE">Chờ xuất (Đặt cọc rồi)</option>
-                    <option value="RENTING">Đang thuê ngoài</option>
-                    <option value="COMPLETED">Hoàn tất hoàn cọc</option>
-                    <option value="PENDING_DEPOSIT">Đợi cọc ký quỹ</option>
-                  </select>
-                </div>
-              </div>
+          {/* Filters strip containing exactly the 5 specified fields */}
+          <div className="bg-white p-4.5 border border-slate-200 rounded-xl shadow-xs grid grid-cols-1 sm:grid-cols-5 gap-3 items-end text-xs mb-6">
+            <div>
+              <label className="block text-slate-500 font-bold mb-1 text-[10px] uppercase">Mã đơn hàng</label>
+              <input 
+                type="text"
+                placeholder="Ví dụ: TR-ORD-5001"
+                value={filterCode}
+                onChange={(e) => setFilterCode(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-205 rounded-xl px-3 py-2 outline-none font-bold text-slate-700 text-xs"
+              />
+            </div>
 
-              {/* Data list Table */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto w-full text-xs">
-                <table className="w-full min-w-[900px] text-left">
-                  <thead>
-                    <tr className="bg-slate-50 text-[10px] text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200">
-                      <th className="px-6 py-4">Mã đơn hàng</th>
-                      <th className="px-6 py-4">Tên khách hàng</th>
-                      <th className="px-6 py-4">Ngày thuê</th>
-                      <th className="px-6 py-4">Ngày trả</th>
-                      <th className="px-6 py-4 text-right">Tổng tiền thanh toán cọc giữ chỗ</th>
-                      <th className="px-6 py-4 text-center">Trạng thái đơn hàng</th>
-                      <th className="px-6 py-4 text-right">Thao tác</th>
+            <div>
+              <label className="block text-slate-500 font-bold mb-1 text-[10px] uppercase">Tên khách hàng</label>
+              <input 
+                type="text"
+                placeholder="Nhập tên..."
+                value={filterCustomer}
+                onChange={(e) => setFilterCustomer(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-205 rounded-xl px-3 py-2 outline-none font-bold text-slate-700 text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-500 font-bold mb-1 text-[10px] uppercase">Ngày nhận</label>
+              <input 
+                type="date"
+                value={filterStartDate}
+                onChange={(e) => setFilterStartDate(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-205 rounded-xl px-3 py-2 outline-none font-bold text-slate-700 text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-500 font-bold mb-1 text-[10px] uppercase">Ngày trả</label>
+              <input 
+                type="date"
+                value={filterEndDate}
+                onChange={(e) => setFilterEndDate(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-205 rounded-xl px-3 py-2 outline-none font-bold text-slate-700 text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-500 font-bold mb-1 text-[10px] uppercase">Trạng thái đơn hàng</label>
+              <select 
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full bg-white border border-slate-202 rounded-xl p-2 outline-none font-extrabold text-slate-650 cursor-pointer text-xs"
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="Chờ bàn giao">Chờ bàn giao</option>
+                <option value="Đang thuê">Đang thuê</option>
+                <option value="Đã trả máy">Đã trả máy</option>
+                <option value="Hoàn thành">Hoàn thành</option>
+                <option value="Đã hủy">Đã hủy</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Table display */}
+          <div className="table-wrapper border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+            <div className="w-full">
+              <table className="data-table text-xs">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 font-semibold text-[#0f172a] text-[13px]">
+                    <th className="px-6 py-3.5 whitespace-nowrap text-left font-semibold min-w-[110px]">Mã đơn hàng</th>
+                    <th className="px-6 py-3.5 whitespace-nowrap text-left font-semibold min-w-[150px]">Khách hàng</th>
+                    <th className="px-6 py-3.5 whitespace-nowrap text-center font-semibold min-w-[110px]">Ngày nhận</th>
+                    <th className="px-6 py-3.5 whitespace-nowrap text-center font-semibold min-w-[110px]">Ngày trả</th>
+                    <th className="px-6 py-3.5 whitespace-nowrap text-center font-semibold min-w-[100px]">Số ngày</th>
+                    <th className="px-6 py-3.5 whitespace-nowrap text-right font-semibold min-w-[125px]">Thành tiền</th>
+                    <th className="px-6 py-3.5 whitespace-nowrap text-right font-semibold min-w-[125px]">Tiền cọc</th>
+                    <th className="px-6 py-3.5 whitespace-nowrap text-center font-semibold min-w-[130px]">Trạng thái</th>
+                    <th className="px-6 py-3.5 whitespace-nowrap text-right font-semibold min-w-[130px]">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-semibold text-slate-705">
+                  {filteredOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" className="px-6 py-10 text-center italic text-slate-400 font-bold">
+                        Không tìm thấy đơn hàng thuê nào.
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-semibold text-slate-650 animate-fade-in">
-                    {filteredOrders.length === 0 ? (
-                      <tr>
-                        <td colSpan="7" className="px-6 py-10 text-center italic text-slate-400">
-                          Không tìm thấy đơn hàng thuê nào trùng khớp.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredOrders.map((ord) => (
-                        <tr key={ord.orderCode} className="hover:bg-slate-50/50 transition duration-150 bg-white">
-                          <td className="px-6 py-4 font-mono font-black text-[#00236f]">{ord.orderCode}</td>
-                          <td className="px-6 py-4 text-slate-800 font-bold">{ord.customerName}</td>
-                          <td className="px-6 py-4 font-mono">{ord.startDate}</td>
-                          <td className="px-6 py-4 font-mono">{ord.endDate}</td>
-                          <td className="px-6 py-4 text-right font-mono font-black text-[#00236f]">{ord.deposit.toLocaleString('vi-VN')} đ</td>
+                  ) : (
+                    filteredOrders.map(o => {
+                      return (
+                        <tr key={o.orderCode} className="hover:bg-slate-100/30 transition">
+                          <td className="px-6 py-4 font-mono font-bold text-[#00236f] cell-code">{o.orderCode}</td>
+                          <td className="px-6 py-4 font-bold text-slate-900">{o.customerName}</td>
+                          <td className="px-6 py-4 font-mono text-center cell-date">{o.startDate}</td>
+                          <td className="px-6 py-4 font-mono text-center cell-date">{o.endDate}</td>
+                          <td className="px-6 py-4 text-center font-bold text-slate-800">{computedDays(o.startDate, o.endDate)} ngày</td>
+                          <td className="px-6 py-4 text-right font-mono font-bold text-[#00236f] cell-money">{formatVND(o.totalPrice)}</td>
+                          <td className="px-6 py-4 text-right font-mono font-bold text-indigo-700 cell-money">{formatVND(o.deposit)}</td>
                           <td className="px-6 py-4 text-center">
-                            <span className={`inline-flex px-2.5 py-0.5 rounded text-[9.5px] font-black uppercase border leading-none ${
-                              ord.status === 'ACTIVE' 
-                                ? 'bg-amber-50 text-amber-700 border-amber-205'
-                                : ord.status === 'RENTING'
-                                  ? 'bg-blue-50 text-blue-700 border-blue-205'
-                                  : ord.status === 'COMPLETED'
-                                    ? 'bg-green-50 text-green-700 border-green-205'
-                                    : 'bg-slate-100 text-slate-500 border-slate-205'
+                            <span className={`status-badge border leading-none ${
+                              o.status === 'Chờ bàn giao' || o.status === 'Đã đặt cọc' ? 'bg-amber-50 text-amber-805 border-amber-200' :
+                              o.status === 'Đang thuê' ? 'bg-indigo-50 text-indigo-805 border-indigo-200' :
+                              o.status === 'Đã trả máy' ? 'bg-emerald-50 text-emerald-800 border-emerald-250' :
+                              o.status === 'Hoàn thành' ? 'bg-green-50 text-green-708 border-green-200' :
+                              'bg-slate-50 text-slate-500 border-slate-200'
                             }`}>
-                              {ord.status === 'ACTIVE' ? 'Chở bàn giao' : ord.status === 'RENTING' ? 'Đang thuê' : ord.status === 'COMPLETED' ? 'Đã hoàn thành' : 'Đợi chuyển cọc'}
+                              {o.status}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <button 
-                              onClick={() => handleOpenDetail(ord)}
-                              className="px-4 py-1.5 border border-[#00236f] text-[#00236f] hover:bg-blue-50 font-black rounded-lg text-[10px] uppercase transition cursor-pointer"
-                            >
-                              xem chi tiết
-                            </button>
+                            <div className="table-action-group justify-end text-xs">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenDetail(o)}
+                                className="table-action-button text-[#00236f] bg-[#00236f]/5 hover:bg-[#00236f]/10 cursor-pointer"
+                              >
+                                Xem chi tiết
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleStartHandoverDirect(o)}
+                                className={`table-action-button transition cursor-pointer font-semibold ${
+                                  o.status === 'Chờ bàn giao' || o.status === 'Đã đặt cọc'
+                                    ? 'bg-[#00236f] text-white hover:bg-slate-800'
+                                    : 'bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed'
+                                }`}
+                              >
+                                {o.status === 'Chờ bàn giao' || o.status === 'Đã đặt cọc' ? 'Lập phiếu bàn giao' : 'Đã lập phiếu'}
+                              </button>
+                            </div>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          ) : (
-            // TRANSACTIONS LIST SUITE
-            <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto w-full shadow-sm text-xs select-none">
-              <div className="p-4 bg-slate-50 border-b font-black text-slate-800 uppercase tracking-widest text-[9.5px]">
-                SỔ NHẬT KÝ ĐỐI SOÁT CHUYỂN HOÀN KÝ QUỸ ĐỒ ĐẠC
-              </div>
-              <table className="w-full min-w-[850px] text-left">
-                <thead>
-                  <tr className="bg-slate-50 border-b font-bold text-slate-500 uppercase tracking-wider text-[10px]">
-                    <th className="px-6 py-4">Mã Giao dịch</th>
-                    <th className="px-6 py-4">Mã đơn hàng</th>
-                    <th className="px-6 py-4">Khách hàng</th>
-                    <th className="px-6 py-4">Loại giao thức</th>
-                    <th className="px-6 py-4 text-right">Giá trị quỹ cọc</th>
-                    <th className="px-6 py-4 text-center">Trạng thái quỹ</th>
-                    <th className="px-6 py-4 text-right">Thời gian chốt</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-semibold text-slate-650">
-                  <tr className="hover:bg-slate-50/20">
-                    <td className="px-6 py-4 font-mono font-bold text-indigo-700">TR-TXN-1001</td>
-                    <td className="px-6 py-4 font-mono">TR-ORD-001</td>
-                    <td className="px-6 py-4 font-black text-slate-800">Nguyễn Văn A</td>
-                    <td className="px-6 py-4 text-emerald-700">Nhận Ký Quỹ Độc Quyền</td>
-                    <td className="px-6 py-4 text-right">5.000.000 đ</td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded text-[9px] font-bold">KHÓA QUỸ THÀNH CÔNG</span>
-                    </td>
-                    <td className="px-6 py-4 text-right font-mono text-slate-400">15/06/2026 09:12</td>
-                  </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
         </>
       )}
 
-      {/* VIEW: 2. DETAILED SCREEN FOR ORDER */}
+      {/* VIEW: 2. DETAILED ORDER VIEW */}
       {activeView === 'detail' && selectedOrder && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-2 text-xs font-bold mb-4">
+        <div className="bg-white border border-[#c5c5d3] p-6 rounded-2xl shadow-xs space-y-6">
+          <div className="flex border-b pb-4 items-center justify-between">
             <button 
-              onClick={() => setActiveView('list')} 
-              className="text-slate-500 hover:text-slate-905 flex items-center gap-1 cursor-pointer"
+              type="button" 
+              onClick={() => setActiveView('list')}
+              className="text-slate-500 hover:text-slate-900 font-bold flex items-center gap-1 cursor-pointer"
             >
-              
-              DANH SÁCH ĐƠN HÀNG
+              <ArrowLeft className="w-4 h-4" />
+              Quay lại danh sách
             </button>
-            <span className="text-slate-350">/</span>
-            <span className="text-slate-900 font-extrabold uppercase">CHI TIẾT ĐƠN HÀNG {selectedOrder.orderCode}</span>
+            <span className="text-[10px] uppercase font-mono font-bold text-slate-400">Chi tiết hóa đơn dán sườn: #{selectedOrder.orderCode}</span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 text-xs font-semibold">
             
-            {/* Main Booking Specifications */}
-            <div className="lg:col-span-8 space-y-6">
+            <div className="md:col-span-8 space-y-6 text-left">
               
-              {/* Profile Client Info summary box */}
-              <div className="bg-white border border-slate-201 p-6 rounded-2xl shadow-xs space-y-4">
-                <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+              {/* Customer Box */}
+              <div className="bg-slate-50 border border-slate-150 p-4.5 rounded-2xl text-slate-700 space-y-3.5">
+                <span className="text-[10px] font-black text-slate-450 block uppercase tracking-widest border-b border-slate-200 pb-1.5">Thông tin đăng ký khách</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <h3 className="text-sm font-black text-[#00236f] flex items-center gap-1 uppercase leading-none">
-                      👤 THÔNG TIN KHÁCH HÀNG &amp; THỜI HẠN
-                    </h3>
-                    <p className="text-[10px] text-slate-400 font-medium mt-1">Thông số kiểm tra thẻ định danh đã duyệt hoàn hảo.</p>
+                    <span className="text-slate-400 font-bold block mb-0.5">Khách hàng thuê máy:</span>
+                    <strong className="text-slate-900 font-bold block text-sm">{selectedOrder.customerName}</strong>
+                    <span className="text-[10.5px] text-green-700 font-black mt-0.5 block">🛡️ {selectedOrder.customerVerification}</span>
                   </div>
-                  <span className="bg-green-50 text-green-700 px-2.5 py-1 rounded text-[10px] border border-green-200 font-black">
-                    {selectedOrder.customerVerification}
-                  </span>
+                  <div>
+                    <span className="text-slate-400 font-bold block mb-0.5">Số điện thoại / Liên lạc:</span>
+                    <span className="text-slate-800 text-sm font-bold block">{selectedOrder.customerPhone}</span>
+                    <span className="text-slate-405 block mt-0.5">{selectedOrder.customerEmail}</span>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-semibold">
-                  <div>
-                    <span className="text-slate-400 block font-bold">Họ và tên:</span>
-                    <span className="text-slate-800 text-sm font-black block">{selectedOrder.customerName}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block font-bold">Số điện thoại:</span>
-                    <span className="text-slate-800 block">{selectedOrder.customerPhone}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block font-bold">Email chính chủ:</span>
-                    <span className="text-slate-800 block">{selectedOrder.customerEmail}</span>
-                  </div>
-                  <div className="col-span-1 sm:col-span-2 pt-2 border-t border-slate-50">
-                    <span className="text-slate-400 block font-bold">Lịch trình Thuê - Trả máy:</span>
-                    <span className="text-indigo-650 block">📅 Từ 09:00, {selectedOrder.startDate} ── Đến trước 18:00, {selectedOrder.endDate}</span>
-                  </div>
+                <div className="pt-3 border-t border-slate-200/90 text-[11px] font-medium text-indigo-700 font-bold">
+                  📅 Kì hạn cho thuê: Từ {selectedOrder.startDate} đến hết {selectedOrder.endDate} (Hợp đồng thuê 48h)
                 </div>
               </div>
 
-              {/* Items Table details inside Booking */}
-              <div className="bg-white border border-slate-201 rounded-2xl overflow-x-auto w-full shadow-xs text-xs">
-                <div className="p-4 border-b font-black text-slate-800 uppercase tracking-widest text-[9px] min-w-[700px]">
-                  DANH SÁCH THIẾT BỊ LƯU TRỮ TRONG ĐƠN HÀNG
-                </div>
-                <table className="w-full min-w-[700px] text-left">
-                  <thead>
-                    <tr className="bg-slate-50 font-bold border-b border-slate-150 text-slate-500 uppercase text-[9.5px]">
-                      <th className="px-6 py-3">Tên sản phẩm</th>
-                      <th className="px-6 py-3 text-center">Số lượng</th>
-                      <th className="px-6 py-3 text-right">Tổng tiền thuê ngày</th>
-                      <th className="px-6 py-3 text-right">Mức cọc máy sườn</th>
-                      <th className="px-6 py-3 text-right">MÃ TÀI SẢN VẬT LÝ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                    {selectedOrder.equipments.map((eq, i) => (
-                      <tr key={i}>
-                        <td className="px-6 py-3 font-bold text-slate-800">{eq.name}</td>
-                        <td className="px-6 py-3 text-center">{eq.qty} chiếc</td>
-                        <td className="px-6 py-3 text-right text-indigo-650">{eq.price.toLocaleString('vi-VN')} đ</td>
-                        <td className="px-6 py-3 text-right text-slate-500">{eq.deposit.toLocaleString('vi-VN')} đ</td>
-                        <td className="px-6 py-3 text-right">
-                          {eq.allocatedAssetId ? (
-                            <span className="font-mono bg-blue-900 text-white font-extrabold px-2 py-0.5 rounded text-[10.5px]">
-                              {eq.allocatedAssetId}
-                            </span>
-                          ) : (
-                            <span className="text-rose-500 text-[10.5px] italic">Chưa gán máy sườn cụ thể</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {/* Aggregation rows */}
-                    <tr className="bg-slate-50/50">
-                      <td colSpan="3" className="px-6 py-3 text-right font-bold text-slate-450 uppercase">Tổng cộng tiền thuê đợt:</td>
-                      <td colSpan="2" className="px-6 py-3 text-right font-black text-[#00236f] text-sm">{selectedOrder.totalPrice.toLocaleString('vi-VN')} VND</td>
-                    </tr>
-                    <tr className="bg-slate-50/50 border-t">
-                      <td colSpan="3" className="px-6 py-3 text-right font-bold text-slate-450 uppercase">Tổng đặt cọc (Tiền ký quỹ giữ tủ):</td>
-                      <td colSpan="2" className="px-6 py-3 text-right font-black text-emerald-700 text-sm">{selectedOrder.deposit.toLocaleString('vi-VN')} VND</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* ACTION PROGRESS STEPS: 1. HANDOVER ZONE (ACTIVE OR PENDING) */}
-              {selectedOrder.status === 'ACTIVE' && (
-                <div className="bg-gradient-to-br from-indigo-50/20 to-orange-50/25 p-5 border-2 border-indigo-200 rounded-2xl space-y-4">
-                  <div className="flex items-center gap-1.5 text-[#00236f]">
-                    <Sliders className="w-5 h-5 text-[#fea619]" />
-                    <span className="text-xs font-black uppercase tracking-wider">TIẾN TRÌNH THỦ TỤC BÀN GIAO THIẾT BỊ (WIZARD STEPS)</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
-                    
-                    {/* Step 1: Specific Serial Allocation (Screen 20) */}
-                    <div className="bg-white p-4 border border-slate-200 rounded-xl space-y-2">
-                      <h4 className="font-extrabold text-[#00236f] flex items-center gap-1">
-                        <span className="w-4 h-4 bg-indigo-500 text-white text-[9.5px] rounded-full inline-flex items-center justify-center font-bold">1</span>
-                        Gán sê-ri máy cụ thể xuất tủ kho
-                      </h4>
-                      <div className="flex gap-2">
-                        <input 
-                          type="text" 
-                          value={allocateInput}
-                          onChange={(e) => setAllocateInput(e.target.value)}
-                          placeholder="Nhập mã AST0401..."
-                          className="flex-1 px-3 py-1.5 border border-slate-200 rounded outline-none font-mono text-[10.5px]"
-                        />
-                        <button 
-                          onClick={handleAllocateAsset}
-                          className="px-3 bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded cursor-pointer transition text-[10.5px]"
-                        >
-                          CHỌN MÃ
-                        </button>
+              {/* Equipments Requested details */}
+              <div className="bg-slate-50 border border-slate-150 p-4.5 rounded-2xl text-slate-705 space-y-3">
+                <span className="text-[10px] font-black text-slate-450 block uppercase tracking-widest border-b border-slate-200 pb-1.5 font-sans">
+                  Thiết bị &amp; Linh kiện kèm theo được gán định danh
+                </span>
+                
+                {selectedOrder.equipments.map((eq, i) => (
+                  <div key={i} className="bg-white p-3 border border-slate-200 rounded-xl space-y-2.5">
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <strong className="text-[#00236f] text-sm block font-black leading-tight">{eq.name}</strong>
+                        <span className="text-[10.5px] text-slate-400 font-bold block mt-1">Giá trị thuê: {formatVND(eq.price)}/ngày | Tiền đặt cọc mốc máy: {formatVND(eq.deposit)}</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 block font-normal">Gán trực tiếp serial của chiếc máy cụ thể lót tủ.</span>
+                      <span className="text-slate-700 bg-slate-100 font-black px-2.5 py-0.5 rounded">{eq.qty} chiếc</span>
                     </div>
 
-                    {/* Step 2: Paper agreement scan copy (Screen 21) */}
-                    <div className="bg-white p-4 border border-slate-200 rounded-xl space-y-2.5">
-                      <h4 className="font-extrabold text-[#00236f] flex items-center gap-1">
-                        <span className="w-4 h-4 bg-indigo-500 text-white text-[9.5px] rounded-full inline-flex items-center justify-center font-bold">2</span>
-                        Hợp đồng giấy / Chụp scan ký nhận
-                      </h4>
-                      {selectedOrder.paperContract ? (
-                        <div className="text-green-600 flex items-center gap-1 font-bold text-[10.5px]">
-                          <CheckCircle2 className="w-4 h-4" />
-                          Đã đính kèm: {selectedOrder.paperContract}
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={handleUploadPaperContract}
-                          className="w-full py-1.5 border border-[#fea619] text-[#fea619] font-black rounded hover:bg-amber-50 cursor-pointer transition flex items-center justify-center gap-1 text-[10.5px]"
-                        >
-                          
-                          UPLOAD HỢP ĐỒNG KÝ GIẤY
-                        </button>
-                      )}
-                      <span className="text-[10px] text-slate-400 block font-normal">Hợp đồng giấy ký tay lăn tay chụp ảnh đối chứng an toàn.</span>
-                    </div>
-
-                    {/* Step 3: Cash / Store Rent payments (Screen 22) */}
-                    <div className="bg-white p-4 border border-slate-200 rounded-xl space-y-2.5">
-                      <h4 className="font-extrabold text-[#00236f] flex items-center gap-1">
-                        <span className="w-4 h-4 bg-indigo-500 text-white text-[9.5px] rounded-full inline-flex items-center justify-center font-bold">3</span>
-                        Xác nhận thanh toán tiền thuê thô
-                      </h4>
-                      {selectedOrder.rentPaid ? (
-                        <div className="text-green-600 flex items-center gap-1 font-bold text-[10.5px]">
-                          <CheckCircle2 className="w-4 h-4" />
-                          Tiền thuê: Đã đóng đủ tại showroom
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={handleConfirmRentPaid}
-                          className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded cursor-pointer transition text-[10.5px]"
-                        >
-                          💸 ĐÃ NHẬN TIỀN THUÊ ({selectedOrder.totalPrice.toLocaleString('vi-VN')}Đ)
-                        </button>
-                      )}
-                      <span className="text-[10px] text-slate-400 block font-normal">Xác nhận thu đủ tổng giá thuê gốc của máy trước khi rời tủ.</span>
-                    </div>
-
-                    {/* Step 4: Hand-off conditions photo uploading (Screen 23) */}
-                    <div className="bg-white p-4 border border-slate-200 rounded-xl space-y-2.5">
-                      <h4 className="font-extrabold text-[#00236f] flex items-center gap-1">
-                        <span className="w-4 h-4 bg-indigo-500 text-white text-[9.5px] rounded-full inline-flex items-center justify-center font-bold">4</span>
-                        Tuyển chọn chụp ảnh hiện trạng xuất xưởng
-                      </h4>
-                      {mockHandoverFiles.length > 0 ? (
-                        <div className="space-y-1">
-                          <span className="text-green-600 flex items-center gap-1 font-bold text-[10.5px]">
-                            <CheckCircle2 className="w-4 h-4" />
-                            Đã gác lưu {mockHandoverFiles.length} ảnh bảo chứng
-                          </span>
-                          <span className="text-[9.5px] text-slate-400 max-w-[200px] block truncate">{mockHandoverFiles.join(', ')}</span>
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={handleUploadHandoverPhotos}
-                          className="w-full py-1.5 border border-slate-300 text-slate-600 font-bold rounded hover:bg-slate-50 cursor-pointer transition flex items-center justify-center gap-1 text-[10.5px]"
-                        >
-                          
-                          CHỤP / UPLOAD ẢNH BÀN GIAO
-                        </button>
-                      )}
-                      <span className="text-[10px] text-slate-400 block font-normal">Chụp ảnh thấu cảm, sensor sạch đẹp làm đối trọng kiểm kê khố sau.</span>
-                    </div>
-
-                  </div>
-
-                  {/* Step 5: Final Handover validation and receipt trigger (Screen 24) */}
-                  <div className="pt-4 border-t border-indigo-150 flex justify-end items-center">
-                    <button 
-                      onClick={handleGenerateHandoverSlip}
-                      className="px-6 py-2.5 bg-[#00236f] hover:bg-[#fea619] hover:text-[#2a1700] text-white text-xs font-black rounded-xl transition flex items-center gap-1.5 shadow active:scale-95 cursor-pointer ml-auto"
-                    >
-                      
-                      LẬP PHIẾU BÀN GIAO XUẤT KHO TRẠM (SCREEN 24)
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* ACTION PROGRESS STEPS: 2. RETURN & CHECK-IN SYSTEM ZONE */}
-              {selectedOrder.status === 'RENTING' && (
-                <div className="bg-gradient-to-br from-indigo-50/25 to-rose-50/25 p-5 border-2 border-indigo-200 rounded-2xl space-y-4">
-                  <div className="flex items-center gap-1.5 text-[#00236f]">
-                    <Sliders className="w-5 h-5 text-indigo-650 animate-pulse" />
-                    <span className="text-xs font-black uppercase tracking-wider">HỒ SƠ KHẢO KIỂM THU HỒI / lập phiếu trả</span>
-                  </div>
-
-                  {/* Step 1: Upload return photos (Screen 25) */}
-                  <div className="bg-white p-4 border border-slate-200 rounded-xl space-y-3 font-semibold text-xs">
-                    <h4 className="font-extrabold text-[#00236f] flex items-center gap-1">
-                      <span className="w-4 h-4 bg-indigo-500 text-white text-[9.5px] rounded-full inline-flex items-center justify-center font-bold">1</span>
-                      Kiểm nghiệm chụp ảnh thu hồi thiết bị thực tế
-                    </h4>
-                    
-                    {mockReturnFiles.length > 0 ? (
-                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg space-y-1">
-                        <span className="text-green-700 font-bold block flex items-center gap-1">
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          Đã lưu thành công bộ {mockReturnFiles.length} ảnh kiểm định hoàn hảo
-                        </span>
-                        <p className="text-[10px] text-slate-500">{mockReturnFiles.join(', ')}</p>
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={handleUploadReturnPhotos}
-                        className="w-full sm:w-auto px-5 py-2 border border-indigo-550 text-indigo-650 hover:bg-indigo-50 font-black rounded-lg transition text-[11px] flex items-center gap-1.5 cursor-pointer"
-                      >
-                        
-                        CHỤP / UPLOAD ẢNH NHẬN TRẢ (SCREEN 25)
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Step 2: Create returns check-in report details (Screen 26) */}
-                  {mockReturnFiles.length > 0 && !selectedOrder.returnSlip && (
-                    <div className="bg-white p-4 border border-slate-200 rounded-xl space-y-4">
-                      <h4 className="font-extrabold text-[#00236f] flex items-center gap-1">
-                        <span className="w-4 h-4 bg-indigo-500 text-white text-[9.5px] rounded-full inline-flex items-center justify-center font-bold">2</span>
-                        Thủ tục Lập phiếu trả máy &amp; Kiểm kê lỗi hao mòn (Screen 26)
-                      </h4>
-
-                      {!isCheckInMode ? (
-                        <button 
-                          onClick={() => setIsCheckInMode(true)}
-                          className="w-full py-2 bg-[#fea619] hover:bg-[#fea619]/90 text-[#2a1700] text-xs font-black rounded-lg transition flex items-center justify-center gap-1"
-                        >
-                          📂 BẮT ĐẦU FORM KIỂM KÊ KỸ THUẬT
-                        </button>
-                      ) : (
-                        <form onSubmit={handleProcessCheckIn} className="space-y-4 font-semibold text-xs border bg-slate-50 p-4 rounded-xl">
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-slate-700">Tình trạng thu lại của thấu kính, sensor máy ảnh sườn:</label>
-                            <select 
-                              value={returnStatus}
-                              onChange={(e) => setReturnStatus(e.target.value)}
-                              className="p-2 border bg-white rounded cursor-pointer font-bold"
-                            >
-                              <option value="normal">🟢 Bình thường - Đầy đủ linh phụ kiện</option>
-                              <option value="late">🔴 Trễ hạn hoàn trả thiết bị</option>
-                              <option value="damaged">💥 Có sự cố trầy xước, dính rễ tre sensor thấu kính</option>
-                              <option value="missing">⚠️ Thất thoát phụ kiện đạn sạc thẻ nhớ đi kèm</option>
-                            </select>
-                          </div>
-
-                          {returnStatus === 'late' && (
-                            <div className="flex flex-col gap-1.5 p-3.5 bg-yellow-50 border border-yellow-200 rounded-lg">
-                              <label className="text-amber-850">Số đêm quá hạn giữ máy (đợt):</label>
-                              <input 
-                                type="number" required value={lateDays}
-                                onChange={(e) => setLateDays(parseInt(e.target.value) || 0)}
-                                className="p-2 bg-white border outline-none rounded"
-                              />
-                              <p className="text-[10px] text-amber-600 block mt-1">Hệ thống tự động phạt @500.000 VNĐ / đêm quá hạn lưu.</p>
-                            </div>
-                          )}
-
-                          {returnStatus === 'damaged' && (
-                            <div className="space-y-3 p-3.5 bg-rose-50 border border-rose-200 rounded-lg">
-                              <div className="flex flex-col gap-1.5">
-                                <label className="text-rose-800">Miêu tả hiện tượng hao mòn đặc chủng:</label>
-                                <input 
-                                  type="text" required value={damageNotes}
-                                  onChange={(e) => setDamageNotes(e.target.value)}
-                                  placeholder="Ráp xước dăm thấu thấu kính trước, sensor bụi dày mốc..."
-                                  className="p-2 bg-white border outline-none rounded"
-                                />
-                              </div>
-                              <div className="flex flex-col gap-1.5">
-                                <label className="text-rose-800">Ước định chi phí phạt tút dọn, sửa thô (VND):</label>
-                                <input 
-                                  type="number" required value={damageFine}
-                                  onChange={(e) => setDamageFine(parseFloat(e.target.value) || 0)}
-                                  className="p-2 bg-white border outline-none rounded"
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {returnStatus === 'missing' && (
-                            <div className="flex flex-col gap-1 p-3 bg-red-50 border border-red-200 rounded-lg">
-                              <label className="text-red-800 font-bold">Số tiền phạt bồi gỗ hao phụ trợ (VND):</label>
-                              <input 
-                                type="number" required value={missingFine}
-                                onChange={(e) => setMissingFine(parseFloat(e.target.value) || 0)}
-                                className="p-2 bg-white border rounded"
-                              />
-                            </div>
-                          )}
-
-                          <div className="flex justify-end gap-2.5 pt-2 border-t">
-                            <button type="button" onClick={() => setIsCheckInMode(false)} className="px-3 py-1.5 bg-white border rounded">Hủy</button>
-                            <button type="submit" className="px-4 py-1.5 bg-indigo-650 text-white rounded font-bold">CHỐT KIỂM NGHIỆM PHIẾU TRẢ</button>
-                          </div>
-                        </form>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Step 3: Outcomes - Escrow calculations (Screen 27, 28, 29) */}
-                  {selectedOrder.returnSlip && (
-                    <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-4">
-                      <div className="p-4.5 bg-slate-50 border border-slate-150 rounded-xl text-xs space-y-2">
-                        <h4 className="font-bold text-slate-800 uppercase text-[#00236f] leading-none mb-1">KẾT QUẢ ĐỐI SOÁT ĐƠN HOÀN TRẢ</h4>
-                        <p className="text-slate-500 font-bold">Mã phiếu kiểm: <span className="font-mono">{selectedOrder.returnSlip.slipId}</span></p>
-                        <p className="text-slate-500">Giám sát viên: {selectedOrder.returnSlip.officer}</p>
-                        {selectedOrder.fines > 0 ? (
-                          <div className="p-3 bg-rose-50 border border-rose-250 text-rose-700 rounded-lg">
-                            ⚠️ Có phát sinh bồi hoàn: <span className="font-black text-rose-800">{selectedOrder.fines.toLocaleString('vi-VN')} đ</span> ({selectedOrder.fineReason})
-                          </div>
+                    <div className="pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-bold block mb-0.5">Mã sê-ri máy thực tế gán xuất:</span>
+                        {eq.allocatedSerial ? (
+                          <strong className="text-indigo-650 font-mono text-sm block font-black">⚙️ {eq.allocatedSerial}</strong>
                         ) : (
-                          <div className="p-3 bg-green-50 border border-green-250 text-green-700 rounded-lg font-bold">
-                            🟢 Không phát sinh bất kỳ hao mòn khuyết hỏng hay chậm đêm quá ngày nào.
-                          </div>
+                          <span className="text-rose-550 italic font-bold">Quầy bàn quầy chưa cấp sê-ri cụ thể</span>
                         )}
                       </div>
 
-                      {/* Refund Trigger buttons conditional (Screen 27 & 28) */}
-                      {selectedOrder.escrowStatus === 'Đã khóa' && (
-                        <div className="pt-3 border-t flex flex-col sm:flex-row gap-3">
-                          {selectedOrder.fines === 0 ? (
-                            <button 
-                              onClick={handleRecordRefundFull}
-                              className="w-full bg-green-600 hover:bg-green-750 text-white text-xs font-black py-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5"
-                            >
-                              ✨ GHI NHẬN HOÀN CỌC 100% (SCREEN 27)
-                            </button>
-                          ) : (
-                            <div className="space-y-3 w-full">
-                              <button 
-                                onClick={handleRecordRefundDeducted}
-                                className="w-full bg-rose-600 hover:bg-rose-750 text-white text-xs font-black py-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5"
-                              >
-                                💸 KHẤU TRỪ CỌC &amp; HOÀN SỐ DƯ (SCREEN 28)
-                              </button>
-
-                              {returnStatus === 'damaged' && (
-                                <button 
-                                  type="button"
-                                  onClick={handleTriggerAutoMaintenance}
-                                  className="w-full border border-[#00236f] text-[#00236f] hover:bg-blue-50 text-xs font-black py-2 rounded-lg transition cursor-pointer flex items-center justify-center gap-1"
-                                >
-                                  🛠️ CHUYỂN BẢO TRÌ SỬA CHỮA THIẾT BỊ (SCREEN 29)
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-bold block mb-0.5">Phụ kiện tương thích đi kèm:</span>
+                        {eq.allocatedAccessories && eq.allocatedAccessories.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {eq.allocatedAccessories.map(name => (
+                              <span key={name} className="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-[10px] text-slate-755 font-bold">📦 {name}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-slate-402 italic font-semibold">Chưa gán gộp phụ kiện rời bổ trợ</span>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  </div>
+                ))}
+              </div>
 
+              {/* Photos upload preview if exists */}
+              {selectedOrder.handoverPhotos && selectedOrder.handoverPhotos.length > 0 && (
+                <div className="bg-slate-50 border p-4.5 rounded-2xl text-slate-707 space-y-3">
+                  <span className="text-[10px] font-black text-slate-450 block uppercase tracking-widest border-b pb-1">Ảnh chụp hiện trạng bàn giao thực tế:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedOrder.handoverPhotos.map(ph => (
+                      <div key={ph} className="px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded font-mono font-bold text-[10.5px]">
+                        📸 {ph} (Ảnh đợt giao)
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
             </div>
 
-            {/* Sidebar quick metadata state info logs */}
-            <div className="lg:col-span-4 space-y-5">
-              
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-xs space-y-4">
-                <h4 className="text-[10.5px] font-black text-slate-800 uppercase tracking-widest border-b border-slate-150 pb-2">📂 BAN ĐIỀU HÀNH &amp; HÀNH ĐỘNG</h4>
-                <p className="text-[10.5px] text-slate-500 font-semibold leading-relaxed">
-                  Các nút bên dưới tự động kích hoạt/ẩn dựa trên chức năng phân quyền vận hành:
-                </p>
-
-                <div className="space-y-2.5 font-sans">
-                  {/* 1. Nút: Bàn giao thiết bị (Chỉ Nhân viên) */}
-                  {userRole === 'staff' && (
-                    <button 
-                      onClick={() => {
-                        setHandoverSerial('AST0401');
-                        setShowHandoverModal(true);
-                      }}
-                      className="w-full py-2.5 bg-[#00236f] hover:bg-blue-900 text-white text-[11px] font-bold rounded-lg transition duration-200 cursor-pointer text-center uppercase"
-                    >
-                      🤝 BÀN GIAO THIẾT BỊ
-                    </button>
-                  )}
-
-                  {/* 2. Nút: Nhận trả thiết bị (Chỉ Nhân viên) */}
-                  {userRole === 'staff' && (
-                    <button 
-                      onClick={() => {
-                        setReturnQualityNote('Linh kiện đầy đủ, sườn hao mòn 1%, ko xước dăm thấu kính.');
-                        setShowReturnModal(true);
-                      }}
-                      className="w-full py-2.5 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 text-[11px] font-bold rounded-lg transition duration-200 cursor-pointer text-center uppercase"
-                    >
-                      🔄 NHẬN TRẢ THIẾT BỊ
-                    </button>
-                  )}
-
-                  {/* 3. Nút: Hoàn trả cọc (Chỉ Quản trị viên) */}
-                  {userRole === 'admin' && (
-                    <button 
-                      onClick={handleActionRefund}
-                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg transition duration-200 cursor-pointer text-center uppercase"
-                    >
-                      💰 HOÀN TRẢ CỌC 100%
-                    </button>
-                  )}
-
-                  {/* 4. Nút: Khấu trừ cọc (Chỉ Quản trị viên) */}
-                  {userRole === 'admin' && (
-                    <button 
-                      onClick={() => {
-                        setDeductAmount(200000);
-                        setDeductReason('Khấu trừ phí hao mòn phụ trợ vỏ sườn bảo vệ');
-                        setShowDeductModal(true);
-                      }}
-                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold rounded-lg transition duration-200 cursor-pointer text-center uppercase"
-                    >
-                      ⚠️ KHẤU TRỪ TIỀN CỌC
-                    </button>
-                  )}
-
-                  {/* 5. Nút: Hủy đơn hàng (Chỉ Quản trị viên hoặc Khách hàng) */}
-                  {(userRole === 'admin' || userRole === 'customer') && (
-                    <button 
-                      onClick={handleActionCancel}
-                      className="w-full py-2.5 bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 text-[11px] font-bold rounded-lg transition duration-200 cursor-pointer text-center uppercase"
-                    >
-                      ❌ HỦY ĐƠN HÀNG
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Lịch sử thao tác đơn hàng (dạng bảng lưu mốc thời gian, nhân viên thao tác, nội dung hành động) */}
-              <div className="bg-white border border-slate-200 p-4.5 rounded-2xl shadow-xs space-y-3 font-sans">
-                <h4 className="text-[10.5px] font-black text-slate-800 uppercase">
-                  📜 CHI TIẾT LỊCH SỬ THAO TÁC ĐƠN HÀNG:
-                </h4>
+            {/* Side Action Column inside detailed */}
+            <div className="md:col-span-4 p-4 bg-slate-50 border border-slate-205 rounded-2xl flex flex-col justify-between space-y-4 font-sans">
+              <div>
+                <span className="text-[9px] block text-slate-400 font-black uppercase mb-1">Nghiệp vụ quầy</span>
                 
-                <div className="border border-slate-150 rounded-xl overflow-x-auto w-full bg-slate-50">
-                  <table className="w-full min-w-[450px] text-left border-collapse text-[11px]">
-                    <thead>
-                      <tr className="bg-slate-150 border-b border-slate-200 font-bold text-slate-500 uppercase tracking-wider text-[9px]">
-                        <th className="px-3 py-2">Mốc thời gian</th>
-                        <th className="px-3 py-2">Thực hiện</th>
-                        <th className="px-3 py-2">Hành động</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-150 font-medium text-slate-650 bg-white">
-                      {(selectedOrder.operations || [
-                        { time: '15/06/2026 10:00', user: 'Lê Minh (Vận hành)', action: 'Duyệt hồ sơ định danh và khóa quỹ' },
-                        { time: '15/06/2026 10:15', user: 'Nhân viên quầy', action: 'Gửi OTP ký kết hợp đồng khung' }
-                      ]).map((op, idx) => (
-                        <tr key={idx} className="hover:bg-slate-100/40 transition">
-                          <td className="px-3 py-2 font-mono text-slate-400 font-bold whitespace-nowrap">{op.time}</td>
-                          <td className="px-3 py-2 text-slate-800 font-bold whitespace-nowrap">{op.user}</td>
-                          <td className="px-3 py-2 text-slate-600 font-bold">{op.action}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {selectedOrder.status === 'Chờ bàn giao' ? (
+                  <p className="text-[10.5px] text-slate-500 font-semibold leading-relaxed">
+                    Khách đã ký quỹ đặt cọc thô trực tuyến. Vui lòng tiến hành <strong>Lập phiếu bàn giao</strong> từ màn hình danh sách đơn hàng.
+                  </p>
+                ) : (
+                  <p className="text-[10.5px] text-slate-500 font-semibold leading-relaxed">
+                    Đơn hàng thuê đang vận hành ngoài bãi hoặc hoàn tất kiểm tra. Hồ sơ bàn giao mã {selectedOrder.handoverSlipCode || 'Chưa lập'} đã gác sổ.
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2 text-center font-bold">
+                <div className="p-3 bg-slate-100 text-slate-500 border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                  Trạng thái đơn: {selectedOrder.status}
                 </div>
               </div>
-
             </div>
 
           </div>
         </div>
       )}
 
-      {/* MODAL 1: BÀN GIAO THIẾT BỊ */}
-      {showHandoverModal && selectedOrder && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden text-slate-700 font-sans">
-            <div className="bg-[#00236f] text-white p-5">
-              <h3 className="text-sm font-black uppercase tracking-wider">🤝 BÀN GIAO THIẾT BỊ VẬT LÝ</h3>
-              <p className="text-[10px] text-blue-200 mt-1 font-semibold">Gán số Serial của sườn máy còn trống cho đơn {selectedOrder.orderCode}</p>
+      {/* VIEW: 3. LẬP PHIẾU BÀN GIAO */}
+      {activeView === 'handover' && selectedOrder && (
+        <form onSubmit={handleSubmitHandover} className="bg-white border border-[#c5c5d3] p-8 rounded-2xl shadow-xs text-xs space-y-8 font-semibold text-slate-700 text-left">
+          <div className="border-b pb-4">
+            <h3 className="text-lg font-black text-[#00236f] uppercase flex items-center gap-2">
+              <FileText className="w-5 h-5 text-indigo-650" />
+              LẬP PHIẾU BÀN GIAO THIẾT BỊ
+            </h3>
+            <p className="text-xs text-slate-400 mt-1 font-semibold">Vui lòng cập nhật các khu vực thông tin nghiệp vụ nhằm lưu trữ hồ sơ bàn giao chuẩn chỉ.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* KHU VỰC THÔNG TIN KHÁCH HÀNG */}
+            <div className="bg-slate-50/70 p-5 border border-slate-200 rounded-xl space-y-3">
+              <h4 className="text-[#00236f] font-black text-xs uppercase tracking-wider border-b pb-1.5 flex items-center justify-between">
+                <span>👤 Khu vực thông tin khách hàng</span>
+                <span className="text-[9.5px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded uppercase font-bold">Xác minh</span>
+              </h4>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-slate-500 font-bold mb-1">Họ tên khách hàng</label>
+                  <input 
+                    type="text"
+                    value={hoName}
+                    onChange={(e) => setHoName(e.target.value)}
+                    className="w-full bg-white border border-slate-205 rounded-lg px-3 py-2 outline-none font-bold text-slate-800 focus:border-[#00236f]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-500 font-bold mb-1">Email</label>
+                  <input 
+                    type="email"
+                    value={hoEmail}
+                    onChange={(e) => setHoEmail(e.target.value)}
+                    className="w-full bg-white border border-slate-205 rounded-lg px-3 py-2 outline-none font-bold text-slate-800 focus:border-[#00236f]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-500 font-bold mb-1">Số điện thoại</label>
+                  <input 
+                    type="text"
+                    value={hoPhone}
+                    onChange={(e) => setHoPhone(e.target.value)}
+                    className="w-full bg-white border border-slate-205 rounded-lg px-3 py-2 outline-none font-bold text-slate-800 focus:border-[#00236f]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-500 font-bold mb-1">Trạng thái xác minh</label>
+                  <input 
+                    type="text"
+                    value={hoVerification}
+                    onChange={(e) => setHoVerification(e.target.value)}
+                    className="w-full bg-white border border-slate-205 rounded-lg px-3 py-2 outline-none font-bold text-slate-800 focus:border-[#00236f]"
+                  />
+                </div>
+              </div>
             </div>
-            
-            <form onSubmit={(e) => { e.preventDefault(); handleActionHandover(handoverSerial); }} className="p-5 space-y-4 text-xs font-semibold">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-450 uppercase block">Chọn sườn thiết bị trống trong tủ kho:</label>
-                <select
-                  value={handoverSerial}
-                  onChange={(e) => setHandoverSerial(e.target.value)}
-                  className="w-full bg-white border border-slate-150 p-2.5 rounded-lg text-xs font-bold text-slate-800"
-                >
-                  <option value="AST0401">AST0401 - Sony Alpha A7 IV (Trống tủ)</option>
-                  <option value="AST0402">AST0402 - Sony Alpha A7 IV (Trống tủ)</option>
-                  <option value="AST0501">AST0501 - Canon EOS R6 Mark II (Trống tủ)</option>
-                  <option value="AST0603">AST0603 - DJI Ronin SC2 (Trống tủ)</option>
-                </select>
+
+            {/* KHU VỰC THÔNG TIN ĐƠN HÀNG */}
+            <div className="bg-slate-50/70 p-5 border border-slate-200 rounded-xl space-y-3">
+              <h4 className="text-[#00236f] font-black text-xs uppercase tracking-wider border-b pb-1.5">
+                📦 Khu vực thông tin đơn hàng
+              </h4>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-500 font-bold mb-1">Mã đơn hàng</label>
+                    <input 
+                      type="text"
+                      value={hoCode}
+                      readOnly
+                      className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 outline-none font-bold text-slate-500 cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-bold mb-1">Trạng thái đơn hàng</label>
+                    <span className="inline-block mt-2 px-2.5 py-1 bg-amber-50 text-amber-800 rounded font-black text-[10px] uppercase border border-amber-200">
+                      {hoStatus}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-500 font-bold mb-1">Ngày nhận</label>
+                    <input 
+                      type="date"
+                      value={hoStartDate}
+                      onChange={(e) => {
+                        setHoStartDate(e.target.value);
+                        setHoDays(computedDays(e.target.value, hoEndDate));
+                      }}
+                      className="w-full bg-white border border-slate-205 rounded-lg px-3 py-2 outline-none font-bold text-slate-800 focus:border-[#00236f]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-bold mb-1">Ngày trả</label>
+                    <input 
+                      type="date"
+                      value={hoEndDate}
+                      onChange={(e) => {
+                        setHoEndDate(e.target.value);
+                        setHoDays(computedDays(hoStartDate, e.target.value));
+                      }}
+                      className="w-full bg-white border border-[#c5c5d3] rounded-lg px-3 py-2 outline-none font-bold text-slate-800 focus:border-[#00236f]"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-slate-500 font-bold mb-1">Số ngày thuê</label>
+                    <input 
+                      type="number"
+                      value={hoDays}
+                      readOnly
+                      className="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 outline-none font-mono font-bold text-slate-505"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-bold mb-1">Tổng tiền thuê</label>
+                    <input 
+                      type="number"
+                      value={hoTotalPrice}
+                      onChange={(e) => setHoTotalPrice(Number(e.target.value))}
+                      className="w-full bg-white border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono font-bold text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-bold mb-1">Tổng tiền cọc</label>
+                    <input 
+                      type="number"
+                      value={hoDeposit}
+                      onChange={(e) => setHoDeposit(Number(e.target.value))}
+                      className="w-full bg-white border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono font-bold text-slate-800"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* KHU VỰC DANH SÁCH MẪU THIẾT BỊ THUÊ */}
+          <div className="bg-slate-50/70 p-5 border border-slate-200 rounded-xl space-y-3">
+            <h4 className="text-[#00236f] font-black text-xs uppercase tracking-wider border-b pb-1.5 flex items-center justify-between">
+              <span>📋 Khu vực danh sách mẫu thiết bị thuê</span>
+              <span className="text-slate-400 font-semibold italic">Danh sách mẫu theo đơn đăng ký</span>
+            </h4>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-xs text-slate-700 bg-white border border-slate-200 rounded-lg overflow-hidden">
+                <thead className="bg-slate-50 border-b border-slate-200 text-[#0f172a] text-[12px] font-semibold">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold whitespace-nowrap min-w-[180px]">Tên mẫu thiết bị</th>
+                    <th className="px-4 py-3 text-center font-semibold whitespace-nowrap min-w-[100px]">Số lượng thuê</th>
+                    <th className="px-4 py-3 text-right font-semibold whitespace-nowrap min-w-[110px]">Giá thuê/ngày</th>
+                    <th className="px-4 py-3 text-right font-semibold whitespace-nowrap min-w-[110px]">Tiền cọc</th>
+                    <th className="px-4 py-3 text-left font-semibold whitespace-nowrap min-w-[160px]">Bộ đi kèm</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-semibold">
+                  {selectedOrder.equipments.map((eq, index) => (
+                    <tr key={index}>
+                      <td className="px-4 py-3 font-bold text-indigo-950">{eq.name}</td>
+                      <td className="px-4 py-3 text-center text-slate-805">{eq.qty} chiếc</td>
+                      <td className="px-4 py-3 text-right font-mono">{formatVND(eq.price)}</td>
+                      <td className="px-4 py-3 text-right font-mono">{formatVND(eq.deposit)}</td>
+                      <td className="px-4 py-3 text-slate-500 italic">Thân máy, sạc rải pin, cáp truyền dữ liệu, túi đựng chống hạt xước</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* KHU VỰC CHỌN TÀI SẢN CỤ THỂ */}
+          <div className="bg-slate-50/70 p-6 border border-slate-200 rounded-2xl space-y-4" id="chon-tai-san-section">
+            <div>
+              <h4 className="text-[#00236f] font-black text-sm uppercase tracking-wider flex items-center gap-2">
+                <span>⚙️ Chọn tài sản cụ thể</span>
+              </h4>
+              <p className="text-xs text-slate-500 mt-0.5">Chọn body chính và các thành phần đi kèm cho từng bộ thiết bị trong đơn hàng.</p>
+            </div>
+
+            <div className="space-y-4">
+              {unitHandoverSelections.map((block, blockIdx) => {
+                const totalCompCount = 1 + block.includedSelections.length;
+                let selectedCompCount = 0;
+                if (block.bodyAssetId) {
+                  selectedCompCount += 1;
+                  block.includedSelections.forEach(s => {
+                    if (s.managementType === 'IDENTIFIED_ASSET' && s.assetId) selectedCompCount += 1;
+                    if (s.managementType === 'QUANTITY' && s.quantity > 0) selectedCompCount += 1;
+                  });
+                }
+
+                const cleanName = block.productName.includes('Sony') ? 'Sony A7 IV' : (block.productName.includes('Fuji') ? 'Fuji X-T5' : block.productName);
+                const badgeState = validateUnitBlock(block, unitHandoverSelections);
+                const isHighlighted = highlightedBlockIndex === blockIdx;
+
+                return (
+                  <div 
+                    key={blockIdx} 
+                    className={`bg-white border-2 rounded-xl overflow-hidden transition-all duration-200 ${
+                      isHighlighted ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-slate-200'
+                    }`}
+                  >
+                    {/* Header */}
+                    <div 
+                      className="p-4 flex flex-wrap items-center justify-between gap-3 bg-slate-50 border-b border-slate-200 cursor-pointer hover:bg-slate-100 select-none"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-indigo-900 font-bold">▼</span>
+                        <strong className="text-sm font-black text-slate-900">{cleanName}</strong>
+                        <span className="px-2 py-0.5 bg-slate-200 text-slate-805 font-mono font-bold rounded text-[10.5px]">#{block.unitIndex}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 font-bold">
+                        <span className={`px-2.5 py-0.5 rounded text-[10px] uppercase font-black tracking-wider ${
+                          badgeState === 'Đã chọn đủ' ? 'bg-green-105 text-green-700 border border-green-200 bg-green-50' :
+                          badgeState === 'Thiếu tài sản' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                          'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse'
+                        }`}>
+                          {badgeState}
+                        </span>
+                        <span className="text-[11px] text-slate-500 font-bold">
+                          ({selectedCompCount}/{totalCompCount} thành phần)
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Table Body Content directly opened as required */}
+                    <div className="p-4 overflow-x-auto">
+                      <table className="w-full text-xs text-slate-705 font-semibold border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 text-[#0f172a] text-[12px] font-semibold text-left border-b border-slate-200 whitespace-nowrap">
+                            <th className="p-3 min-w-[160px] whitespace-nowrap font-semibold">Thành phần</th>
+                            <th className="p-3 min-w-[110px] whitespace-nowrap font-semibold">Loại quản lý</th>
+                            <th className="p-3 min-w-[100px] whitespace-nowrap font-semibold">Yêu cầu</th>
+                            <th className="p-3 min-w-[320px] whitespace-nowrap font-semibold">Tài sản / Số lượng bàn giao</th>
+                            <th className="p-3 min-w-[180px] whitespace-nowrap font-semibold">Tình trạng bàn giao</th>
+                            <th className="p-3 min-w-[180px] whitespace-nowrap font-semibold">Ghi chú</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {/* Row: Body chính */}
+                          <tr className="hover:bg-slate-50/50">
+                            <td className="p-3 font-bold text-indigo-950 whitespace-nowrap">Body chính</td>
+                            <td className="p-3 whitespace-nowrap">
+                              <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded font-bold text-[10px] border border-indigo-150">Serial</span>
+                            </td>
+                            <td className="p-3 whitespace-nowrap">
+                              <span className="text-rose-500 font-extrabold">Bắt buộc</span>
+                            </td>
+                            <td className="p-3">
+                              <select
+                                value={block.bodyAssetId || ''}
+                                onChange={(e) => {
+                                  const updated = [...unitHandoverSelections];
+                                  updated[blockIdx].bodyAssetId = e.target.value;
+                                  setUnitHandoverSelections(updated);
+                                }}
+                                className="w-full bg-white border border-slate-350 rounded px-2.5 py-1.5 outline-none font-semibold text-slate-800 focus:border-indigo-600 text-xs"
+                              >
+                                <option value="">-- Chọn BODY thiết bị sê-ri --</option>
+                                {MOCK_BODIES_IN_STOCK.filter(b => (b.modelName === block.productName || b.modelName.includes(block.productName) || block.productName.includes(b.modelName)) && b.status === "Sẵn sàng").map(b => {
+                                  // Kiểm tra xem serial này có được chọn ở bộ nào khác không
+                                  const isSelectedElsewhere = unitHandoverSelections.some((other, oIdx) => oIdx !== blockIdx && other.bodyAssetId === b.assetCode);
+                                  return (
+                                    <option key={b.assetCode} value={b.assetCode} disabled={isSelectedElsewhere} className="whitespace-nowrap">
+                                      {b.assetCode} - {b.serial} - {b.condition} {isSelectedElsewhere ? '[Đã chọn ở dòng khác]' : ''}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            </td>
+                            <td className="p-3">
+                              <input 
+                                type="text"
+                                value={block.bodyStateBefore || ''}
+                                onChange={(e) => {
+                                  const updated = [...unitHandoverSelections];
+                                  updated[blockIdx].bodyStateBefore = e.target.value;
+                                  setUnitHandoverSelections(updated);
+                                }}
+                                className="w-full bg-white border border-slate-200 rounded px-2 py-1 outline-none text-slate-800 font-medium"
+                              />
+                            </td>
+                            <td className="p-3">
+                              <input 
+                                type="text"
+                                placeholder="Ghi chú thân máy..."
+                                value={block.bodyNotes || ''}
+                                onChange={(e) => {
+                                  const updated = [...unitHandoverSelections];
+                                  updated[blockIdx].bodyNotes = e.target.value;
+                                  setUnitHandoverSelections(updated);
+                                }}
+                                className="w-full bg-white border border-slate-200 rounded px-2 py-1 outline-none text-slate-800 font-medium"
+                              />
+                            </td>
+                          </tr>
+
+                          {/* Rows for included items components list */}
+                          {block.includedSelections.map((comp, compIdx) => {
+                            return (
+                              <tr key={compIdx} className="hover:bg-slate-50/50">
+                                <td className="p-3 font-bold text-slate-800 whitespace-nowrap">{comp.includedItemName}</td>
+                                <td className="p-3 whitespace-nowrap">
+                                  <span className={`px-2 py-0.5 rounded font-bold text-[10px] border ${
+                                    comp.managementType === 'IDENTIFIED_ASSET' 
+                                      ? 'bg-indigo-50 text-indigo-700 border-indigo-150' 
+                                      : 'bg-amber-50 text-amber-700 border-amber-150'
+                                  }`}>
+                                    {comp.managementType === 'IDENTIFIED_ASSET' ? 'Serial' : 'Số lượng'}
+                                  </span>
+                                </td>
+                                <td className="p-3 whitespace-nowrap">
+                                  {comp.required ? <span className="text-rose-500 font-extrabold">Bắt buộc</span> : <span className="text-slate-400">Tùy chọn</span>}
+                                </td>
+                                <td className="p-3">
+                                  {comp.managementType === 'IDENTIFIED_ASSET' ? (
+                                    <div>
+                                      <select
+                                        value={comp.assetId || ''}
+                                        onChange={(e) => {
+                                          const updated = [...unitHandoverSelections];
+                                          updated[blockIdx].includedSelections[compIdx].assetId = e.target.value;
+                                          setUnitHandoverSelections(updated);
+                                        }}
+                                        className="w-full bg-white border border-slate-350 rounded px-2.5 py-1.5 outline-none font-semibold text-slate-800 focus:border-indigo-600 text-xs"
+                                      >
+                                        <option value="">-- Chọn phụ kiện sê-ri --</option>
+                                        {MOCK_COMPONENTS_IN_STOCK.filter(c => (c.componentName === comp.includedItemName || c.componentName.includes(comp.includedItemName) || comp.includedItemName.includes(c.componentName) || c.modelName === comp.includedItemName) && c.status === "Sẵn sàng").map(c => {
+                                          const isSelectedElsewhere = unitHandoverSelections.some((otherBlock, obIdx) => {
+                                            return otherBlock.includedSelections.some((otherComp, ocIdx) => {
+                                              if (obIdx === blockIdx && ocIdx === compIdx) return false;
+                                              return otherComp.assetId === c.assetCode && otherComp.assetId !== '';
+                                            });
+                                          });
+                                          return (
+                                            <option key={c.assetCode} value={c.assetCode} disabled={isSelectedElsewhere} className="whitespace-nowrap">
+                                              {c.assetCode} - {c.serial} - {c.condition} {isSelectedElsewhere ? '[Đã chọn ở bộ khác]' : ''}
+                                            </option>
+                                          );
+                                        })}
+                                      </select>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2 whitespace-nowrap">
+                                      <input 
+                                        type="number"
+                                        min="1"
+                                        max={MOCK_QUANTITY_IN_STOCK[comp.includedItemName] || 10}
+                                        value={comp.quantity || 1}
+                                        onChange={(e) => {
+                                          const updated = [...unitHandoverSelections];
+                                          updated[blockIdx].includedSelections[compIdx].quantity = Number(e.target.value);
+                                          setUnitHandoverSelections(updated);
+                                        }}
+                                        className="w-16 bg-white border border-slate-300 rounded px-2 py-1 outline-none font-bold text-center"
+                                      />
+                                      <span className="text-[10.5px] text-slate-500 font-bold whitespace-nowrap">
+                                        Khả dụng: <strong className="text-indigo-700">{MOCK_QUANTITY_IN_STOCK[comp.includedItemName] || MOCK_QUANTITY_IN_STOCK['Mặc định'] || 10}</strong>
+                                      </span>
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="p-3">
+                                  {comp.managementType === 'IDENTIFIED_ASSET' ? (
+                                    <input 
+                                      type="text"
+                                      value={comp.stateBefore || ''}
+                                      onChange={(e) => {
+                                        const updated = [...unitHandoverSelections];
+                                        updated[blockIdx].includedSelections[compIdx].stateBefore = e.target.value;
+                                        setUnitHandoverSelections(updated);
+                                      }}
+                                      className="w-full bg-white border border-slate-200 rounded px-2 py-1 outline-none text-slate-800 font-medium"
+                                    />
+                                  ) : (
+                                    <span className="text-slate-400 pl-3">-</span>
+                                  )}
+                                </td>
+                                <td className="p-3">
+                                  <input 
+                                    type="text"
+                                    placeholder="Ghi chú..."
+                                    value={comp.notes || ''}
+                                    onChange={(e) => {
+                                      const updated = [...unitHandoverSelections];
+                                      updated[blockIdx].includedSelections[compIdx].notes = e.target.value;
+                                      setUnitHandoverSelections(updated);
+                                    }}
+                                    className="w-full bg-white border border-slate-200 rounded px-2 py-1 outline-none text-slate-800 font-medium"
+                                  />
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Bottom Button of choose asset section */}
+            <div className="pt-4 border-t flex flex-wrap gap-4 justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200 select-none">
+              <div>
+                <span className="text-[11px] block text-slate-500 font-bold">Hãy tự thực hiện kiểm tra trạng thái xung đột trước khi lưu hồ sơ chính.</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCheckSelections}
+                className="px-5 py-2.5 bg-[#00236f] hover:bg-[#fea619] hover:text-[#2a1700] text-white font-extrabold rounded-lg transition text-[11px] uppercase cursor-pointer"
+              >
+                Kiểm tra tài sản đã chọn
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* KHU VỰC UPLOAD ẢNH HOẶC FILE HỢP ĐỒNG GIẤY */}
+            <div className="bg-slate-50/70 p-5 border border-slate-200 rounded-xl space-y-3">
+              <h4 className="text-[#00236f] font-black text-xs uppercase tracking-wider border-b pb-1.5 flex items-center justify-between">
+                <span>📝 Hợp đồng giấy trực tiếp</span>
+                <span className="text-red-500 uppercase text-[9.5px] font-black">YÊU CẦU</span>
+              </h4>
+              
+              <div className="bg-white border rounded-lg p-3 space-y-2 text-slate-600">
+                <div className="grid grid-cols-3 gap-2 border-b pb-2 text-[10px] text-slate-400 uppercase">
+                  <span>Tên file</span>
+                  <span>Loại file</span>
+                  <span>Kích thước</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-[11px] font-mono break-all py-1">
+                  <span className="font-bold text-slate-800">{hoContractFile ? hoContractFile.name : "(Trống)"}</span>
+                  <span className="text-slate-500">{hoContractFile ? hoContractFile.type : "-"}</span>
+                  <span className="text-slate-500">{hoContractFile ? hoContractFile.size : "-"}</span>
+                </div>
+                
+                {hoContractFile && (
+                  <div className="mt-2 text-indigo-700 bg-indigo-50 border border-indigo-200 text-[10.5px] p-2 rounded flex items-center gap-1">
+                    💾 File hợp đồng giấy đã sẵn sàng gửi đính kèm.
+                  </div>
+                )}
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="pt-2 text-center">
                 <button
                   type="button"
-                  onClick={() => setShowHandoverModal(false)}
-                  className="px-4.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition uppercase text-[10px]"
+                  onClick={handleUploadContractSimulated}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold rounded-lg border border-slate-300 transition cursor-pointer flex items-center gap-1.5 mx-auto text-xs"
                 >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-[#00236f] hover:bg-blue-900 text-white font-black rounded-lg transition uppercase text-[10px]"
-                >
-                  XÁC NHẬN BÀN GIAO
+                  <Upload className="w-3.5 h-3.5" />
+                  Nạp file hợp đồng giấy
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: NHẬN TRẢ THIẾT BỊ */}
-      {showReturnModal && selectedOrder && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden text-slate-700 font-sans">
-            <div className="bg-[#00236f] text-white p-5">
-              <h3 className="text-sm font-black uppercase tracking-wider">🔄 NHẬN TRẢ &amp; KIỂM TRA HAO MÒN</h3>
-              <p className="text-[10px] text-blue-200 mt-1 font-semibold">Ghi nhận độ hao mòn sườn và phụ tùng thu hồi từ khách hàng</p>
             </div>
-            
-            <form onSubmit={(e) => { e.preventDefault(); handleActionReturn(returnQualityNote); }} className="p-5 space-y-4 text-xs font-semibold">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-450 uppercase block">Nhập ghi nhận tình trạng vật lý hao mòn:</label>
-                <textarea
-                  required
-                  rows="3"
-                  value={returnQualityNote}
-                  onChange={(e) => setReturnQualityNote(e.target.value)}
-                  placeholder="Ghi nhận độ trầy xước sườn máy, thấu kính có bám bụi hay không..."
-                  className="w-full p-2.5 border border-slate-150 rounded-lg outline-none font-medium text-slate-800"
-                />
+
+            {/* KHU VỰC UPLOAD ẢNH KHI BÀN GIAO */}
+            <div className="bg-slate-50/70 p-5 border border-slate-200 rounded-xl space-y-3">
+              <h4 className="text-[#00236f] font-black text-xs uppercase tracking-wider border-b pb-1.5 flex items-center justify-between">
+                <span>📸 Ảnh thực tế bàn giao lúc xuất</span>
+                <span className="text-red-500 uppercase text-[9.5px] font-black">YÊU CẦU</span>
+              </h4>
+
+              <div className="bg-white border rounded-lg p-3 space-y-2 text-slate-600">
+                <div className="grid grid-cols-3 gap-2 border-b pb-2 text-[10px] text-slate-400 uppercase">
+                  <span>Tên file</span>
+                  <span>Loại file</span>
+                  <span>Kích thước</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-[11px] font-mono break-all py-1">
+                  <span className="font-bold text-slate-800">{hoHandoverFile ? hoHandoverFile.name : "(Trống)"}</span>
+                  <span className="text-slate-500">{hoHandoverFile ? hoHandoverFile.type : "-"}</span>
+                  <span className="text-slate-500">{hoHandoverFile ? hoHandoverFile.size : "-"}</span>
+                </div>
+                
+                {hoHandoverFile && (
+                  <div className="mt-2 text-emerald-800 bg-emerald-50 border border-emerald-200 text-[10.5px] p-2 rounded flex items-center gap-1">
+                    🟢 Ảnh chứng cứ bàn giao đã sẵn sàng.
+                  </div>
+                )}
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="pt-2 text-center">
                 <button
                   type="button"
-                  onClick={() => setShowReturnModal(false)}
-                  className="px-4.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition uppercase text-[10px]"
+                  onClick={handleUploadHandoverSimulated}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold rounded-lg border border-slate-300 transition cursor-pointer flex items-center gap-1.5 mx-auto text-xs"
                 >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-lg transition uppercase text-[10px]"
-                >
-                  XÁC NHẬN ĐÃ THU HỒI
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  Nạp ảnh bàn giao thiết bị
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 3: KHẤU TRỪ TIỀN CỌC */}
-      {showDeductModal && selectedOrder && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden text-slate-700 font-sans">
-            <div className="bg-[#00236f] text-white p-5">
-              <h3 className="text-sm font-black uppercase tracking-wider">⚠️ LẬP BIÊN BẢN KHẤU TRỪ TIỀN CỌC</h3>
-              <p className="text-[10px] text-blue-200 mt-1 font-semibold">Khai khấu hao tổn thất vật lý và áp giá bồi hoàn trực tiếp vào tiền cọc</p>
             </div>
-            
-            <form onSubmit={(e) => { e.preventDefault(); handleActionDeduct(deductAmount, deductReason); }} className="p-5 space-y-4 text-xs font-semibold">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-450 uppercase block">Số tiền phạt bồi thường khấu trừ (VND):</label>
-                <input
-                  type="number"
-                  required
-                  value={deductAmount}
-                  onChange={(e) => setDeductAmount(parseInt(e.target.value) || 0)}
-                  className="w-full p-2.5 border border-slate-150 rounded-lg outline-none font-bold text-rose-700 font-mono text-sm"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-450 uppercase block">Lý do phạt trừ tiền cọc giữ chỗ:</label>
-                <input
-                  type="text"
-                  required
-                  value={deductReason}
-                  onChange={(e) => setDeductReason(e.target.value)}
-                  placeholder="Ví dụ: Làm trầy xước thấu kính..."
-                  className="w-full p-2.5 border border-slate-150 rounded-lg outline-none font-bold text-slate-800"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowDeductModal(false)}
-                  className="px-4.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition uppercase text-[10px]"
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-lg transition uppercase text-[10px]"
-                >
-                  THỰC THI KHẤU TRỪ
-                </button>
-              </div>
-            </form>
           </div>
-        </div>
+
+          {/* KHU VỰC GHI CHÚ */}
+          <div className="bg-slate-50/70 p-5 border border-slate-200 rounded-xl space-y-2.5">
+            <label className="text-slate-700 block font-black uppercase text-xs">✍️ Khu vực ghi chú bàn giao</label>
+            <textarea 
+              value={hoNotes}
+              onChange={(e) => setHoNotes(e.target.value)}
+              placeholder="Nhập ghi chú chi tiết về trạng thái bàn giao..."
+              rows={3}
+              className="w-full bg-white border border-[#c5c5d3] rounded-xl p-3 outline-none font-semibold text-slate-800 focus:border-[#00236f]"
+            />
+          </div>
+
+          {/* BUTTON CUỐI FORM */}
+          <div className="flex justify-end gap-3 pt-6 border-t select-none font-bold">
+            <button 
+              type="button" 
+              onClick={() => setActiveView('list')}
+              className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-xl transition"
+            >
+              Hủy
+            </button>
+            <button 
+              type="submit"
+              className="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl transition shadow-xs uppercase flex items-center gap-1.5 cursor-pointer"
+            >
+              <Check className="w-4 h-4" />
+              Xác nhận bàn giao
+            </button>
+          </div>
+        </form>
       )}
 
     </div>

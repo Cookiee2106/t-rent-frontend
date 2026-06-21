@@ -71,7 +71,7 @@ export default function Header({
                   activePage === 'verification' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
                 }`}
               >
-                Hồ sơ xác minh
+                Quản lý tài khoản
               </a>
               <a 
                 href="#" 
@@ -89,7 +89,7 @@ export default function Header({
                   activePage === 'orders' || activePage === 'order-detail' ? 'text-[#fea619]' : 'text-gray-200 hover:text-white'
                 }`}
               >
-                Đơn hàng
+                Quản lý đơn hàng
               </a>
             </>
           )}
@@ -173,9 +173,9 @@ export default function Header({
           <a href="#" onClick={(e) => handleNavClick('equipments', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Mẫu thiết bị</a>
           {user && (
             <>
-              <a href="#" onClick={(e) => handleNavClick('verification', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Hồ sơ xác minh</a>
+              <a href="#" onClick={(e) => handleNavClick('verification', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Quản lý tài khoản</a>
               <a href="#" onClick={(e) => handleNavClick('cart', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Giỏ hàng</a>
-              <a href="#" onClick={(e) => handleNavClick('orders', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Đơn hàng</a>
+              <a href="#" onClick={(e) => handleNavClick('orders', e)} className="py-2 border-b border-white/5 whitespace-nowrap">Quản lý đơn hàng</a>
             </>
           )}
         </div>

@@ -176,48 +176,228 @@ export const EQUIPMENTS = [
 
 export const MOCK_ORDERS = [
   {
-    id: 'f9bcf012-9fa4-469a-bcc3-4fc82fc9ffff', // UUID
-    order_code: 'TR-10042',
-    customer_id: '86ae940c-0da5-46fd-bcc5-74889c19bfff',
-    equipment: EQUIPMENTS[0],
-    startDate: '2026-06-10',
-    endDate: '2026-06-12',
-    totalPrice: 1600000,
-    deposit: 5000000,
-    status: 'pending',
-    createdAt: '2026-06-09',
-    rental_days: 2,
-    total_rental_amount: 1600000,
-    total_deposit_amount: 5000000
+    id: "ord-001",
+    orderCode: "ORD001",
+    customer: {
+      fullName: "Nguyễn Văn A",
+      email: "nguyenvana@example.com",
+      phone: "0901234567",
+      verificationStatus: "APPROVED"
+    },
+    startDate: "2026-06-20",
+    endDate: "2026-06-23",
+    rentalDays: 3,
+    totalRentalAmount: 4500000,
+    totalDepositAmount: 6000000,
+    paymentMethod: "VNPAY_SANDBOX",
+    depositPaymentStatus: "PAID",
+    orderStatus: "DEPOSIT_PAID", // Đã đặt cọc
+    createdAt: "2026-06-18",
+    depositPayment: {
+      paymentCode: "PAY001",
+      paymentMethod: "VNPAY_SANDBOX",
+      amount: 6000000,
+      status: "PAID",
+      paidAt: "2026-06-18 10:30"
+    },
+    termAcceptance: {
+      accepted: true,
+      acceptedAt: "2026-06-18 10:25"
+    },
+    items: [
+      {
+        productModel: "Sony A7 IV",
+        brand: "Sony",
+        category: "Body máy ảnh",
+        quantity: 1,
+        dailyPrice: 800000,
+        rentalAmount: 2400000,
+        depositAmount: 3000000,
+        includedItems: [
+          { name: "Pin NP-FZ100", quantity: 1 },
+          { name: "Lens 24-70 GM", quantity: 1 },
+          { name: "Túi Sony", quantity: 1 }
+        ]
+      },
+      {
+        productModel: "Fuji X-T5",
+        brand: "Fujifilm",
+        category: "Body máy ảnh",
+        quantity: 1,
+        dailyPrice: 700000,
+        rentalAmount: 2100000,
+        depositAmount: 3000000,
+        includedItems: [
+          { name: "Pin Fuji NP-W235", quantity: 1 },
+          { name: "Lens XF 35mm", quantity: 1 },
+          { name: "Túi Fuji", quantity: 1 }
+        ]
+      }
+    ],
+    handover: {
+      status: "NOT_YET",
+      handoverAt: null,
+      staffName: null,
+      paperContractUploaded: false,
+      handoverImagesUploaded: false
+    }
   },
   {
-    id: '3fecd04c-fa24-4ea6-bccb-4fc82fc9dff3', // UUID
-    order_code: 'TR-09923',
-    customer_id: '86ae940c-0da5-46fd-bcc5-74889c19bfff',
-    equipment: EQUIPMENTS[2],
-    startDate: '2026-06-01',
-    endDate: '2026-06-05',
-    totalPrice: 1600000,
-    deposit: 2000000,
-    status: 'active',
-    createdAt: '2026-05-30',
-    rental_days: 4,
-    total_rental_amount: 1600000,
-    total_deposit_amount: 2000000
+    id: "ord-002",
+    orderCode: "ORD002",
+    customer: {
+      fullName: "Nguyễn Văn A",
+      email: "nguyenvana@example.com",
+      phone: "0901234567",
+      verificationStatus: "APPROVED"
+    },
+    startDate: "18/06/2026",
+    endDate: "21/06/2026",
+    rentalDays: 3,
+    totalRentalAmount: 2400000,
+    totalDepositAmount: 3000000,
+    paymentMethod: "VNPAY_SANDBOX",
+    depositPaymentStatus: "PAID",
+    orderStatus: "RENTING", // Đang thuê
+    createdAt: "2026-06-15",
+    depositPayment: {
+      paymentCode: "PAY002",
+      paymentMethod: "VNPAY_SANDBOX",
+      amount: 3000000,
+      status: "PAID",
+      paidAt: "2026-06-15 15:30"
+    },
+    termAcceptance: {
+      accepted: true,
+      acceptedAt: "2026-06-15 15:20"
+    },
+    items: [
+      {
+        productModel: "Sony A7 IV",
+        brand: "Sony",
+        category: "Body máy ảnh",
+        quantity: 1,
+        dailyPrice: 800000,
+        rentalAmount: 2400000,
+        depositAmount: 3000000,
+        includedItems: [
+          { name: "Pin NP-FZ100", quantity: 1 },
+          { name: "Lens 24-70 GM", quantity: 1 },
+          { name: "Túi Sony", quantity: 1 }
+        ]
+      }
+    ],
+    handover: {
+      status: "DELIVERED",
+      handoverAt: "18/06/2026",
+      staffName: "Nhân viên A",
+      paperContractUploaded: true,
+      handoverImagesUploaded: true,
+      notes: "Thiết bị hoạt động bình thường khi giao"
+    }
   },
   {
-    id: '8fecd012-4fa2-4ea6-bccb-4fc82fc92222', // UUID
-    order_code: 'TR-09811',
-    customer_id: '86ae940c-0da5-46fd-bcc5-74889c19bfff',
-    equipment: EQUIPMENTS[3],
-    startDate: '2026-05-20',
-    endDate: '2026-05-22',
-    totalPrice: 700000,
-    deposit: 3000000,
-    status: 'completed',
-    createdAt: '2026-05-19',
-    rental_days: 2,
-    total_rental_amount: 700000,
-    total_deposit_amount: 3000000
+    id: "ord-003",
+    orderCode: "ORD003",
+    customer: {
+      fullName: "Nguyễn Văn A",
+      email: "nguyenvana@example.com",
+      phone: "0901234567",
+      verificationStatus: "APPROVED"
+    },
+    startDate: "10/06/2026",
+    endDate: "13/06/2026",
+    rentalDays: 3,
+    totalRentalAmount: 2100000,
+    totalDepositAmount: 3000000,
+    paymentMethod: "VNPAY_SANDBOX",
+    depositPaymentStatus: "REFUNDED",
+    orderStatus: "COMPLETED", // Hoàn tất
+    createdAt: "2026-06-08",
+    depositPayment: {
+      paymentCode: "PAY003",
+      paymentMethod: "VNPAY_SANDBOX",
+      amount: 3000000,
+      status: "PAID",
+      paidAt: "2026-06-08 11:30"
+    },
+    termAcceptance: {
+      accepted: true,
+      acceptedAt: "2026-06-08 11:20"
+    },
+    items: [
+      {
+        productModel: "Fuji X-T5",
+        brand: "Fujifilm",
+        category: "Body máy ảnh",
+        quantity: 1,
+        dailyPrice: 700000,
+        rentalAmount: 2100000,
+        depositAmount: 3000000,
+        includedItems: [
+          { name: "Pin Fuji NP-W235", quantity: 1 },
+          { name: "Lens XF 35mm", quantity: 1 },
+          { name: "Túi Fuji", quantity: 1 }
+        ]
+      }
+    ],
+    handover: {
+      status: "DELIVERED",
+      handoverAt: "10/06/2026",
+      staffName: "Nhân viên B",
+      paperContractUploaded: true,
+      handoverImagesUploaded: true
+    },
+    returnInfo: {
+      actualReturnDate: "13/06/2026",
+      inventoryResult: "Tốt, không phát sinh trầy xước hao mòn bất thường",
+      depositRefundAmount: 3000000,
+      depositRefundStatus: "REFUNDED",
+      notes: "Đã hoàn trả 100% tiền cọc dã quầy"
+    }
+  },
+  {
+    id: "ord-004",
+    orderCode: "ORD004",
+    customer: {
+      fullName: "Nguyễn Văn A",
+      email: "nguyenvana@example.com",
+      phone: "0901234567",
+      verificationStatus: "APPROVED"
+    },
+    startDate: "25/06/2026",
+    endDate: "27/06/2026",
+    rentalDays: 2,
+    totalRentalAmount: 1600000,
+    totalDepositAmount: 3000000,
+    paymentMethod: "VNPAY_SANDBOX",
+    depositPaymentStatus: "REFUND_CANCELLED",
+    orderStatus: "CANCELLED", // Đã hủy
+    createdAt: "2026-06-19",
+    cancelReason: "Khách hàng thay đổi lịch thuê",
+    cancelledAt: "19/06/2026 09:00",
+    depositPayment: {
+      paymentCode: "PAY004",
+      paymentMethod: "VNPAY_SANDBOX",
+      amount: 3000000,
+      status: "PAID",
+      paidAt: "2026-06-24 15:00"
+    },
+    items: [
+      {
+        productModel: "Sony A7 IV",
+        brand: "Sony",
+        category: "Body máy ảnh",
+        quantity: 1,
+        dailyPrice: 800000,
+        rentalAmount: 1600000,
+        depositAmount: 3000000,
+        includedItems: [
+          { name: "Pin NP-FZ100", quantity: 1 },
+          { name: "Lens 24-70 GM", quantity: 1 },
+          { name: "Túi Sony", quantity: 1 }
+        ]
+      }
+    ]
   }
 ];

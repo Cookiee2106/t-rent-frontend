@@ -9,22 +9,24 @@
 body {
   font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
   scroll-behavior: smooth;
-  background-color: #fcf9f8;
+  background-color: #f6f8fc;
+  color: #0f172a;
 }
 
 /* Custom scrollbar to match the high-end dark slate vibe */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: #f1f3f5;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c5c5d3;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #00236f;
+  background: #0f2f6e;
 }
 
 button {
@@ -35,5 +37,78 @@ select, option {
   color: #111827 !important;
   background-color: #ffffff !important;
   opacity: 1 !important;
+}
+
+/* --- Standardized Professional CSS rules --- */
+
+table th,
+.table th,
+.data-table th {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  line-height: 1.4 !important;
+}
+
+.cell-code,
+.cell-serial,
+.cell-location,
+.cell-status,
+.cell-money,
+.cell-date {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto !important;
+  overflow-y: visible;
+}
+
+.data-table {
+  width: 100%;
+  min-width: 1200px;
+  table-layout: auto !important;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap !important;
+  min-width: fit-content;
+  max-width: max-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+.table-action-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.table-action-button {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
