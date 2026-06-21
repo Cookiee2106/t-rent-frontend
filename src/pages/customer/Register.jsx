@@ -204,8 +204,8 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#00236f]"
                 tabIndex={-1}
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              >Hi?n
+                
               </button>
             </div>
           </div>
@@ -230,8 +230,8 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#00236f]"
                 tabIndex={-1}
-              >
-                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              >Hi?n
+                
               </button>
             </div>
           </div>

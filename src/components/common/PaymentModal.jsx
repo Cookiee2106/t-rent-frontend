@@ -48,8 +48,8 @@ export default function PaymentModal({ isOpen, onClose, orderCode = 'TR-10042', 
         <button
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition"
-        >
-          <X className="w-4 h-4" />
+        >??ng
+          
         </button>
 
         {/* Header banner */}
@@ -89,7 +89,7 @@ export default function PaymentModal({ isOpen, onClose, orderCode = 'TR-10042', 
                   : 'border-transparent text-gray-400 hover:text-[#444651]'
               }`}
             >
-              <Landmark className="w-4 h-4" />
+              
               Chuyển khoản trực tiếp
             </button>
             <button
@@ -100,7 +100,7 @@ export default function PaymentModal({ isOpen, onClose, orderCode = 'TR-10042', 
                   : 'border-transparent text-gray-400 hover:text-[#444651]'
               }`}
             >
-              <Smartphone className="w-4 h-4" />
+              
               Ví Momo / ZaloPay
             </button>
             <button
@@ -111,7 +111,7 @@ export default function PaymentModal({ isOpen, onClose, orderCode = 'TR-10042', 
                   : 'border-transparent text-gray-400 hover:text-[#444651]'
               }`}
             >
-              <CreditCard className="w-4 h-4" />
+              
               Thẻ quốc tế visa
             </button>
           </div>
@@ -151,9 +151,9 @@ export default function PaymentModal({ isOpen, onClose, orderCode = 'TR-10042', 
                         className="text-xs text-[#00236f] hover:text-[#fea619] font-bold flex items-center gap-1 transition"
                       >
                         {copiedField === 'account' ? (
-                          <><Check className="w-3.5 h-3.5 text-green-600" /> Đã sao chép</>
+                          <>Đã sao chép</>
                         ) : (
-                          <><Copy className="w-3.5 h-3.5" /> Copy</>
+                          <>Copy</>
                         )}
                       </button>
                     </div>
@@ -173,9 +173,9 @@ export default function PaymentModal({ isOpen, onClose, orderCode = 'TR-10042', 
                         className="text-xs text-[#00236f] hover:text-[#fea619] font-bold flex items-center gap-1 transition"
                       >
                         {copiedField === 'memo' ? (
-                          <><Check className="w-3.5 h-3.5 text-green-600" /> Đã sao chép</>
+                          <>Đã sao chép</>
                         ) : (
-                          <><Copy className="w-3.5 h-3.5" /> Copy</>
+                          <>Copy</>
                         )}
                       </button>
                     </div>
@@ -204,7 +204,7 @@ export default function PaymentModal({ isOpen, onClose, orderCode = 'TR-10042', 
                   className="px-5 py-2.5 bg-fuchsia-600 text-white font-bold text-xs rounded-lg hover:bg-fuchsia-700 transition duration-200 inline-flex items-center gap-1.5"
                 >
                   Kết nối ví di động
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  
                 </button>
               </div>
             )}
@@ -277,12 +277,10 @@ export default function PaymentModal({ isOpen, onClose, orderCode = 'TR-10042', 
             >
               {isVerifying ? (
                 <>
-                  <Clock className="w-4 h-4 animate-spin" />
                   Đang ghi nhận...
                 </>
               ) : (
                 <>
-                  <Check className="w-4 h-4" />
                   Xác nhận đã chuyển khoản
                 </>
               )}

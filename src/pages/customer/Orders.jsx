@@ -655,6 +655,15 @@ export default function Orders({
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-green-50 text-green-700 font-black border border-green-200 text-[9px] uppercase leading-none">
                       {viewingOrder.customer.verificationStatus === 'APPROVED' ? 'Đã duyệt bằng lái' : 'Chưa định danh'}
                     </span>
+                    
+                    {/* Trạng thái thanh toán cọc */}
+                    <span className={`text-[10px] px-2 py-0.5 rounded border font-bold ${
+                      order.status === 'pending' || order.status === 'cancelled'
+                        ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                        : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    }`}>
+                      {order.status === 'pending' ? 'Chưa thanh toán cọc' : order.status === 'cancelled' ? 'Hủy đặt cọc' : 'Đã thanh toán cọc'}
+                    </span>
                   </div>
                 </div>
               </div>

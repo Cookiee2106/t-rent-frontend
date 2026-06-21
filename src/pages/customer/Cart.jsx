@@ -1319,6 +1319,21 @@ export default function Cart({
                           Thanh toán thành công
                         </button>
 
+                      {/* Giá thuê, Tiền cọc, Thành tiền */}
+                      <div className="col-span-12 md:col-span-2 text-right text-xs">
+                        <div className="font-semibold text-slate-500 text-[10px]">
+                          Thuê: <span className="font-bold text-slate-700 font-mono">{lineRent.toLocaleString('vi-VN')}đ</span>
+                        </div>
+                        <div className="font-semibold text-slate-500 text-[10px]">
+                          Cọc thế: <span className="font-bold text-slate-700 font-mono">{lineDeposit.toLocaleString('vi-VN')}đ</span>
+                        </div>
+                        <div className="font-black text-[#00236f] text-xs pt-1 border-t border-slate-100 mt-1 font-mono">
+                          T.Tiền: {lineTotal.toLocaleString('vi-VN')}đ
+                        </div>
+                      </div>
+
+                      {/* Xóa dòng sản phẩm */}
+                      <div className="col-span-12 md:col-span-1 flex justify-center">
                         <button
                           type="button"
                           onClick={() => simulatePaymentFailure('cancelled')}
