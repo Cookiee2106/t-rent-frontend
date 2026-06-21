@@ -145,7 +145,7 @@ export default function OrderDetail({
         onClick={onNavigateBack}
         className="mb-6 inline-flex items-center gap-1.5 text-xs font-bold text-[#00236f] hover:text-[#fea619] transition bg-white py-1.5 px-3 border border-slate-200 rounded-xl shadow-sm"
       >
-        <ChevronLeft className="w-4 h-4" />
+        
         Quay lại đơn hàng đặt thuê
       </button>
 
