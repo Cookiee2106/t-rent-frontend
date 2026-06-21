@@ -173,7 +173,6 @@ export default function Login({ onLoginSuccess, onNavigateToRegister }) {
               className="w-full h-11 px-4 rounded-lg border border-[#c5c5d3] outline-none focus:border-[#00236f] text-xs text-[#111827] font-semibold transition-all bg-gray-50/50"
             />
           </div>
-        </div>
 
           {/* Mật khẩu */}
           <div className="flex flex-col gap-1">
