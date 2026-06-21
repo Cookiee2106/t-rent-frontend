@@ -29,8 +29,8 @@ export default function TermsModal({ isOpen, onClose, onAccept }) {
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-gray-200/50 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition"
-          >??ng
-            
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -122,7 +122,7 @@ export default function TermsModal({ isOpen, onClose, onAccept }) {
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
-              
+              <CheckCircle className="w-4 h-4" />
               Tiếp tục
             </button>
           </div>

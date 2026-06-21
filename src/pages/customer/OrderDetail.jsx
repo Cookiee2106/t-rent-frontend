@@ -34,14 +34,17 @@ export default function OrderDetail({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Tiền thuê, Tiền cọc, Tổng cộng
-  const totalRent = order.totalPrice || 0;
-  const totalDeposit = order.deposit || 0;
+  const totalRent = order.totalRentalAmount || order.totalPrice || 0;
+  const totalDeposit = order.totalDepositAmount || order.deposit || 0;
   const finalTotalAmount = totalRent + totalDeposit;
+  const currentStatus = order.orderStatus || order.status;
 
   // Lấy text trạng thái
-  const getStatusNode = (status) => {
+  const getStatusNode = (statusVal) => {
+    const status = statusVal || currentStatus;
     switch (status) {
       case 'pending':
+      case 'PENDING':
         return (
           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-300 text-amber-800 text-xs font-black rounded-full select-none animate-pulse">
             <Clock className="w-4 h-4 shrink-0" />
@@ -50,13 +53,23 @@ export default function OrderDetail({
         );
       case 'paid':
       case 'active':
+      case 'DEPOSIT_PAID':
         return (
           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-black rounded-full select-none">
             <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
             ĐÃ ĐẶT CỌC GIỮ CHỖ
           </span>
         );
+      case 'renting':
+      case 'RENTING':
+        return (
+          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e0f2fe] border border-sky-305 text-[#0369a1] text-xs font-black rounded-full select-none">
+            <Clock className="w-4 h-4 text-[#0284c7] shrink-0" />
+            ĐANG THUÊ MÁY
+          </span>
+        );
       case 'completed':
+      case 'COMPLETED':
         return (
           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 border border-sky-300 text-sky-800 text-xs font-black rounded-full select-none">
             <CheckCircle2 className="w-4 h-4 text-sky-600 shrink-0" />
@@ -64,10 +77,11 @@ export default function OrderDetail({
           </span>
         );
       case 'cancelled':
+      case 'CANCELLED':
         return (
           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-black rounded-full select-none">
             <X className="w-4 h-4 text-rose-600 shrink-0" />
-            ĐƠN ĐÃ HỦY (ĐÃ HOÀN KHO)
+            ĐƠN ĐÃ HỦY
           </span>
         );
       default:
@@ -131,7 +145,7 @@ export default function OrderDetail({
         onClick={onNavigateBack}
         className="mb-6 inline-flex items-center gap-1.5 text-xs font-bold text-[#00236f] hover:text-[#fea619] transition bg-white py-1.5 px-3 border border-slate-200 rounded-xl shadow-sm"
       >
-        
+        <ChevronLeft className="w-4 h-4" />
         Quay lại đơn hàng đặt thuê
       </button>
 
@@ -370,8 +384,8 @@ export default function OrderDetail({
             >
               <div className="border-b pb-2 flex justify-between items-center">
                 <h3 className="text-xs font-black text-[#00236f] uppercase">Chính sách bảo chứng thuê</h3>
-                <button type="button" onClick={() => setShowTerms(false)} className="p-1 hover:bg-slate-100 rounded text-slate-400">??ng
-                  
+                <button type="button" onClick={() => setShowTerms(false)} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 

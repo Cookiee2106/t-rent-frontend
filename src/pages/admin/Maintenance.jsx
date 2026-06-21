@@ -3,503 +3,1082 @@ import {
   Wrench, 
   Search, 
   Calendar, 
-  Clock, 
   User, 
   AlertTriangle, 
   CheckCircle2, 
   ArrowLeft,
-  Settings,
   History,
   X,
-  FileText
+  FileText,
+  Info
 } from 'lucide-react';
 
-const INITIAL_MAINTENANCE = [
+const formatVND = (value) => {
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+};
+
+// INITIAL REQUIRED MOCK DATA
+const INITIAL_MAINTENANCE_RECORDS = [
   {
-    id: 'MT-001',
-    assetId: 'AST0403',
-    assetName: 'Canon EOS R6 Mark II',
-    serial: 'SN-R62-88001',
-    reason: 'Trầy sước kính ngắm & Lau dọn bụi sensor',
-    status: 'repairing', // repairing, completed, pending_parts
-    statusLabel: 'Đang xử lý',
-    startDate: '2026-06-10',
-    endDate: '',
-    createdBy: 'Trần Văn Hoàng (Admin)',
-    technician: 'Lê Minh (Kỹ thuật)',
-    notes: 'Kính ngắm bị bám bụi nhẹ, cảm biến xuất hiện 3 chấm mòn nhỏ cần kiểm tra f-stop.',
-    resultInspect: '',
-    resultRepair: '',
-    historyLogs: [
-      { action: 'Khởi tạo hồ sơ bảo trì', time: '10/06/2026 09:00', user: 'Trần Văn Hoàng' },
-      { action: 'Nhận thiết bị tại quầy kỹ thuật', time: '11/06/2026 14:00', user: 'Lê Minh' }
+    maintenanceCode: 'MT001',
+    assetCode: 'LEN012',
+    equipmentName: 'Lens XF 35mm',
+    modelName: 'Lens XF 35mm',
+    serial: 'SN-LEN-F001',
+    reason: 'Hư hỏng khi khách hàng trả thiết bị',
+    status: 'Đang xử lý', // 'Đang xử lý', 'Hoàn tất', 'Hủy'
+    createdAt: '23/06/2026',
+    createdBy: 'Nhân viên A',
+    // Detailed fields for view/update
+    notes: 'Lens bị lỗi vòng lấy nét sau khi khách hàng trả',
+    rentCount: 14,
+    maintenanceThreshold: '20 lần',
+    assetStatus: 'Bảo trì', // 'Sẵn sàng', 'Bảo trì', 'Ngừng sử dụng', 'Mất'
+    conditionNotes: 'Kính trầy xước nhẹ vỏ ngoài, cơ chế xoay trơn bị kẹt góc 45 độ.',
+    // Source details
+    sourceType: 'LIQUIDATION', // 'LIQUIDATION' or 'INVENTORY_MANAGER'
+    relatedOrderCode: 'ORD001',
+    relatedReturnSlip: 'PR001',
+    conditionOnReturn: 'Hư hỏng',
+    auditNotes: 'Khách hàng vô ý va chạm trong buổi chụp dã ngoại ngoài trời',
+    // Executed results
+    processContent: '',
+    result: '',
+    cost: 0,
+    resultNotes: '',
+    // History entries
+    history: [
+      {
+        maintenanceCode: 'MT001',
+        createdAt: '23/06/2026',
+        reason: 'Hư hỏng khi khách hàng trả thiết bị',
+        createdBy: 'Nhân viên A',
+        status: 'Đang xử lý',
+        processContent: 'Chưa có',
+        cost: 0,
+        notes: 'Tạo từ thanh lý hợp đồng ORD001'
+      },
+      {
+        maintenanceCode: 'MT000',
+        createdAt: '10/05/2026',
+        reason: 'Kiểm tra định kỳ',
+        createdBy: 'Nhân viên B',
+        status: 'Hoàn tất',
+        processContent: 'Vệ sinh lens, hoạt động bình thường',
+        cost: 100000,
+        notes: 'Không phát sinh lỗi'
+      }
     ]
   },
   {
-    id: 'MT-002',
-    assetId: 'AST0407',
-    assetName: 'Aputure Amaran 200d LED Light',
-    serial: 'SN-LGT-22101',
-    reason: 'Cắm nguồn không lên bóng LED, quạt không hoạt động',
-    status: 'pending_parts',
-    statusLabel: 'Chờ linh kiện',
-    startDate: '2026-06-12',
-    endDate: '',
-    createdBy: 'Nguyễn Văn B (Kỹ thuật)',
-    technician: 'Nguyễn Văn B (Kỹ thuật)',
-    notes: 'Nghi ngờ chập cuộn tụ đổi nguồn Adapter chính hãng, đã liên hệ hãng gửi tụ linh kiện thay thế.',
-    resultInspect: 'Hỏng mạch đổi nguồn thứ cấp',
-    resultRepair: '',
-    historyLogs: [
-      { action: 'Khởi tạo hồ sơ kiểm thử', time: '12/06/2026 10:30', user: 'Nguyễn Văn B' },
-      { action: 'Gửi yêu cầu nhập linh kiện từ hãng', time: '13/06/2026 16:00', user: 'Nguyễn Văn B' }
-    ]
+    maintenanceCode: 'MT002',
+    assetCode: 'BODY010',
+    equipmentName: 'Sony A7 IV Body',
+    modelName: 'Sony A7 IV',
+    serial: 'SN-A7IV-010',
+    reason: 'Đạt ngưỡng số lần thuê cần kiểm tra',
+    status: 'Đang xử lý',
+    createdAt: '24/06/2026',
+    createdBy: 'Quản trị viên',
+    notes: 'Cần kiểm tra kỹ báng cầm cao su bị bong nhẹ và nút chụp phản hồi kém',
+    rentCount: 50,
+    maintenanceThreshold: '50 lần',
+    assetStatus: 'Bảo trì',
+    conditionNotes: 'Tấm đệm cao su bọc tay cầm có dấu hiệu rão cơ học.',
+    sourceType: 'INVENTORY_MANAGER',
+    relatedOrderCode: '',
+    relatedReturnSlip: '',
+    conditionOnReturn: '',
+    auditNotes: 'Hệ thống tự động kích hoạt cảnh báo bảo trì định kỳ dựa trên khối lượng lượt thuê.',
+    processContent: '',
+    result: '',
+    cost: 0,
+    resultNotes: '',
+    history: [] // empty history to test "Thiết bị chưa có lịch sử bảo trì" scenario
   },
   {
-    id: 'MT-003',
-    assetId: 'AST0401',
-    assetName: 'Sony Alpha A7 IV',
-    serial: 'SN-A74-99201',
-    reason: 'Kiểm tra f-stop định kỳ 50 lần thuê',
-    status: 'completed',
-    statusLabel: 'Đã hoàn thành',
-    startDate: '2026-06-05',
-    endDate: '2026-06-06',
-    createdBy: 'Trần Văn Hoàng (Admin)',
-    technician: 'Lê Minh (Kỹ thuật)',
-    notes: 'Kiểm tra độ chụm thấu kính mặt sau, kiểm tra hệ thống chống rung sensor SteadyShot.',
-    resultInspect: 'Cảm biến thấu kính bình thường, cơ chế chống rung hoạt động tốt.',
-    resultRepair: 'Đã căn chỉnh lại thước đo khoảng cách hội tụ và lau dầu trục bánh răng gimbal chống rung.',
-    historyLogs: [
-      { action: 'Khởi tạo phiếu', time: '05/06/2026 08:00', user: 'Trần Văn Hoàng' },
-      { action: 'Đã hoàn tất nghiệm thu & đưa lại tủ kệ trưng bày', time: '06/06/2026 11:30', user: 'Lê Minh' }
+    maintenanceCode: 'MT003',
+    assetCode: 'PIN003',
+    equipmentName: 'Pin NP-FZ100',
+    modelName: 'Pin NP-FZ100',
+    serial: 'SN-PIN-S001',
+    reason: 'Pin sạc yếu',
+    status: 'Hoàn tất',
+    createdAt: '15/06/2026',
+    createdBy: 'Nhân viên B',
+    notes: 'Đã thay cell pin chất lượng cao mới',
+    rentCount: 32,
+    maintenanceThreshold: '40 lần',
+    assetStatus: 'Sẵn sàng',
+    conditionNotes: 'Pin tụt điện năng áp quá nhanh.',
+    sourceType: 'INVENTORY_MANAGER',
+    relatedOrderCode: '',
+    relatedReturnSlip: '',
+    conditionOnReturn: '',
+    auditNotes: 'Khách hàng phản hồi pin nhanh sụt rớt lúc chụp phơi sáng đêm.',
+    processContent: 'Thay thế cụm cell pin Lithium polymer cao cấp',
+    result: 'Dung tích pin khôi phục 98%, dòng sạc xả ổn định.',
+    cost: 250000,
+    resultNotes: 'Đưa trở lại hệ thống sẵn sàng phân phối',
+    history: [
+      {
+        maintenanceCode: 'MT003',
+        createdAt: '15/06/2026',
+        reason: 'Pin sạc yếu',
+        createdBy: 'Nhân viên B',
+        status: 'Hoàn tất',
+        processContent: 'Thay thế cụm cell pin Lithium polymer cao cấp',
+        cost: 250000,
+        notes: 'Pin khôi phục hiệu suất tối đa'
+      }
     ]
   }
 ];
 
-export default function Maintenance({ onAddNotification }) {
-  const [records, setRecords] = useState(INITIAL_MAINTENANCE);
-  const [activeView, setActiveView] = useState('list'); // list, detail, edit
-  const [selectedRecord, setSelectedRecord] = useState(null);
-
-  // Search/Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-
-  // Form states for update result
-  const [inspectResult, setInspectResult] = useState('');
-  const [repairResult, setRepairResult] = useState('');
-  const [formNotes, setFormNotes] = useState('');
-  const [targetAssetStatus, setTargetAssetStatus] = useState('available'); // available, repairing, retired
-
-  // Notification Toast
+export default function Maintenance() {
+  const [records, setRecords] = useState(INITIAL_MAINTENANCE_RECORDS);
   const [toast, setToast] = useState(null);
-  const triggerToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+
+  // Filters state
+  const [filterCode, setFilterCode] = useState('');
+  const [filterAssetCode, setFilterAssetCode] = useState('');
+  const [filterName, setFilterName] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterCreatedDate, setFilterCreatedDate] = useState('');
+
+  // Modals state
+  const [selectedDetail, setSelectedDetail] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  const [selectedUpdate, setSelectedUpdate] = useState(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+
+  const [selectedHistory, setSelectedHistory] = useState(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+  // Form Input states for updating work result
+  const [formProcessContent, setFormProcessContent] = useState('');
+  const [formResult, setFormResult] = useState('');
+  const [formCost, setFormCost] = useState('');
+  const [formNotes, setFormNotes] = useState('');
+  const [formAssetStatusAfter, setFormAssetStatusAfter] = useState('Sẵn sàng'); // 'Sẵn sàng', 'Tiếp tục bảo trì', 'Hư hỏng', 'Ngừng sử dụng'
+
+  // Form submit diagnostics log state (for demonstration)
+  const [diagnosticLog, setDiagnosticLog] = useState(null);
+
+  const triggerToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // Pre-fill form when triggering "Cập nhật kết quả bảo trì"
+  const handleOpenUpdateForm = (rec) => {
+    if (rec.status === 'Hoàn tất') {
+      return; // Disabled click
+    }
+
+    setSelectedUpdate(rec);
+
+    // Pre-fill for MT001 specifically as specified in requirements
+    if (rec.maintenanceCode === 'MT001') {
+      setFormProcessContent('Kiểm tra vòng lấy nét và vệ sinh lens');
+      setFormResult('Đã xử lý lỗi vòng lấy nét, lens hoạt động bình thường');
+      setFormCost('300000');
+      setFormNotes('Có thể đưa thiết bị về trạng thái sẵn sàng');
+      setFormAssetStatusAfter('Sẵn sàng');
+    } else {
+      setFormProcessContent('');
+      setFormResult('');
+      setFormCost('0');
+      setFormNotes('');
+      setFormAssetStatusAfter('Sẵn sàng');
+    }
+
+    setShowUpdateModal(true);
   };
 
   const handleOpenDetail = (rec) => {
-    setSelectedRecord(rec);
-    setActiveView('detail');
+    setSelectedDetail(rec);
+    setShowDetailModal(true);
   };
 
-  const handleOpenEdit = () => {
-    setInspectResult(selectedRecord.resultInspect || '');
-    setRepairResult(selectedRecord.resultRepair || '');
-    setFormNotes(selectedRecord.notes || '');
-    setTargetAssetStatus(selectedRecord.status === 'completed' ? 'available' : 'repairing');
-    setActiveView('edit');
+  const handleOpenHistory = (rec) => {
+    if (!rec.history || rec.history.length === 0) {
+      alert('Thiết bị chưa có lịch sử bảo trì');
+    }
+    setSelectedHistory(rec);
+    setShowHistoryModal(true);
   };
 
-  const handleSaveResult = (e) => {
+  // Save/Update results
+  const handleSaveUpdate = (e) => {
     e.preventDefault();
-    if (!inspectResult.trim() || !repairResult.trim()) {
-      alert('Vui lòng điền đầy đủ thông tin Kết quả kiểm tra và Kết quả sửa chữa/bảo dưỡng!');
+
+    if (!selectedUpdate) {
+      alert('Không tìm thấy hồ sơ bảo trì');
       return;
     }
 
-    const isDone = targetAssetStatus === 'available' || targetAssetStatus === 'retired';
-    const updatedStatus = isDone ? 'completed' : (targetAssetStatus === 'repairing' ? 'repairing' : 'pending_parts');
-    const label = updatedStatus === 'completed' ? 'Đã hoàn thành' : (updatedStatus === 'repairing' ? 'Đang xử lý' : 'Chờ linh kiện');
+    if (selectedUpdate.status === 'Hoàn tất') {
+      alert('Hồ sơ bảo trì đã hoàn tất');
+      return;
+    }
 
-    const updatedRecord = {
-      ...selectedRecord,
-      status: updatedStatus,
-      statusLabel: label,
-      resultInspect: inspectResult,
-      resultRepair: repairResult,
-      notes: formNotes,
-      endDate: isDone ? new Date().toISOString().split('T')[0] : '',
-      historyLogs: [
-        ...selectedRecord.historyLogs,
-        { 
-          action: `Cập nhật kết quả bảo trì: (Vật lý -> ${targetAssetStatus === 'available' ? 'Sẵn sàng' : targetAssetStatus === 'retired' ? 'Ngừng sử dụng' : 'Bảo trì'})`, 
-          time: new Date().toLocaleDateString('vi-VN') + ' ' + new Date().toLocaleTimeString('vi-VN', { hour24: true }).substring(0, 5), 
-          user: 'Nguyễn Văn B (Kỹ thuật)' 
-        }
-      ]
+    if (!formProcessContent.trim()) {
+      alert('Vui lòng nhập nội dung xử lý');
+      return;
+    }
+
+    if (!formResult.trim()) {
+      alert('Vui lòng nhập kết quả bảo trì');
+      return;
+    }
+
+    const parsedCost = parseFloat(formCost);
+    if (isNaN(parsedCost) || parsedCost < 0) {
+      alert('Chi phí phát sinh không hợp lệ');
+      return;
+    }
+
+    const validStatuses = ['Sẵn sàng', 'Tiếp tục bảo trì', 'Hư hỏng', 'Ngừng sử dụng'];
+    if (!validStatuses.includes(formAssetStatusAfter)) {
+      alert('Trạng thái thiết bị không hợp lệ');
+      return;
+    }
+
+    // Determine final status
+    let nextMaintenanceStatus = 'Đang xử lý';
+    let nextAssetStatus = 'Bảo trì';
+
+    if (formAssetStatusAfter === 'Sẵn sàng') {
+      nextMaintenanceStatus = 'Hoàn tất';
+      nextAssetStatus = 'Sẵn sàng';
+    } else if (formAssetStatusAfter === 'Tiếp tục bảo trì') {
+      nextMaintenanceStatus = 'Đang xử lý';
+      nextAssetStatus = 'Bảo trì';
+    } else if (formAssetStatusAfter === 'Hư hỏng') {
+      nextMaintenanceStatus = 'Đang xử lý'; // Maintenance in progress as it is still damaged
+      nextAssetStatus = 'Bảo trì';
+    } else if (formAssetStatusAfter === 'Ngừng sử dụng') {
+      nextMaintenanceStatus = 'Hoàn tất';
+      nextAssetStatus = 'Ngừng sử dụng';
+    }
+
+    // Prepare JSON payload for output display as requested by specifications
+    const payload = {
+      maintenanceCode: selectedUpdate.maintenanceCode,
+      assetCode: selectedUpdate.assetCode,
+      processContent: formProcessContent,
+      result: formResult,
+      cost: parsedCost,
+      note: formNotes,
+      assetStatusAfterMaintenance: formAssetStatusAfter === 'Sẵn sàng' ? 'AVAILABLE' : (formAssetStatusAfter === 'Ngừng sử dụng' ? 'DECOMMISSIONED' : 'MAINTENANCE'),
+      maintenanceStatus: nextMaintenanceStatus === 'Hoàn tất' ? 'COMPLETED' : 'IN_PROGRESS'
     };
 
-    setRecords(records.map(r => r.id === selectedRecord.id ? updatedRecord : r));
-    setSelectedRecord(updatedRecord);
-    setActiveView('detail');
+    setDiagnosticLog(payload);
 
-    let itemMsg = `Đã cập nhật hồ sơ bảo trì ${selectedRecord.id}. `;
-    if (targetAssetStatus === 'available') {
-      itemMsg += 'Thiết bị đã chuyển về trạng thái SÃN SÀNG đón đơn hàng mới!';
-    } else if (targetAssetStatus === 'retired') {
-      itemMsg += 'Thiết bị đã Ngừng cho thuê vĩnh viễn!';
-    } else {
-      itemMsg += 'Tiếp tục giữ thiết bị ở kho bảo dưỡng.';
-    }
-    triggerToast(itemMsg);
-    if (onAddNotification) {
-      onAddNotification(itemMsg);
-    }
+    // Perform state updating of local mock db
+    const updatedRecords = records.map(r => {
+      if (r.maintenanceCode === selectedUpdate.maintenanceCode) {
+        // Construct new history item inside the record as well
+        const newHistoryLog = {
+          maintenanceCode: r.maintenanceCode,
+          createdAt: new Date().toLocaleDateString('vi-VN'),
+          reason: r.reason,
+          createdBy: r.createdBy,
+          status: nextMaintenanceStatus,
+          processContent: formProcessContent,
+          cost: parsedCost,
+          notes: formNotes || 'Cập nhật trực tiếp kết quả nghiệm thu hàng ngày.'
+        };
+
+        return {
+          ...r,
+          status: nextMaintenanceStatus,
+          assetStatus: nextAssetStatus,
+          processContent: formProcessContent,
+          result: formResult,
+          cost: parsedCost,
+          resultNotes: formNotes,
+          history: [newHistoryLog, ...(r.history || [])]
+        };
+      }
+      return r;
+    });
+
+    setRecords(updatedRecords);
+    setShowUpdateModal(false);
+    triggerToast('Cập nhật kết quả bảo trì thành công');
+    
+    // Display prompt specified success alerts
+    setTimeout(() => {
+      alert(`Cập nhật kết quả bảo trì thành công\n\n[Dữ liệu gửi lên server]:\n${JSON.stringify(payload, null, 2)}`);
+    }, 300);
   };
 
+  // Apply search filtering
   const filteredRecords = records.filter(r => {
-    const matchesSearch = r.assetName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          r.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          r.serial.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === '' || r.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesCode = filterCode === '' || r.maintenanceCode.toLowerCase().includes(filterCode.toLowerCase());
+    const matchesAssetCode = filterAssetCode === '' || r.assetCode.toLowerCase().includes(filterAssetCode.toLowerCase());
+    const matchesName = filterName === '' || r.equipmentName.toLowerCase().includes(filterName.toLowerCase());
+    const matchesStatus = filterStatus === '' || r.status === filterStatus;
+    const matchesDate = filterCreatedDate === '' || r.createdAt.includes(filterCreatedDate);
+
+    return matchesCode && matchesAssetCode && matchesName && matchesStatus && matchesDate;
   });
 
   return (
-    <div className="space-y-6 select-none font-sans">
+    <div className="space-y-6 text-left selection:bg-indigo-100">
       
-      {/* Toast Notice */}
+      {/* Toast Alert pop */}
       {toast && (
-        <div className="fixed top-20 right-4 bg-slate-900 border border-slate-700 text-white px-5 py-3 rounded-lg shadow-2xl z-[90] flex items-center gap-3 animate-fade-in">
-          <Wrench className="w-4 h-4 text-amber-400 shrink-0" />
-          <span className="text-xs font-bold">{toast}</span>
+        <div className="fixed top-5 right-5 z-[2000] bg-slate-900 border border-slate-800 text-white p-4 rounded-xl shadow-2xl flex items-center gap-3 animate-fadeIn">
+          <div className="bg-emerald-500 p-1.5 rounded-full text-white">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-xs font-bold font-sans">{toast.message}</p>
+          </div>
         </div>
       )}
 
-      {/* VIEW: LIST OF RECORDS */}
-      {activeView === 'list' && (
-        <>
-          {/* Title bar */}
-          <div className="flex justify-between items-center bg-white p-5 border border-slate-200 rounded-2xl shadow-xs">
-            <div>
-              <h2 className="text-xl font-bold text-[#00236f] flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-indigo-650" />
-                PHIẾU YÊU CẦU & BẢO TRÌ THIẾT BỊ
-              </h2>
-              <p className="text-xs text-slate-500 mt-1">Giám sát vòng đời, sửa chữa và lau dọn cảm biến thiết bị quay chụp định kỳ.</p>
-            </div>
+      {/* Breadcrumb & Header Section */}
+      <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5 font-mono">
+            <span>Trang chủ</span>
+            <span>/</span>
+            <span className="text-indigo-600 font-black">Quản lý bảo trì</span>
+          </div>
+          <h2 className="text-lg font-black text-[#00236f] uppercase tracking-wide flex items-center gap-2">
+            <Wrench className="w-5 h-5 text-indigo-600" />
+            Quản lý bảo trì
+          </h2>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Theo dõi lịch trình chẩn đoán lỗi, khắc phục hao mòn kỹ thuật và phục hồi các thiết bị quay chụp hư hại từ vận hành thực tế.</p>
+        </div>
+        {/* Không được thêm nút "Thêm hồ sơ bảo trì" - Hãy đảm bảo an toàn tuyệt đối */}
+      </div>
+
+      {/* FILTER CONTROL CARD */}
+      <div className="bg-white p-5 border border-slate-200 rounded-2xl shadow-sm">
+        <h3 className="text-xs uppercase font-extrabold text-slate-500 mb-3.5 flex items-center gap-1.5 tracking-wider">
+          <Search className="w-3.5 h-3.5 text-indigo-500" />
+          Bộ lọc hồ sơ bảo trì
+        </h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+          {/* Mã hồ sơ */}
+          <div className="space-y-1 text-left">
+            <label className="text-[10px] text-slate-400 font-bold uppercase block">Mã hồ sơ bảo trì</label>
+            <input 
+              type="text" 
+              placeholder="Nhập mã hồ sơ (Ví dụ: MT001)"
+              value={filterCode}
+              onChange={(e) => setFilterCode(e.target.value)}
+              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-indigo-500"
+            />
           </div>
 
-          {/* Search bar filters */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-3">
-            <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input 
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm mã bảo trì, tên thiết bị, mã serial..."
-                className="w-full bg-slate-50 border-none rounded-lg pl-10 pr-4 py-2.5 text-xs text-slate-800 focus:ring-1 focus:ring-blue-500/50 outline-none"
-              />
-            </div>
-            <div className="w-full sm:w-48">
-              <select 
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg py-2.5 px-3 text-xs focus:ring-1 focus:ring-blue-500/50 outline-none text-slate-800 cursor-pointer"
-              >
-                <option value="">Trạng thái: Tất cả</option>
-                <option value="repairing">Đang xử lý</option>
-                <option value="pending_parts">Chờ linh kiện</option>
-                <option value="completed">Đã hoàn thành</option>
-              </select>
-            </div>
+          {/* Mã tài sản */}
+          <div className="space-y-1 text-left">
+            <label className="text-[10px] text-slate-400 font-bold uppercase block">Mã tài sản (Asset Code)</label>
+            <input 
+              type="text" 
+              placeholder="Nhập mã tài sản (Ví dụ: LEN012)"
+              value={filterAssetCode}
+              onChange={(e) => setFilterAssetCode(e.target.value)}
+              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-indigo-500"
+            />
           </div>
 
-          {/* Table list */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto w-full shadow-sm">
-            <table className="w-full min-w-[900px] text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 text-slate-500 border-b border-rose-100 text-[10px] font-black uppercase tracking-wider">
-                  <th className="px-6 py-4">Mã hồ sơ</th>
-                  <th className="px-6 py-4">Thiết bị cần bảo trì</th>
-                  <th className="px-6 py-4">Số Serial</th>
-                  <th className="px-6 py-4">Lý do bảo trì</th>
-                  <th className="px-6 py-4">Ngày bắt đầu</th>
-                  <th className="px-6 py-4 text-center">Trạng thái</th>
-                  <th className="px-6 py-4 text-right">Chi tiết</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredRecords.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="text-center py-12 text-xs text-slate-400 font-medium">
-                      ⚠️ Không tìm thấy hồ sơ bảo trì nào phù hợp.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredRecords.map((r) => (
-                    <tr key={r.id} className="hover:bg-slate-50/55 transition duration-150">
-                      <td className="px-6 py-4 font-mono text-xs text-indigo-600 font-black">{r.id}</td>
-                      <td className="px-6 py-4">
-                        <span className="text-xs font-bold text-slate-800 block">{r.assetName}</span>
-                        <span className="text-[9.5px] text-slate-400 font-bold block">ID: {r.assetId}</span>
-                      </td>
-                      <td className="px-6 py-4 font-mono text-xs text-slate-600">{r.serial}</td>
-                      <td className="px-6 py-4 text-xs text-slate-600 max-w-[200px] truncate">{r.reason}</td>
-                      <td className="px-6 py-4 text-xs text-slate-500">{r.startDate}</td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex px-2 py-1 rounded-full text-[9px] font-black uppercase border ${
-                          r.status === 'completed' 
-                            ? 'bg-green-50 text-green-700 border-green-250 animate-pulse' 
-                            : r.status === 'repairing'
-                              ? 'bg-amber-50 text-amber-700 border-amber-250'
-                              : 'bg-red-50 text-red-700 border-red-250'
-                        }`}>
-                          {r.statusLabel}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button 
-                          onClick={() => handleOpenDetail(r)}
-                          className="px-3 py-1.5 bg-slate-100 hover:bg-[#fea619] hover:text-[#2a1700] text-slate-700 text-[11px] font-black rounded-lg transition-colors cursor-pointer"
-                        >
-                          XEM CHI TIẾT
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          {/* Tên thiết bị */}
+          <div className="space-y-1 text-left">
+            <label className="text-[10px] text-slate-400 font-bold uppercase block">Tên thiết bị</label>
+            <input 
+              type="text" 
+              placeholder="Nhập tên thiết bị..."
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-indigo-500"
+            />
           </div>
-        </>
+
+          {/* Trạng thái bảo trì */}
+          <div className="space-y-1 text-left">
+            <label className="text-[10px] text-slate-400 font-bold uppercase block">Trạng thái bảo trì</label>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none font-extrabold text-slate-700 cursor-pointer focus:bg-white focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="">Tất cả</option>
+              <option value="Đang xử lý">Đang xử lý</option>
+              <option value="Hoàn tất">Hoàn tất</option>
+              <option value="Hủy">Hủy</option>
+            </select>
+          </div>
+
+          {/* Ngày tạo */}
+          <div className="space-y-1 text-left">
+            <label className="text-[10px] text-slate-400 font-bold uppercase block">Ngày tạo hồ sơ</label>
+            <input 
+              type="text" 
+              placeholder="Ví dụ: 23/06/2026"
+              value={filterCreatedDate}
+              onChange={(e) => setFilterCreatedDate(e.target.value)}
+              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* DIAGNOSTIC API PAYLOAD SIMULATOR PREVIEW (ELEGANT DESIGN ELEMENT) */}
+      {diagnosticLog && (
+        <div className="bg-slate-900 text-slate-100 p-4.5 rounded-2xl border border-slate-800 font-mono text-xs">
+          <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-800">
+            <span className="text-amber-400 font-bold text-[10.5px]">📡 [Cập nhật thành công] Dữ liệu JSON gửi đi (Dạng nghiệp vụ):</span>
+            <button 
+              onClick={() => setDiagnosticLog(null)}
+              className="text-slate-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <pre className="overflow-x-auto whitespace-pre-wrap">{JSON.stringify(diagnosticLog, null, 2)}</pre>
+        </div>
       )}
 
-      {/* VIEW: DETAIL OF MOISTURE/MAINTENANCE */}
-      {activeView === 'detail' && selectedRecord && (
-        <div className="space-y-6">
-          {/* Breadcrumb nav */}
-          <div className="flex items-center gap-2 text-xs">
-            <button 
-              onClick={() => setActiveView('list')} 
-              className="text-slate-500 hover:text-slate-900 transition flex items-center gap-1 font-bold"
-            >
-              
-              Danh sách bảo trì
-            </button>
-            <span className="text-slate-300">/</span>
-            <span className="text-slate-800 font-extrabold">Chi tiết phiếu {selectedRecord.id}</span>
-          </div>
+      {/* TABLE LISTING */}
+      <div className="table-wrapper border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="w-full">
+          <table className="data-table">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-[13px] font-semibold text-[#0f172a]">
+                <th className="px-6 py-3.5 whitespace-nowrap text-left font-semibold min-w-[120px]">Mã hồ sơ</th>
+                <th className="px-6 py-3.5 whitespace-nowrap text-left font-semibold min-w-[100px]">Mã tài sản</th>
+                <th className="px-6 py-3.5 whitespace-nowrap text-left font-semibold min-w-[140px]">Tên thiết bị</th>
+                <th className="px-6 py-3.5 whitespace-nowrap text-left font-semibold min-w-[150px]">Mẫu thiết bị</th>
+                <th className="px-6 py-3.5 whitespace-nowrap text-left font-semibold min-w-[110px]">Số serial</th>
+                <th className="px-6 py-3.5 whitespace-nowrap text-left font-semibold min-w-[200px]">Lý do bảo trì</th>
+                <th className="px-6 py-3.5 whitespace-nowrap text-center font-semibold min-w-[125px]">Trạng thái</th>
+                <th className="px-6 py-3.5 whitespace-nowrap text-center font-semibold min-w-[110px]">Ngày tạo</th>
+                <th className="px-6 py-3.5 whitespace-nowrap text-left font-semibold min-w-[130px]">Người tạo</th>
+                <th className="px-6 py-3.5 whitespace-nowrap text-right font-semibold min-w-[345px]">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-705">
+              {filteredRecords.length === 0 ? (
+                <tr>
+                  <td colSpan="10" className="px-6 py-12 text-center text-slate-400 italic font-bold">
+                    Không tìm thấy hồ sơ bảo trì phù hợp bộ lọc tìm kiếm.
+                  </td>
+                </tr>
+              ) : (
+                filteredRecords.map(r => {
+                  const isCompleted = r.status === 'Hoàn tất';
+                  return (
+                    <tr key={r.maintenanceCode} className="hover:bg-slate-50/50 transition duration-150">
+                      {/* Mã hồ sơ */}
+                      <td className="px-6 py-4 text-[#00236f] font-mono font-black cell-code">{r.maintenanceCode}</td>
+                      
+                      {/* Mã tài sản */}
+                      <td className="px-6 py-4 text-slate-800 font-bold font-mono cell-code">{r.assetCode}</td>
+                      
+                      {/* Tên thiết bị */}
+                      <td className="px-6 py-4 text-slate-900 font-bold">{r.equipmentName}</td>
+                      
+                      {/* Mẫu thiết bị */}
+                      <td className="px-6 py-4 text-slate-600">{r.modelName}</td>
+                      
+                      {/* Số serial */}
+                      <td className="px-6 py-4 font-mono font-bold text-slate-800 cell-serial">{r.serial}</td>
+                      
+                      {/* Lý do bảo trì */}
+                      <td className="px-6 py-4 text-slate-500 max-w-[200px] truncate" title={r.reason}>{r.reason}</td>
+                      
+                      {/* Trạng thái bảo trì */}
+                      <td className="px-6 py-4 text-center">
+                        <span className={`status-badge ${
+                          r.status === 'Hoàn tất' 
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                            : r.status === 'Hủy'
+                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                              : 'bg-amber-50 text-amber-700 border border-amber-250'
+                        }`}>
+                          {r.status}
+                        </span>
+                      </td>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      {/* Ngày tạo */}
+                      <td className="px-6 py-4 text-center font-mono cell-date">{r.createdAt}</td>
+
+                      {/* Người tạo */}
+                      <td className="px-6 py-4 text-slate-805 font-bold">{r.createdBy}</td>
+
+                      {/* BA NÚT NGANG HÀNG BẮT BUỘC KHÔNG ĐƯỢC GIẤU */}
+                      <td className="px-6 py-4 text-right">
+                        <div className="table-action-group justify-end items-center">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDetail(r)}
+                            className="table-action-button text-[#00236f] bg-[#00236f]/5 hover:bg-[#00236f]/10 cursor-pointer"
+                          >
+                            Xem chi tiết
+                          </button>
+
+                          <div className="relative group">
+                            <button
+                              type="button"
+                              disabled={isCompleted}
+                              onClick={() => handleOpenUpdateForm(r)}
+                              className={`table-action-button transition cursor-pointer font-semibold ${
+                                isCompleted
+                                  ? 'bg-slate-50 text-slate-350 border border-slate-100 cursor-not-allowed'
+                                  : 'bg-indigo-50 text-indigo-705 hover:bg-indigo-100'
+                              }`}
+                            >
+                              Cập nhật kết quả bảo trì
+                            </button>
+                            
+                            {isCompleted && (
+                              <div className="absolute right-0 bottom-full mb-1.5 hidden group-hover:block transition duration-200 z-[100] max-w-[200px] w-48 text-left bg-slate-900 text-white rounded-lg p-2.5 shadow-2xl">
+                                <p className="text-[10px] font-bold font-sans">Hồ sơ bảo trì đã hoàn tất</p>
+                              </div>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleOpenHistory(r)}
+                            className="table-action-button text-slate-705 bg-slate-100 hover:bg-slate-200 cursor-pointer"
+                          >
+                            Xem lịch sử bảo trì
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ========================================================= */}
+      {/* 1. DRAWER / MODAL: XEM CHI TIẾT BẢO TRÌ (Chỉ xem, KHÔNG nút) */}
+      {/* ========================================================= */}
+      {showDetailModal && selectedDetail && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[1100] flex justify-end animate-fadeIn font-sans">
+          <div className="bg-white w-full max-w-2xl h-screen shadow-2xl flex flex-col animate-slideLeft text-slate-800 text-xs">
             
-            {/* Main Info */}
-            <div className="lg:col-span-8 bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
-              <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                <div>
-                  <span className="text-[10px] bg-slate-900 text-slate-10
-                  0 font-mono px-2 py-0.5 rounded-md font-bold uppercase">{selectedRecord.id}</span>
-                  <h3 className="text-sm font-bold text-slate-800 mt-2">{selectedRecord.assetName}</h3>
-                  <p className="text-[11px] text-slate-400 font-mono">ID: {selectedRecord.assetId} | Serial: {selectedRecord.serial}</p>
+            {/* Modal Header */}
+            <div className="px-6 py-4.5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div>
+                <h3 className="text-sm font-black text-[#00236f] uppercase">Chi tiết hồ sơ quản lý bảo trì</h3>
+                <p className="text-[11px] text-slate-400 font-bold font-mono">ID bảo trì: {selectedDetail.maintenanceCode} | Tài sản: {selectedDetail.assetCode}</p>
+              </div>
+              <button 
+                onClick={() => setShowDetailModal(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-900 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content Scroll */}
+            <div className="flex-grow overflow-y-auto p-6 space-y-6 text-left font-semibold">
+              
+              {/* A. THÔNG TIN HỒ SƠ BẢO TRÌ */}
+              <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl space-y-2">
+                <span className="text-[9.5px] text-[#00236f] font-extrabold uppercase block tracking-wider border-b pb-1">
+                  A. Thông tin hồ sơ bảo trì
+                </span>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                  <div>
+                    <span className="text-slate-400 block">Mã hồ sơ bảo trì:</span>
+                    <p className="text-[#00236f] font-mono font-black text-xs">{selectedDetail.maintenanceCode}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Trạng thái bảo trì:</span>
+                    <span className={`inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                      selectedDetail.status === 'Hoàn tất' ? 'bg-emerald-50 text-emerald-700 border border-emerald-150' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    }`}>
+                      {selectedDetail.status}
+                    </span>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="text-slate-400 block">Lý do bảo trì:</span>
+                    <p className="text-slate-900 font-bold">{selectedDetail.reason}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Ngày tạo:</span>
+                    <p className="text-slate-850 font-mono font-bold">{selectedDetail.createdAt}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Người tạo hồ sơ:</span>
+                    <p className="text-slate-850 font-bold">{selectedDetail.createdBy}</p>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="text-slate-400 block">Ghi chú ban đầu:</span>
+                    <p className="text-slate-700 italic font-medium">"{selectedDetail.notes || 'Không ghi nhận ghi chú ban đầu'}"</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className={`inline-flex px-3 py-1 rounded-full text-xs font-black uppercase border ${
-                    selectedRecord.status === 'completed' 
-                      ? 'bg-green-50 text-green-700 border-green-200' 
-                      : 'bg-amber-50 text-amber-700 border-amber-250'
-                  }`}>
-                    {selectedRecord.statusLabel}
+
+                {/* Kết quả phục hồi sửa chữa nếu có */}
+                {selectedDetail.processContent && (
+                  <div className="mt-3.5 pt-3.5 border-t border-slate-200 space-y-2 bg-indigo-50/20 p-3 rounded-lg">
+                    <span className="text-[9px] text-indigo-700 font-extrabold uppercase block">Kết quả nghiệm thu bảo dưỡng</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="sm:col-span-2">
+                        <span className="text-slate-400 block text-[9.5px]">Nội dung kỹ sư thực hiện:</span>
+                        <p className="text-slate-850 font-bold">{selectedDetail.processContent}</p>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <span className="text-slate-400 block text-[9.5px]">Kết quả thu hoạch kiểm thử:</span>
+                        <p className="text-slate-850 font-bold">{selectedDetail.result}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[9.5px]">Chi phí thực tế:</span>
+                        <p className="text-[#00236f] font-mono font-black text-sm">{formatVND(selectedDetail.cost)}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[9.5px]">Ghi chú kết quả:</span>
+                        <p className="text-slate-650 italic">"{selectedDetail.resultNotes || 'Không có ghi chú'}"</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* B. THÔNG TIN THIẾT BỊ VẬT LÝ */}
+              <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl space-y-2">
+                <span className="text-[9.5px] text-[#00236f] font-extrabold uppercase block tracking-wider border-b pb-1">
+                  B. Thông tin cấu hình thiết bị vật lý
+                </span>
+                
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <span className="text-slate-400 block">Mã tài sản:</span>
+                    <p className="text-slate-900 font-mono font-extrabold">{selectedDetail.assetCode}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Danh tính thiết bị:</span>
+                    <p className="text-slate-900 font-black">{selectedDetail.equipmentName}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Thuộc mẫu thiết bị:</span>
+                    <p className="text-slate-700 font-bold">{selectedDetail.modelName}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Số sản phẩm serial:</span>
+                    <p className="text-[#00236f] font-mono font-black">{selectedDetail.serial}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Tần suất lượt thuê máy:</span>
+                    <p className="text-slate-850 font-bold">{selectedDetail.rentCount} lần thuê</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Ngưỡng kiểm tra định kỳ:</span>
+                    <p className="text-slate-800 font-bold">{selectedDetail.maintenanceThreshold || 'N/A'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-slate-400 block">Trạng thái thiết bị hiện tại:</span>
+                    <span className={`inline-block mt-0.5 px-2.5 py-0.5 rounded text-[10px] font-black uppercase ${
+                      selectedDetail.assetStatus === 'Sẵn sàng' ? 'bg-emerald-50 text-emerald-700 border border-emerald-250' : 
+                      selectedDetail.assetStatus === 'Ngừng sử dụng' ? 'bg-slate-100 text-slate-500 border border-slate-250' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                    }`}>
+                      {selectedDetail.assetStatus}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-slate-400 block">Ghi chú hao mòn tình trạng:</span>
+                    <p className="text-slate-650 italic font-medium">"{selectedDetail.conditionNotes || 'Thiết bị hoạt động bền bỉ.'}"</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* C. NGUỒN PHÁT SINH HỒ SƠ */}
+              <div className="bg-white border border-dashed border-indigo-200 p-4 rounded-xl space-y-2">
+                <span className="text-[9.5px] text-indigo-700 font-extrabold uppercase block tracking-wider border-b border-indigo-100 pb-1">
+                  C. Nguồn gốc xuất xứ hồ sơ bảo trì
+                </span>
+                
+                {selectedDetail.sourceType === 'LIQUIDATION' ? (
+                  <div className="space-y-2">
+                    <div className="inline-flex px-2 py-0.5 bg-rose-50 text-rose-800 text-[9.5px] rounded-sm font-black border border-rose-100">
+                      PHÁT SINH TỪ QUÁ TRÌNH THANH LÝ HỢP ĐỒNG
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                      <div>
+                        <span className="text-slate-400 block">Mã đơn hàng liên quan:</span>
+                        <p className="text-indigo-850 font-mono font-extrabold">{selectedDetail.relatedOrderCode || 'ORD001'}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Mã phiếu trả &amp; kiểm kê:</span>
+                        <p className="text-slate-850 font-mono font-bold">{selectedDetail.relatedReturnSlip || 'PR001'}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Hiện trạng ghi nhận khi trả:</span>
+                        <span className="text-red-600 font-extrabold text-[11px] block">⚠️ {selectedDetail.conditionOnReturn || 'Hư hỏng vật lý'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Ghi chú đối soát kiểm kê:</span>
+                        <p className="text-slate-700 italic font-medium">"{selectedDetail.auditNotes || 'Khách hoàn trả phát hiện móp méo cụm zoom kính ngoài.'}"</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="inline-flex px-2 py-0.5 bg-yellow-50 text-yellow-800 text-[9.5px] rounded-sm font-black border border-yellow-100">
+                      PHÁT SINH TỪ QUẢN LÝ KHO THIẾT BỊ VẬT LÝ
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block">Ghi chú tạo từ quản lý thiết bị:</span>
+                      <p className="text-slate-850 font-bold">"{selectedDetail.auditNotes || 'Được kỹ thuật chủ động kích hoạt kiểm thử hoặc định kỳ.'}"</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block">Lý do kiểm tra/bảo trì:</span>
+                      <p className="text-slate-750 font-bold">{selectedDetail.reason}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* RE-HIGHLIGHT EXTREMELY IMPORTANT CLAUSE: NO OPERATION BUTTONS ALLOWED HERE */}
+              <div className="p-3 bg-rose-50 text-rose-700 border border-rose-100 rounded-xl text-[11px] font-semibold flex items-start gap-2">
+                <Info className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+                <p>Theo quy chuẩn kiểm thử nghiệp vụ, các thao tác <strong>Cập nhật kết quả bảo trì</strong> hoặc <strong>Xem lịch sử bảo trì</strong> phải được mở trực tiếp từ bảng danh sách bên ngoài để đảm bảo tính minh bạch, không được phép lồng ghép tại đây.</p>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4.5 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button 
+                type="button" 
+                onClick={() => setShowDetailModal(false)}
+                className="px-5 py-2.5 bg-slate-250 text-slate-700 font-black rounded-xl hover:bg-slate-350 transition uppercase text-xs cursor-pointer"
+              >
+                Đóng thông tin
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 2. DRAWER / MODAL: CẬP NHẬT KẾT QUẢ BẢO TRÌ */}
+      {/* ========================================================= */}
+      {showUpdateModal && selectedUpdate && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[1100] flex justify-end animate-fadeIn font-sans">
+          <div className="bg-white w-full max-w-2xl h-screen shadow-2xl flex flex-col animate-slideLeft text-slate-850 text-xs">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4.5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div>
+                <span className="text-[9.5px] text-indigo-700 font-black uppercase tracking-wider flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-650 animate-ping"></span>
+                  Nghiệm thu dịch vụ kỹ thuật
+                </span>
+                <h3 className="text-sm font-black text-[#00236f] uppercase mt-0.5">Cập nhật kết quả bảo trì</h3>
+                <p className="text-[11px] text-slate-400 font-medium">Nhập chi tiết xử lý sự cố và chuyển đổi trạng thái thiết bị vật lý tương ứng.</p>
+              </div>
+              <button 
+                onClick={() => setShowUpdateModal(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-900 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Form Scroll Area */}
+            <form onSubmit={handleSaveUpdate} className="flex-grow overflow-y-auto p-6 space-y-5.5 text-left font-semibold">
+              
+              {/* A. THÔNG TIN HỒ SƠ */}
+              <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl space-y-2">
+                <span className="text-[9.5px] text-[#00236f] font-extrabold uppercase block tracking-wider">
+                  A. Thông tin hồ sơ bảo trì cơ bản
+                </span>
+                <div className="grid grid-cols-2 gap-3.5 text-xs pt-1">
+                  <div>
+                    <span className="text-slate-400 block text-[9.5px]">Mã hồ sơ bảo trì</span>
+                    <span className="text-slate-900 font-mono font-black">{selectedUpdate.maintenanceCode}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[9.5px]">Ngày khởi tạo</span>
+                    <span className="text-slate-850 font-mono font-bold">{selectedUpdate.createdAt}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[9.5px]">Nhân sự thiết lập</span>
+                    <span className="text-slate-850 font-bold">{selectedUpdate.createdBy}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[9.5px]">Trạng thái hiện trạng</span>
+                    <span className="bg-amber-100 text-amber-800 text-[9px] px-2 py-0.5 rounded font-black border border-amber-200 uppercase">
+                      {selectedUpdate.status}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-slate-400 block text-[9.5px]">Lý do bảo rưỡng thu hồi</span>
+                    <p className="text-slate-900 font-bold text-xs">"{selectedUpdate.reason}"</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* B. THÔNG TIN THIẾT BỊ */}
+              <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl space-y-2">
+                <span className="text-[9.5px] text-[#00236f] font-extrabold uppercase block tracking-wider">
+                  B. Thông tin nhận dạng thiết bị vật lý
+                </span>
+                <div className="grid grid-cols-2 gap-3.5 text-xs pt-1">
+                  <div>
+                    <span className="text-slate-400 block text-[9.5px]">Mã tài sản (Asset Code)</span>
+                    <span className="text-[#00236f] font-mono font-black">{selectedUpdate.assetCode}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[9.5px]">Tên mã sản phẩm</span>
+                    <span className="text-slate-900 font-extrabold">{selectedUpdate.equipmentName}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[9.5px]">Số sản phẩm Serial</span>
+                    <span className="text-slate-850 font-mono font-bold">{selectedUpdate.serial}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[9.5px]">Trạng thái vật lý hiện tại</span>
+                    <span className="bg-rose-50 text-rose-700 text-[9.5px] px-2 py-0.5 rounded font-black uppercase border border-rose-150">
+                      {selectedUpdate.assetStatus}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-slate-400 block text-[9.5px]">Ghi chú chẩn đoán ban đầu</span>
+                    <p className="text-slate-750 italic">"{selectedUpdate.notes || 'Pin yếu hoặc sước mờ kính ngoài.'}"</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* C. KẾT QUẢ XỬ LÝ */}
+              <div className="border border-slate-250 p-4 rounded-xl space-y-3 bg-white">
+                <span className="text-[9.5px] text-indigo-700 font-extrabold uppercase block tracking-wider border-b pb-1">
+                  C. Nhập biên bản kết quả xử lý thực tế
+                </span>
+
+                {/* Nội dung xử lý */}
+                <div className="space-y-1 text-left">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase block">
+                    Nội dung xử lý <span className="text-rose-500">*</span>
+                  </label>
+                  <textarea
+                    rows="2"
+                    value={formProcessContent}
+                    onChange={(e) => setFormProcessContent(e.target.value)}
+                    placeholder="Nhập chi tiết các bước xử lý (Ví dụ: Tháo mặt kính ngoài, sấy bụi cảm biến sensor...)"
+                    className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-indigo-500"
+                  />
+                  <span className="text-[10px] text-slate-400 font-medium italic block mt-0.5">Mô tả hành vi lắp đặt, can thiệp hoặc chẩn đoán thiết bị.</span>
+                </div>
+
+                {/* Kết quả bảo trì */}
+                <div className="space-y-1 text-left">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase block">
+                    Kết quả bảo trì / Nghiệm thu <span className="text-rose-500">*</span>
+                  </label>
+                  <textarea
+                    rows="2"
+                    value={formResult}
+                    onChange={(e) => setFormResult(e.target.value)}
+                    placeholder="Nhập kết quả (Ví dụ: Ống kính về lại trạng thái hội tụ chuẩn nét, không xước dăm...)"
+                    className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+
+                {/* Chi phí phát sinh */}
+                <div className="space-y-1 text-left">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase block">
+                    Chi phí phát sinh thực tế (VNĐ) <span className="text-slate-400">(Nếu không có, điền 0)</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formCost}
+                    onChange={(e) => setFormCost(e.target.value)}
+                    placeholder="Nhập số tiền..."
+                    className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-850 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+
+                {/* Ghi chú */}
+                <div className="space-y-1 text-left">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase block">Ghi chú bồi hoàn / Hậu mãi bảo hành</label>
+                  <input
+                    type="text"
+                    value={formNotes}
+                    onChange={(e) => setFormNotes(e.target.value)}
+                    placeholder="Thiết bị hồi lưu tốt..."
+                    className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* D. TRẠNG THÁI SAU BẢO TRÌ CỦA THIẾT BỊ */}
+              <div className="bg-rose-50/40 border border-rose-100 p-4 rounded-xl space-y-2">
+                <label className="text-[10.5px] text-rose-800 font-extrabold uppercase block tracking-wider">
+                  D. Quyết định trạng thái thiết bị sau bảo trì
+                </label>
+                <select
+                  value={formAssetStatusAfter}
+                  onChange={(e) => setFormAssetStatusAfter(e.target.value)}
+                  className="w-full text-xs bg-white border border-rose-200 rounded-xl p-2.5 outline-none font-black text-slate-800 cursor-pointer focus:ring-1 focus:ring-rose-500"
+                >
+                  <option value="Sẵn sàng">Sẵn sàng (Thiết bị hoạt động tốt - Kết thúc bảo trì)</option>
+                  <option value="Tiếp tục bảo trì">Tiếp tục bảo trì (Chưa đạt an toàn kỹ thuật)</option>
+                  <option value="Hư hỏng">Hư hỏng (Hư hỏng sâu bách bộ phận - Giữ trạng thái Bảo trì)</option>
+                  <option value="Ngừng sử dụng">Ngừng sử dụng (Khải tử tài sản quá rát - Thanh lý)</option>
+                </select>
+                <div className="text-[10px] text-rose-700 font-medium">
+                  • <strong>Chú ý:</strong> Nếu chọn <span className="underline">Sẵn sàng</span> hoặc <span className="underline">Ngừng sử dụng</span>, hồ Sơ bảo trì sẽ được cập nhật thành <strong>Hoàn tất</strong>.
+                </div>
+              </div>
+
+            </form>
+
+            {/* Modal Footer */}
+            <div className="p-4.5 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+              <button 
+                type="button" 
+                onClick={() => setShowUpdateModal(false)}
+                className="px-4 py-2.5 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition text-xs cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+
+              <button 
+                type="button" 
+                onClick={handleSaveUpdate}
+                className="px-6 py-2.5 bg-[#00236f] text-white hover:bg-[#fea619] hover:text-[#2a1700] font-black rounded-xl transition shadow-md text-xs cursor-pointer"
+              >
+                Lưu cập nhật kết quả
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 3. DRAWER / MODAL: XEM LỊCH SỬ BẢO TRÌ */}
+      {/* ========================================================= */}
+      {showHistoryModal && selectedHistory && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[1100] flex justify-end animate-fadeIn font-sans">
+          <div className="bg-white w-full max-w-3xl h-screen shadow-2xl flex flex-col animate-slideLeft text-slate-800 text-xs">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4.5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div>
+                <h3 className="text-sm font-black text-[#00236f] uppercase">Lịch sử bảo trì thiết bị</h3>
+                <p className="text-[11px] text-slate-400 font-medium font-mono">Tài sản: {selectedHistory.assetCode} | Serial: {selectedHistory.serial}</p>
+              </div>
+              <button 
+                onClick={() => setShowHistoryModal(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-900 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-grow overflow-y-auto p-6 space-y-5 text-left font-semibold">
+              
+              {/* Thống kê thiết bị */}
+              <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <span className="text-slate-400 block text-[9px] uppercase">Mã tài sản</span>
+                  <p className="font-mono font-black text-[#00236f]">{selectedHistory.assetCode}</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[9px] uppercase">Tên thiết bị</span>
+                  <p className="font-bold text-slate-900 truncate">{selectedHistory.equipmentName}</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[9px] uppercase">Số Serial</span>
+                  <p className="font-mono font-bold text-slate-800">{selectedHistory.serial}</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[9px] uppercase">Trạng thái hiện tại</span>
+                  <span className="inline-block mt-0.5 bg-indigo-50 text-indigo-700 pointer-events-none px-2 py-0.5 font-bold rounded">
+                    {selectedHistory.assetStatus}
                   </span>
                 </div>
               </div>
 
-              <div className="p-6 space-y-5">
+              {/* Bảng hồ sơ bảo trì */}
+              <div className="space-y-2">
+                <span className="text-slate-400 text-[10px] uppercase font-extrabold tracking-wider block">Các sự vụ bảo dưỡng qua các năm</span>
                 
-                {/* 2 column specification details */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <span className="text-slate-400 block font-semibold mb-1">Thời gian bắt đầu:</span>
-                    <span className="text-slate-800 font-bold block">{selectedRecord.startDate}</span>
+                {!selectedHistory.history || selectedHistory.history.length === 0 ? (
+                  <div className="py-12 border border-dashed border-slate-250 bg-slate-50 rounded-xl text-center">
+                    <p className="text-slate-400 font-bold italic">Thiết bị chưa có lịch sử bảo trì</p>
                   </div>
-                  <div>
-                    <span className="text-slate-400 block font-semibold mb-1">Thời gian hoàn tất:</span>
-                    <span className="text-slate-800 font-bold block">{selectedRecord.endDate || 'Chưa hoàn tất/Đang xử lý'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block font-semibold mb-1">Cán bộ lập yêu cầu:</span>
-                    <span className="text-slate-800 font-bold block">{selectedRecord.createdBy}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block font-semibold mb-1">Kỹ thuật viên đảm nhiệm:</span>
-                    <span className="text-slate-800 font-bold block">{selectedRecord.technician}</span>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                  <h4 className="text-xs font-black text-[#00236f] uppercase">Nội dung / Triệu chứng hư hỏng gốc</h4>
-                  <p className="text-xs text-slate-700 leading-relaxed font-medium bg-white p-3 border border-slate-150 rounded-lg italic">
-                    "{selectedRecord.reason}"
-                  </p>
-                  <p className="text-xs text-slate-600 block mt-1 font-medium">Ghi chú bổ sung: {selectedRecord.notes}</p>
-                </div>
-
-                <div className="space-y-4 pt-3 border-t border-slate-100">
-                  <h4 className="text-xs font-black text-slate-800 uppercase flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    KẾT QUẢ PHỤC HỒI / NGHIỆM THU
-                  </h4>
-
-                  {selectedRecord.resultInspect ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                      <div className="p-4 bg-green-50/50 border border-green-200 rounded-xl">
-                        <span className="text-slate-500 font-bold block mb-1">Kết quả kiểm tra kỹ thuật:</span>
-                        <p className="text-slate-800 font-semibold">{selectedRecord.resultInspect}</p>
-                      </div>
-                      <div className="p-4 bg-blue-50/50 border border-blue-200 rounded-xl">
-                        <span className="text-slate-500 font-bold block mb-1">Kết quả sửa chữa &amp; linh kiện:</span>
-                        <p className="text-slate-800 font-semibold">{selectedRecord.resultRepair || 'Chỉ lau dọn và hiệu chuẩn phần mềm'}</p>
-                      </div>
+                ) : (
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-[11px] border-collapse min-w-[700px]">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-200 text-[#0f172a] text-[12px] font-semibold">
+                            <th className="p-3 whitespace-nowrap min-w-[100px]">Mã hồ sơ</th>
+                            <th className="p-3 whitespace-nowrap min-w-[110px]">Ngày tạo</th>
+                            <th className="p-3 whitespace-nowrap min-w-[180px]">Lý do bảo trì</th>
+                            <th className="p-3 whitespace-nowrap min-w-[120px]">Người tạo</th>
+                            <th className="p-3 whitespace-nowrap min-w-[110px]">Trạng thái</th>
+                            <th className="p-3 whitespace-nowrap min-w-[200px]">Xử lý kỹ thuật</th>
+                            <th className="p-3 text-right whitespace-nowrap min-w-[110px]">Chi phí</th>
+                            <th className="p-3 whitespace-nowrap min-w-[150px]">Ghi chú</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                          {selectedHistory.history.map((h, hIdx) => (
+                            <tr key={hIdx} className="hover:bg-slate-50/50">
+                              <td className="p-3 text-[#00236f] font-mono font-black">{h.maintenanceCode}</td>
+                              <td className="p-3 font-mono">{h.createdAt}</td>
+                              <td className="p-3 text-slate-600 max-w-[120px] truncate" title={h.reason}>{h.reason}</td>
+                              <td className="p-3 font-bold text-slate-800">{h.createdBy}</td>
+                              <td className="p-3">
+                                <span className={`px-2 py-0.5 rounded text-[9.5px] font-black uppercase ${
+                                  h.status === 'Hoàn tất' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                                }`}>
+                                  {h.status}
+                                </span>
+                              </td>
+                              <td className="p-3 max-w-[160px] truncate" title={h.processContent}>{h.processContent}</td>
+                              <td className="p-3 text-right font-mono font-bold text-slate-900">{formatVND(h.cost)}</td>
+                              <td className="p-3 text-slate-400 italic max-w-[120px] truncate" title={h.notes}>{h.notes}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  ) : (
-                    <div className="p-5 text-center text-xs text-slate-400 border border-dashed border-slate-200 bg-slate-50 rounded-xl font-medium">
-                      Chưa ghi nhận kết quả phục hồi. Vui lòng cập nhật phiếu khi kỹ sư hoàn tất xử lý.
-                    </div>
-                  )}
-                </div>
-
-                {/* Return actions on details view */}
-                <div className="flex gap-3 pt-6 border-t border-slate-100">
-                  <button 
-                    onClick={() => setActiveView('list')}
-                    className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black rounded-xl transition duration-150 cursor-pointer"
-                  >
-                    Quay lại danh sách
-                  </button>
-
-                  {selectedRecord.status !== 'completed' && (
-                    <button 
-                      onClick={handleOpenEdit}
-                      className="px-6 py-2.5 bg-[#00236f] hover:bg-[#fea619] text-white hover:text-[#2a1700] text-xs font-black rounded-xl transition duration-150 flex items-center gap-1.5 shadow active:scale-95 cursor-pointer ml-auto"
-                    >
-                      
-                      Cập nhật kết quả bảo trì
-                    </button>
-                  )}
-                </div>
-
+                  </div>
+                )}
               </div>
+
             </div>
 
-            {/* Sidebar History Logs */}
-            <div className="lg:col-span-4 space-y-5">
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
-                <h4 className="text-xs font-black text-slate-800 uppercase mb-4 flex items-center gap-1.5">
-                  <History className="w-4 h-4 text-indigo-650" />
-                  LỊCH SỬ BẢO TRÌ TÀI SẢN
-                </h4>
-                <div className="relative border-l-2 border-slate-150 pl-4 ml-2 space-y-6">
-                  {selectedRecord.historyLogs.map((log, idx) => (
-                    <div key={idx} className="relative text-xs">
-                      {/* Node point */}
-                      <span className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-indigo-600 border-2 border-white ring-4 ring-indigo-50"></span>
-                      <p className="font-bold text-slate-800">{log.action}</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">{log.time} - {log.user}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {/* Modal Footer */}
+            <div className="p-4.5 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button 
+                type="button" 
+                onClick={() => setShowHistoryModal(false)}
+                className="px-5 py-2.5 bg-slate-250 text-slate-700 font-extrabold rounded-xl hover:bg-slate-350 transition text-xs cursor-pointer"
+              >
+                Đóng lịch sử và danh sách
+              </button>
             </div>
 
           </div>
         </div>
-      )}
-
-      {/* VIEW: UPDATE MAINTENANCE RESULT FORM */}
-      {activeView === 'edit' && selectedRecord && (
-        <form onSubmit={handleSaveResult} className="space-y-6 max-w-3xl bg-white border border-slate-200 p-6 rounded-2xl shadow-xs">
-          <div>
-            <h3 className="text-sm font-bold text-[#00236f] flex items-center gap-2">
-              <Wrench className="w-5 h-5" />
-              CẬP NHẬT KẾT QUẢ PHỤC HỒI / SỬA CHỮA {selectedRecord.id}
-            </h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">Tiến hành chốt bệnh lý, phương án kỹ thuật và chuyển đổi trạng thái thiết bị.</p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 text-xs font-medium">
-            
-            {/* Kết quả kiểm tra */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-700">Kết quả kiểm tra / Nguyên nhân sự cố <span className="text-red-500">*</span></label>
-              <textarea 
-                required
-                value={inspectResult}
-                onChange={(e) => setInspectResult(e.target.value)}
-                placeholder="Ví dụ: Cảm biến CCD bị mốc rễ tre sâu góc phải thấu kính, nguồn hỏng tụ..."
-                rows="3"
-                className="px-3.5 py-2.5 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-              />
-            </div>
-
-            {/* Kết quả sửa chữa */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-700">Cách thức khắc phục / Linh kiện thay mới <span className="text-red-500">*</span></label>
-              <textarea 
-                required
-                value={repairResult}
-                onChange={(e) => setRepairResult(e.target.value)}
-                placeholder="Ví dụ: Đã tháo rã thấu kính lau sấy mốc ẩm, chấm keo gia cố mặt ngoài cảm biến. Thay thế Adapter chập nguồn."
-                rows="3"
-                className="px-3.5 py-2.5 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-              />
-            </div>
-
-            {/* Trạng thái thiết bị */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-700">Trạng thái thiết bị sau bảo trì</label>
-              <select 
-                value={targetAssetStatus}
-                onChange={(e) => setTargetAssetStatus(e.target.value)}
-                className="px-3 py-2.5 border border-slate-200 rounded-lg text-xs text-slate-800 outline-none cursor-pointer"
-              >
-                <option value="available">🟢 Hoàn tất xuất sưởng - Chuyển sang SẴN SÀNG cho thuê</option>
-                <option value="repairing">🟡 Đang xử lý tiếp - Giữ nguyên trạng thái BẢO TRÌ</option>
-                <option value="retired">🔴 Ngừng cho thuê vĩnh viễn (Phế phẩm thanh lý)</option>
-              </select>
-            </div>
-
-            {/* Ghi chú */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-700">Ghi chú vận hành</label>
-              <input 
-                type="text"
-                value={formNotes}
-                onChange={(e) => setFormNotes(e.target.value)}
-                placeholder="Cân kiểm dải f-stop hoạt động bình thường, không bám vân tay trong thấu kính..."
-                className="px-3.5 py-2.5 border border-slate-200 rounded-lg text-xs outline-none"
-              />
-            </div>
-
-          </div>
-
-          <div className="flex gap-3 pt-4 border-t border-slate-100">
-            <button 
-              type="button"
-              onClick={() => setActiveView('detail')}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition"
-            >
-              Hủy bỏ, Quay lại
-            </button>
-            <button 
-              type="submit"
-              className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white text-xs font-black rounded-lg transition flex items-center gap-1 shadow ml-auto"
-            >
-              LƯU PHIẾU NGHIỆM THU
-            </button>
-          </div>
-        </form>
       )}
 
     </div>

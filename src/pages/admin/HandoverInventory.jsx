@@ -1,1082 +1,1626 @@
 import React, { useState } from 'react';
 import { 
   Search, 
-  Calendar, 
-  User, 
-  ChevronRight, 
-  CheckCircle, 
-  AlertTriangle, 
-  UploadCloud, 
-  X, 
-  Printer, 
-  ShieldAlert, 
-  HelpCircle, 
-  BatteryCharging, 
-  Database, 
-  Briefcase,
-  CheckCircle2,
-  Trash2,
-  Lock,
-  ArrowLeftRight,
-  ClipboardCheck,
-  ShieldCheck,
-  ArrowLeft
+  Trash2, 
+  ArrowLeft,
+  Check,
+  UploadCloud,
+  FileText,
+  AlertTriangle,
+  FileCheck,
+  HelpCircle,
+  X,
+  Info,
+  Calendar,
+  User,
+  Wrench,
+  CheckCircle
 } from 'lucide-react';
-import { EQUIPMENTS } from '../../data';
 
-const MOCK_HANDOVER_ORDERS = [
+const formatVND = (value) => {
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+};
+
+// INITIAL MOCK DATA ACCORDING TO DETAILED REQUIREMENTS
+const INITIAL_LIQUIDATION_ORDERS = [
   {
-    id: '#ORD-5001',
-    customerName: 'Nguyễn Văn B',
-    customerPhone: '0901 234 567',
-    customerClass: 'Gold Member',
-    startDate: '15/10/2026 09:00',
-    endDate: '18/10/2026 18:00',
-    totalPrice: '4.500.000đ',
-    equipmentName: 'Body Sony A7IV & Lens 24-70mm GM II',
-    equipmentSN: 'SN-A74-99201',
-    image: EQUIPMENTS[0].image,
-    items: [
-      { name: 'Body Sony Alpha A7 IV', sn: 'SN-A74-99201', location: 'Kệ 02', status: 'Hoàn hảo' },
-      { name: 'Lens Sony FE 24-70mm f/2.8 GM II', sn: 'SN-L2470-8812', location: 'Kệ 02', status: 'Hoàn hảo' }
-    ],
-    accessories: [
-      { name: 'Pin NP-FZ100', qty: 'x2', icon: BatteryCharging },
-      { name: 'Thẻ nhớ Extreme SD 128GB', qty: 'x1', icon: Database },
-      { name: 'Túi đựng Peak Design', qty: 'x1', icon: Briefcase }
-    ],
-    avatarBg: 'bg-indigo-100 text-indigo-800',
-    status: 'Chờ bàn giao'
+    orderCode: 'ORD001',
+    customerName: 'Nguyễn Văn A',
+    customerEmail: 'nguyenvana@example.com',
+    customerPhone: '0901234567',
+    verificationStatus: 'Đã duyệt',
+    receiveDate: '20/06/2026',
+    expectedReturnDate: '23/06/2026',
+    durationDays: 3,
+    rentAmount: 2400000,
+    depositAmount: 6000000,
+    orderStatus: 'Đang thuê',
+    liquidationStatus: 'Chờ kiểm kê',
+    // Handover Details
+    handoverDate: '20/06/2026',
+    handoverStaff: 'Trần Tú (Nhân viên)',
+    paperContract: 'hop_dong_ORD001_signed.pdf',
+    handoverPhoto: 'anh_ban_giao_ORD001.png',
+    handoverNotes: 'Thiết bị hoạt động tốt, đầy đủ phụ kiện, pin sạc cáp bọc nilon bảo quản.',
+    // Items data loaded inside return form structure
+    combos: [
+      {
+        productName: 'Sony A7 IV',
+        unitIndex: 1,
+        items: [
+          {
+            id: 'item-1',
+            name: 'Body chính',
+            category: 'BODY',
+            managementType: 'IDENTIFIED_ASSET',
+            assetCode: 'BODY001',
+            serial: 'SN-A7IV-001',
+            stateBefore: 'Tốt',
+            stateAfter: 'Tốt', // Default state after return: Good
+            isDamaged: false,
+            isMissing: false,
+            notes: ''
+          },
+          {
+            id: 'item-2',
+            name: 'Pin NP-FZ100',
+            category: 'ACCESSORY',
+            managementType: 'IDENTIFIED_ASSET',
+            assetCode: 'PIN003',
+            serial: 'SN-PIN-S001',
+            stateBefore: 'Tốt',
+            stateAfter: 'Tốt',
+            isDamaged: false,
+            isMissing: false,
+            notes: ''
+          },
+          {
+            id: 'item-3',
+            name: 'Lens 24-70 GM',
+            category: 'ACCESSORY',
+            managementType: 'IDENTIFIED_ASSET',
+            assetCode: 'LEN005',
+            serial: 'SN-LEN-S001',
+            stateBefore: 'Tốt',
+            stateAfter: 'Tốt',
+            isDamaged: false,
+            isMissing: false,
+            notes: ''
+          },
+          {
+            id: 'item-4',
+            name: 'Túi Sony',
+            category: 'ACCESSORY',
+            managementType: 'QUANTITY',
+            deliveredQuantity: 1,
+            returnedQuantity: 1,
+            damagedQuantity: 0,
+            missingQuantity: 0,
+            stateBefore: 'Tốt',
+            notes: 'Đầy đủ quai đeo'
+          }
+        ]
+      },
+      {
+        productName: 'Fuji X-T5',
+        unitIndex: 1,
+        items: [
+          {
+            id: 'item-5',
+            name: 'Body chính',
+            category: 'BODY',
+            managementType: 'IDENTIFIED_ASSET',
+            assetCode: 'FUJI002',
+            serial: 'SN-FUJI-001',
+            stateBefore: 'Tốt',
+            stateAfter: 'Tốt',
+            isDamaged: false,
+            isMissing: false,
+            notes: ''
+          },
+          {
+            id: 'item-6',
+            name: 'Pin Fuji NP-W235',
+            category: 'ACCESSORY',
+            managementType: 'IDENTIFIED_ASSET',
+            assetCode: 'PIN008',
+            serial: 'SN-PIN-F001',
+            stateBefore: 'Tốt',
+            stateAfter: 'Tốt',
+            isDamaged: false,
+            isMissing: false,
+            notes: ''
+          },
+          {
+            id: 'item-7',
+            name: 'Lens XF 35mm',
+            category: 'ACCESSORY',
+            managementType: 'IDENTIFIED_ASSET',
+            assetCode: 'LEN012',
+            serial: 'SN-LEN-F001',
+            stateBefore: 'Tốt',
+            stateAfter: 'Hư hỏng', // Pre-filled as damaged to trigger usecase scenarios
+            isDamaged: true,
+            isMissing: false,
+            notes: 'Kính xước dăm sâu vết móp cơ cấu xoay zoom rít cứng'
+          },
+          {
+            id: 'item-8',
+            name: 'Túi Fuji',
+            category: 'ACCESSORY',
+            managementType: 'QUANTITY',
+            deliveredQuantity: 1,
+            returnedQuantity: 1,
+            damagedQuantity: 0,
+            missingQuantity: 0,
+            stateBefore: 'Tốt',
+            notes: 'Không lấm bẩn'
+          }
+        ]
+      }
+    ]
   },
   {
-    id: '#ORD-5002',
-    customerName: 'Trần Thị C',
-    customerPhone: '0987 654 321',
-    customerClass: 'Silver Member',
-    startDate: '16/10/2026 10:00',
-    endDate: '19/10/2026 17:00',
-    totalPrice: '1.200.000đ',
-    equipmentName: 'Saramonic Blink 500 B2',
-    equipmentSN: 'SN-SARAB5-3012',
-    image: EQUIPMENTS[2]?.image || EQUIPMENTS[0].image,
-    items: [
-      { name: 'Saramonic Blink 500 B2 (TX+TX+RX)', sn: 'SN-SARAB5-3012', location: 'Kệ 05', status: 'Hoàn hảo' }
+    orderCode: 'ORD002',
+    customerName: 'Trần Minh B',
+    customerEmail: 'tranminhb@example.com',
+    customerPhone: '0982738221',
+    verificationStatus: 'Đã duyệt',
+    receiveDate: '18/06/2026',
+    expectedReturnDate: '21/06/2026',
+    durationDays: 3,
+    rentAmount: 1800000,
+    depositAmount: 3000000,
+    orderStatus: 'Hoàn tất',
+    liquidationStatus: 'Đã thanh lý',
+    // Handover Details
+    handoverDate: '18/06/2026',
+    handoverStaff: 'Trần Tú (Nhân viên)',
+    paperContract: 'hop_dong_ORD002_signed.pdf',
+    handoverPhoto: 'anh_ban_giao_ORD002.png',
+    handoverNotes: 'Hợp đồng hoàn chỉnh, khách thanh toán luôn tiền cọc.',
+    combos: [
+      {
+        productName: 'Sony A7 IV',
+        unitIndex: 1,
+        items: [
+          {
+            id: 'item-9',
+            name: 'Body chính',
+            category: 'BODY',
+            managementType: 'IDENTIFIED_ASSET',
+            assetCode: 'BODY002',
+            serial: 'SN-A7IV-002',
+            stateBefore: 'Tốt',
+            stateAfter: 'Tốt',
+            isDamaged: false,
+            isMissing: false,
+            notes: 'Trả nguyên vẹn'
+          }
+        ]
+      }
     ],
-    accessories: [
-      { name: 'Hộp sạc Blink 500', qty: 'x1', icon: BatteryCharging },
-      { name: 'Cáp âm thanh 3.5mm TRS', qty: 'x1', icon: Database }
-    ],
-    avatarBg: 'bg-pink-100 text-pink-800',
-    status: 'Chờ bàn giao'
-  },
-  {
-    id: '#ORD-5003',
-    customerName: 'Phạm Hoàng Linh',
-    customerPhone: '0912 345 678',
-    customerClass: 'Platinum Member',
-    startDate: '10/10/2026 08:30',
-    endDate: '13/10/2026 18:00',
-    totalPrice: '3.100.000đ',
-    equipmentName: 'DJI Ronin RSC 2 Gimbal',
-    equipmentSN: 'SN-RSC2-55610',
-    image: EQUIPMENTS[1]?.image || EQUIPMENTS[0].image,
-    items: [
-      { name: 'DJI Ronin RSC 2 Gimbal', sn: 'SN-RSC2-55610', location: 'Kệ 01', status: 'Hoàn hảo' }
-    ],
-    accessories: [
-      { name: 'Tay nắm phụ Briefcase Grip', qty: 'x1', icon: Briefcase },
-      { name: 'Cáp điều khiển USB-C', qty: 'x2', icon: Database }
-    ],
-    avatarBg: 'bg-teal-100 text-teal-800',
-    status: 'Đang thuê'
-  },
-  {
-    id: '#ORD-5004',
-    customerName: 'Vũ Minh Tuấn',
-    customerPhone: '0945 999 888',
-    customerClass: 'Gold Member',
-    startDate: '14/10/2026 14:00',
-    endDate: '17/10/2026 14:00',
-    totalPrice: '2.400.000đ',
-    equipmentName: 'Body Canon EOS R6 Mark II',
-    equipmentSN: 'SN-CANR62-8871',
-    image: EQUIPMENTS[0].image,
-    items: [
-      { name: 'Canon EOS R6 Mark II', sn: 'SN-CANR62-8871', location: 'Kệ 04', status: 'Hoàn hảo' }
-    ],
-    accessories: [
-      { name: 'Pin LP-E6NH', qty: 'x1', icon: BatteryCharging },
-      { name: 'Sạc pin LC-E6', qty: 'x1', icon: BatteryCharging }
-    ],
-    avatarBg: 'bg-emerald-100 text-emerald-800',
-    status: 'Đang thuê'
+    liquidationResults: {
+      returnNotes: 'Thiết bị trả rất tốt, không trầy xước, bàn giao vệ sinh bụi sạch sẽ.',
+      photos: ['tra_may_ORD002.png'],
+      settlementType: 'REFUND_FULL', // REFUND_FULL / DEDUCT
+      depositReturned: 3000000,
+      depositDeducted: 0,
+      deductedReason: ''
+    }
   }
 ];
 
 export default function HandoverInventory() {
-  const [activeTab, setActivePageTab] = useState('handover'); // handover, return
-  const [selectedHandoverOrder, setSelectedHandoverOrder] = useState(null);
-  
-  // Handover state checkmarks
-  const [checkedItems, setCheckedItems] = useState({});
-  const [paperContractWarningResolved, setPaperContractWarningResolved] = useState(false);
-  const [paymentWarningResolved, setPaymentWarningResolved] = useState(false);
-  const [handoverNotes, setHandoverNotes] = useState('');
-  const [handoverImages, setHandoverImages] = useState([]);
+  const [orders, setOrders] = useState(INITIAL_LIQUIDATION_ORDERS);
+  const [toast, setToast] = useState(null);
 
-  // Modal triggers
-  const [showInvoicePrintModal, setShowInvoicePrintModal] = useState(false);
-  const [showHandoverConfirmModal, setShowHandoverConfirmModal] = useState(false);
-  const [showReturnConfirmModal, setShowReturnConfirmModal] = useState(false);
+  // Filters state
+  const [filterOrderCode, setFilterOrderCode] = useState('');
+  const [filterCustomerName, setFilterCustomerName] = useState('');
+  const [filterExpectedReturnDate, setFilterExpectedReturnDate] = useState('');
+  const [filterOrderStatus, setFilterOrderStatus] = useState('');
+  const [filterLiquidationStatus, setFilterLiquidationStatus] = useState('');
 
-  // Return & audit state
-  const [mainAssetState, setMainAssetState] = useState('correct'); // correct, wrong, missing, damaged
-  const [accessory1State, setAccessory1State] = useState('enough'); // enough, missing, lost, damaged
-  const [accessory2State, setAccessory2State] = useState('lost'); // enough, missing, lost, damaged
-  const [returnNotes, setReturnNotes] = useState('');
-  const [returnImages, setReturnImages] = useState([
-    'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=150'
+  // Modals state
+  const [selectedDetailOrder, setSelectedDetailOrder] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  // Return slip and audit form state
+  const [selectedFormOrder, setSelectedFormOrder] = useState(null);
+  const [showFormModal, setShowFormModal] = useState(false);
+
+  // Form input states
+  const [formCombos, setFormCombos] = useState([]);
+  const [formPhotos, setFormPhotos] = useState([]);
+  const [settlementType, setSettlementType] = useState('DEDUCT'); // 'REFUND_FULL' or 'DEDUCT'
+  const [refundAmount, setRefundAmount] = useState(5000000);
+  const [deductionAmount, setDeductionAmount] = useState(1000000);
+  const [deductionReason, setDeductionReason] = useState('Lens XF 35mm bị hư hỏng');
+  const [liquidationNotes, setLiquidationNotes] = useState('Cần chuyển lens sang bộ phận bảo trì gấp');
+  const [maintenanceRecords, setMaintenanceRecords] = useState([
+    {
+      assetCode: 'LEN012',
+      equipmentName: 'Lens XF 35mm',
+      serial: 'SN-LEN-F001',
+      reason: 'Hư hỏng khi khách hàng trả',
+      note: 'Tạo từ quá trình thanh lý hợp đồng ORD001',
+      saved: true
+    }
   ]);
 
-  const handleToggleItemCheck = (sn) => {
-    setCheckedItems(prev => ({
-      ...prev,
-      [sn]: !prev[sn]
-    }));
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
-
-  const handleDropHandoverImage = (e) => {
-    e.preventDefault();
-    setHandoverImages([...handoverImages, 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=150']);
-  };
-
-  const handleNewUploadClick = () => {
-    setHandoverImages([...handoverImages, 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=150']);
-  };
-
-  const handleDropReturnImage = (e) => {
-    e.preventDefault();
-    setReturnImages([...returnImages, 'https://images.unsplash.com/photo-1620510629702-92149b10003e?w=150']);
-  };
-
-  const isAllItemsChecked = selectedHandoverOrder ? selectedHandoverOrder.items.every(item => checkedItems[item.sn]) : false;
-  const isHandoverReady = isAllItemsChecked && paperContractWarningResolved && paymentWarningResolved;
-
-  const handleConfirmHandoverSubmit = () => {
-    setShowHandoverConfirmModal(false);
-    if (selectedHandoverOrder) {
-      alert(`Bàn giao đơn hàng ${selectedHandoverOrder.id} thành công! Trạng thái đơn được chuyển sang 'Đang thuê'.`);
-      setSelectedHandoverOrder(null);
+  // Pre-fill form when opening ORD001
+  const handleOpenForm = (order) => {
+    if (order.liquidationStatus === 'Đã thanh lý') {
+      return; // Handled by disabled button or direct warning
     }
+    
+    setSelectedFormOrder(order);
+    // Clone combos safely
+    const clonedCombos = JSON.parse(JSON.stringify(order.combos || []));
+    setFormCombos(clonedCombos);
+    
+    // Default initial files for display
+    setFormPhotos([
+      { name: 'anh_tra_may_lens_fuji_xước.jpg', size: '1.2 MB', previewUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=150' }
+    ]);
+
+    // Pre-fill fields for ORD001 scenario
+    if (order.orderCode === 'ORD001') {
+      setSettlementType('DEDUCT');
+      setDeductionAmount(1000000);
+      setDeductionReason('Lens XF 35mm bị hư hỏng');
+      setLiquidationNotes('Cần chuyển lens sang bảo trì');
+      setRefundAmount(5000000);
+      setMaintenanceRecords([
+        {
+          assetCode: 'LEN012',
+          equipmentName: 'Lens XF 35mm',
+          serial: 'SN-LEN-F001',
+          reason: 'Hư hỏng khi khách hàng trả',
+          note: 'Tạo từ quá trình thanh lý hợp đồng ORD001',
+          saved: true
+        }
+      ]);
+    } else {
+      setSettlementType('REFUND_FULL');
+      setDeductionAmount(0);
+      setDeductionReason('');
+      setRefundAmount(order.depositAmount);
+      setLiquidationNotes('');
+      setMaintenanceRecords([]);
+    }
+
+    setShowFormModal(true);
   };
 
-  const handleConfirmReturnSubmit = () => {
-    setShowReturnConfirmModal(false);
-    if (selectedHandoverOrder) {
-      alert(`Xác nhận hoàn tất thủ tục bàn giao kiểm kê đối chiếu tài sản cho đơn hàng ${selectedHandoverOrder.id} thành công!`);
-      setSelectedHandoverOrder(null);
-    }
+  const handleOpenDetail = (order) => {
+    setSelectedDetailOrder(order);
+    setShowDetailModal(true);
   };
+
+  // Simulate file drag drops
+  const handleFileUploadSimulated = () => {
+    const freshFile = {
+      name: `tra_thiet_bi_photo_${Math.floor(Math.random() * 899 + 100)}.png`,
+      size: '2.4 MB',
+      previewUrl: 'https://images.unsplash.com/photo-1495707902641-75cac588d2e9?w=150'
+    };
+    setFormPhotos([...formPhotos, freshFile]);
+    showToast('Tải ảnh trả máy thành công');
+  };
+
+  const handleRemovePhoto = (idx) => {
+    setFormPhotos(formPhotos.filter((_, i) => i !== idx));
+    showToast('Đã xóa ảnh chụp');
+  };
+
+  // Field change handlers inside Return Form
+  const handleSerialConditionChange = (comboIdx, itemIdx, val) => {
+    const updated = [...formCombos];
+    const item = updated[comboIdx].items[itemIdx];
+    item.stateAfter = val;
+    
+    if (val === 'Tốt' || val === 'Trầy xước nhẹ') {
+      item.isDamaged = false;
+      item.isMissing = false;
+    } else if (val === 'Hư hỏng') {
+      item.isDamaged = true;
+      item.isMissing = false;
+    } else if (val === 'Mất') {
+      item.isDamaged = false;
+      item.isMissing = true;
+    }
+    
+    setFormCombos(updated);
+
+    // Dynamic adjustment: If any item is damaged or missing, automatically suggest DEDUCT cọc
+    recalculateSettlementStates(updated);
+  };
+
+  const handleQuantityReturnedChange = (comboIdx, itemIdx, val) => {
+    const num = Math.max(0, parseInt(val) || 0);
+    const updated = [...formCombos];
+    const item = updated[comboIdx].items[itemIdx];
+    
+    // Limit to delivered quantity
+    const returned = Math.min(item.deliveredQuantity, num);
+    item.returnedQuantity = returned;
+    item.missingQuantity = item.deliveredQuantity - returned;
+    
+    // Ensure damaged cannot be higher than returned
+    if (item.damagedQuantity > returned) {
+      item.damagedQuantity = returned;
+    }
+
+    setFormCombos(updated);
+    recalculateSettlementStates(updated);
+  };
+
+  const handleQuantityDamagedChange = (comboIdx, itemIdx, val) => {
+    const num = Math.max(0, parseInt(val) || 0);
+    const updated = [...formCombos];
+    const item = updated[comboIdx].items[itemIdx];
+    
+    // Limit to returned quantity
+    item.damagedQuantity = Math.min(item.returnedQuantity, num);
+    
+    setFormCombos(updated);
+    recalculateSettlementStates(updated);
+  };
+
+  const recalculateSettlementStates = (combosList) => {
+    let hasDamage = false;
+    let hasMissing = false;
+    let damagedAsset = null;
+
+    combosList.forEach(cb => {
+      cb.items.forEach(it => {
+        if (it.managementType === 'IDENTIFIED_ASSET') {
+          if (it.stateAfter === 'Hư hỏng') {
+            hasDamage = true;
+            damagedAsset = it;
+          }
+          if (it.stateAfter === 'Mất') hasMissing = true;
+        } else {
+          if (it.damagedQuantity > 0) hasDamage = true;
+          if (it.missingQuantity > 0) hasMissing = true;
+        }
+      });
+    });
+
+    if (hasDamage || hasMissing) {
+      setSettlementType('DEDUCT');
+      if (hasDamage && !hasMissing) {
+        setDeductionReason(`Khấu trừ hao tổn hư hại thiết bị: ${damagedAsset ? damagedAsset.name : 'Thiết bị phụ kiện'}`);
+        setDeductionAmount(1000000);
+      } else if (hasMissing) {
+        setDeductionReason(`Khấu trừ đền bù tài sản bị tổn thất/mất`);
+        setDeductionAmount(1500000);
+      } else {
+        setDeductionReason('Thiết bị hỏng hóc và hao hụt phụ tùng đi kèm');
+        setDeductionAmount(2000000);
+      }
+    }
+
+    // Dynamic regeneration of suggestion cards for maintenance
+    const repairs = [];
+    combosList.forEach(cb => {
+      cb.items.forEach(it => {
+        if (it.managementType === 'IDENTIFIED_ASSET' && it.stateAfter === 'Hư hỏng') {
+          repairs.push({
+            assetCode: it.assetCode,
+            equipmentName: it.name,
+            serial: it.serial,
+            reason: `Linh kiện ${it.name} bị hư hỏng móp méo lúc khách hoàn trả`,
+            note: `Hợp đồng ORD001 thanh lý phát sinh hư hỏng`,
+            saved: true
+          });
+        }
+      });
+    });
+    setMaintenanceRecords(repairs);
+  };
+
+  // Helpers to count components for each combo accordion badge
+  const getAccordionBadgeState = (combo) => {
+    let checkedCount = 0;
+    const totalCount = combo.items.length;
+    let hasIssue = false;
+
+    combo.items.forEach(it => {
+      if (it.managementType === 'IDENTIFIED_ASSET') {
+        if (it.stateAfter) {
+          checkedCount += 1;
+        }
+        if (it.stateAfter === 'Hư hỏng' || it.stateAfter === 'Mất') {
+          hasIssue = true;
+        }
+      } else {
+        // Quantity items are always counted if values are filled
+        if (it.returnedQuantity !== undefined) {
+          checkedCount += 1;
+        }
+        if (it.damagedQuantity > 0 || it.missingQuantity > 0) {
+          hasIssue = true;
+        }
+      }
+    });
+
+    if (checkedCount < totalCount) {
+      return {
+        label: 'Chưa kiểm kê đủ',
+        bg: 'bg-rose-50 text-rose-700 border-rose-200',
+        countLabel: `${checkedCount}/${totalCount} thành phần`
+      };
+    }
+
+    if (hasIssue) {
+      return {
+        label: 'Có phát sinh',
+        bg: 'bg-amber-50 text-amber-700 border-amber-200',
+        countLabel: `${checkedCount}/${totalCount} thành phần`
+      };
+    }
+
+    return {
+      label: 'Đã kiểm kê đủ',
+      bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      countLabel: `${checkedCount}/${totalCount} thành phần`
+    };
+  };
+
+  // Main Submit handler for Liquidation
+  const handleConfirmSubmitLiquidation = (e) => {
+    e.preventDefault();
+
+    // 1. Validation checks
+    if (!selectedFormOrder) return;
+
+    // Check all serial components have filled conditions
+    let allChecked = true;
+    formCombos.forEach(cb => {
+      cb.items.forEach(it => {
+        if (it.managementType === 'IDENTIFIED_ASSET') {
+          if (!it.stateAfter) {
+            allChecked = false;
+          }
+        }
+      });
+    });
+
+    if (!allChecked) {
+      alert('Vui lòng kiểm kê đầy đủ tài sản và phụ kiện');
+      return;
+    }
+
+    // Photo check
+    if (formPhotos.length === 0) {
+      alert('Ảnh khi trả không hợp lệ');
+      return;
+    }
+
+    // Money and Deduct policy validity
+    let hasIssueInAudit = false;
+    formCombos.forEach(cb => {
+      cb.items.forEach(it => {
+        if (it.managementType === 'IDENTIFIED_ASSET') {
+          if (it.stateAfter === 'Hư hỏng' || it.stateAfter === 'Mất') {
+            hasIssueInAudit = true;
+          }
+        } else {
+          if (it.damagedQuantity > 0 || it.missingQuantity > 0) {
+            hasIssueInAudit = true;
+          }
+        }
+      });
+    });
+
+    if (settlementType === 'REFUND_FULL' && hasIssueInAudit) {
+      alert('Đơn hàng không đủ điều kiện hoàn cọc');
+      return;
+    }
+
+    if (!settlementType) {
+      alert('Vui lòng chọn hoàn cọc hoặc khấu trừ cọc');
+      return;
+    }
+
+    // Validate deduction amount limit
+    if (settlementType === 'DEDUCT') {
+      if (deductionAmount <= 0 || deductionAmount > selectedFormOrder.depositAmount) {
+        alert('Số tiền khấu trừ không hợp lệ');
+        return;
+      }
+      if (!deductionReason.trim()) {
+        alert('Vui lòng nhập lý do khấu trừ');
+        return;
+      }
+    }
+
+    // Save success scenario
+    const updatedOrders = orders.map(o => {
+      if (o.orderCode === selectedFormOrder.orderCode) {
+        return {
+          ...o,
+          orderStatus: 'Hoàn tất',
+          liquidationStatus: 'Đã thanh lý',
+          liquidationResults: {
+            returnNotes: liquidationNotes || 'Thanh lý hoàn tất phiếu kiểm kê.',
+            photos: formPhotos.map(p => p.name),
+            settlementType: settlementType,
+            depositReturned: settlementType === 'REFUND_FULL' ? o.depositAmount : o.depositAmount - deductionAmount,
+            depositDeducted: settlementType === 'REFUND_FULL' ? 0 : deductionAmount,
+            deductedReason: settlementType === 'REFUND_FULL' ? '' : deductionReason
+          }
+        };
+      }
+      return o;
+    });
+
+    setOrders(updatedOrders);
+    setShowFormModal(false);
+
+    // Show sequence logs representing programmatic alerts required
+    showToast('Thanh lý hợp đồng thành công!');
+    setTimeout(() => {
+      alert('Thanh lý hợp đồng thành công\n\n- Ghi nhận khấu trừ cọc thành công\n- Tạo hồ sơ bảo trì thành công\n- Lập phiếu trả và kiểm kê thành công');
+    }, 500);
+  };
+
+  // Filters application
+  const filteredOrders = orders.filter(o => {
+    const matchesCode = filterOrderCode === '' || o.orderCode.toLowerCase().includes(filterOrderCode.toLowerCase());
+    const matchesCust = filterCustomerName === '' || o.customerName.toLowerCase().includes(filterCustomerName.toLowerCase());
+    const matchesDate = filterExpectedReturnDate === '' || o.expectedReturnDate.includes(filterExpectedReturnDate);
+    const matchesStatus = filterOrderStatus === '' || o.orderStatus === filterOrderStatus;
+    const matchesLiq = filterLiquidationStatus === '' || o.liquidationStatus === filterLiquidationStatus;
+    
+    return matchesCode && matchesCust && matchesDate && matchesStatus && matchesLiq;
+  });
 
   return (
-    <div className="space-y-6 select-none font-sans">
+    <div className="space-y-6 text-left selection:bg-indigo-200">
       
-      {/* Toast Confirmation modals */}
-      {showInvoicePrintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
-            <div className="px-6 py-4.5 bg-blue-900 text-white flex justify-between items-center shrink-0">
-              <div>
-                <h3 className="text-sm font-black font-serif text-white">Xem trước phiếu bàn giao {selectedHandoverOrder.id}</h3>
-                <p className="text-[10px] text-blue-200 mt-0.5">Vui lòng rà soát lại kỹ thông số kỹ vĩ trước khi in phiếu giao vật lý.</p>
-              </div>
-              <button onClick={() => setShowInvoicePrintModal(false)} className="text-blue-100 hover:text-white">??ng
-                
-              </button>
-            </div>
-
-            <div className="p-8 space-y-6 overflow-y-auto shrink text-xs text-slate-700 leading-normal">
-              
-              {/* Receipt metadata grid */}
-              <div className="grid grid-cols-2 gap-6 border-b border-slate-100 pb-5">
-                <div className="space-y-1">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Thông tin đơn cọc</h4>
-                  <p className="flex justify-between"><span>Mã đơn:</span> <strong className="text-slate-800">{selectedHandoverOrder.id}</strong></p>
-                  <p className="flex justify-between"><span>Khách hàng:</span> <strong className="text-slate-800">{selectedHandoverOrder.customerName}</strong></p>
-                  <p className="flex justify-between"><span>Số điện thoại:</span> <strong className="text-slate-800 font-mono">{selectedHandoverOrder.customerPhone}</strong></p>
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Thời gian giao ước</h4>
-                  <p className="flex justify-between"><span>Giao máy:</span> <strong className="text-slate-800">{selectedHandoverOrder.startDate}</strong></p>
-                  <p className="flex justify-between"><span>Trả máy:</span> <strong className="text-slate-800">{selectedHandoverOrder.endDate}</strong></p>
-                  <p className="flex justify-between"><span>Tổng cộng:</span> <strong className="text-slate-800">3 ngày</strong></p>
-                </div>
-              </div>
-
-              {/* Items Table */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Danh mục tài sản thực tế bàn giao</h4>
-                <div className="border border-slate-200 rounded-lg overflow-x-auto w-full">
-                  <table className="w-full min-w-[550px] text-left">
-                    <thead className="bg-slate-50 border-b border-slate-200">
-                      <tr>
-                        <th className="px-4 py-2 font-bold text-slate-500 uppercase tracking-wider text-[10px]">Thiết bị</th>
-                        <th className="px-4 py-2 font-bold text-slate-500 uppercase tracking-wider text-[10px]">Mã Sê-ri</th>
-                        <th className="px-4 py-2 font-bold text-slate-500 uppercase tracking-wider text-[10px]">Tình trạng</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {selectedHandoverOrder.items.map((item, idx) => (
-                        <tr key={idx}>
-                          <td className="px-4 py-3 font-semibold text-slate-800">{item.name}</td>
-                          <td className="px-4 py-3 font-mono font-medium text-slate-600">{item.sn}</td>
-                          <td className="px-4 py-3 text-emerald-600 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            {item.status} (Mới 98%)
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Legal Notice */}
-              <div className="bg-blue-50/50 p-4 border-l-4 border-blue-900 rounded text-slate-600 text-[11px] leading-relaxed">
-                <h5 className="font-bold text-[#00236f] flex items-center gap-1.5 mb-1.5 uppercase text-[10px] tracking-wider">
-                  <ShieldCheck className="w-4 h-4 text-[#00236f]" />
-                  Điều khoản liên đới ràng buộc bàn giao
-                </h5>
-                <p>Khách hàng ký tên xác nhận ở trên đồng nghĩa với việc đã trực tiếp kích hoạt kiểm thử tính năng của các trang thiết bị đạt chuẩn đầy đủ hoàn hảo. Mọi tổn hao hoặc hư hỏng phát sinh sau khi nhận máy cọc sẽ được đối chiếu bồi thường theo đúng mẫu cam kết hợp đồng dịch vụ vật lý #CTR-1002.</p>
-              </div>
-
-            </div>
-
-            <div className="px-6 py-4.5 bg-slate-50 border-t border-slate-200 flex justify-end gap-3 shrink-0">
-              <button 
-                type="button" 
-                onClick={() => setShowInvoicePrintModal(false)}
-                className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-650 hover:bg-slate-100 transition"
-              >
-                Hủy quay lại
-              </button>
-              <button 
-                type="button" 
-                onClick={() => {
-                  alert('Đang kết nối hệ thống máy in nhiệt tại cửa hàng...');
-                  setShowInvoicePrintModal(false);
-                }}
-                className="px-6 py-2.5 bg-blue-900 hover:bg-blue-950 border-none text-white text-xs font-black rounded-xl transition shadow-sm flex items-center gap-2"
-              >
-                
-                Xác nhận in &amp; Ký lập
-              </button>
-            </div>
+      {/* Toast Alert pop */}
+      {toast && (
+        <div className="fixed top-5 right-5 z-[2000] bg-slate-900 border border-slate-800 text-white p-4 rounded-xl shadow-2xl flex items-center gap-3 animate-fadeIn">
+          <div className="bg-emerald-500 p-1.5 rounded-full text-white">
+            <Check className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-xs font-bold font-sans">{toast.message}</p>
           </div>
         </div>
       )}
 
-      {/* Handover Confirm dialog screen 32 */}
-      {showHandoverConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 p-8 flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-5 border border-emerald-150 shadow-inner">
-              <CheckCircle2 className="w-9 h-9" />
-            </div>
-            <h3 className="text-base font-black font-serif text-slate-800 mb-2">Xác nhận bàn giao thiết bị?</h3>
-            <p className="text-xs text-slate-500 leading-relaxed mb-6">
-              Bạn có chắc chắn đồng ý hoàn tất kiểm chứng và khởi động bàn giao cho đơn hàng <strong className="text-blue-900 font-mono">{selectedHandoverOrder.id}</strong>? Trạng thái thuê máy sẽ chuyển dứt điểm sang <strong className="text-blue-800">"Đang thuê"</strong>.
-            </p>
-            <div className="flex gap-3 w-full">
-              <button 
-                onClick={() => setShowHandoverConfirmModal(false)}
-                className="flex-1 py-2.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
-              >
-                Hủy bỏ
-              </button>
-              <button 
-                onClick={handleConfirmHandoverSubmit}
-                className="flex-1 py-2.5 bg-blue-900 hover:bg-blue-950 border-none text-white text-xs font-black rounded-lg transition"
-              >
-                Giao máy ngay
-              </button>
-            </div>
+      {/* Header section with Breadcrumb */}
+      <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5 font-mono">
+            <span>Trang chủ</span>
+            <span>/</span>
+            <span className="text-indigo-650 font-black">Thanh lý hợp đồng</span>
           </div>
+          <h2 className="text-lg font-black text-[#00236f] uppercase tracking-wide flex items-center gap-2">
+            <FileCheck className="w-5 h-5 text-indigo-600" />
+            Thanh lý hợp đồng
+          </h2>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Xử lý thu hồi thiết bị, lập biên bản kiểm kê hao tổn thực tế của từng combo máy ảnh và hoàn trả đặt cọc quỹ.</p>
         </div>
-      )}
-
-      {/* Return Verify Modal Screen 30 */}
-      {showReturnConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 p-8 flex flex-col items-center text-center animate-in zoom-in-95">
-            <div className="w-16 h-16 bg-[#fea619]/10 text-amber-700 rounded-full flex items-center justify-center mb-5 border border-amber-150">
-              <ClipboardCheck className="w-9 h-9" />
-            </div>
-            <h3 className="text-base font-black font-serif text-slate-800 mb-2">Hoàn tất quy trình kiểm kê?</h3>
-            <p className="text-xs text-slate-500 leading-relaxed mb-4">
-              Hệ thống sẽ đối chiếu toàn bộ tình trạng máy và phụ kiện đi kèm để chuyển trả thiết bị cho đơn <strong className="text-blue-900 font-mono">{selectedHandoverOrder.id}</strong> sang trạng thái hoàn thành an toàn.
-            </p>
-            
-            {/* Penalty fine alert box if something missing */}
-            {(mainAssetState !== 'correct' || accessory1State !== 'enough' || accessory2State !== 'enough') && (
-              <div className="bg-red-50 text-red-700 text-[10px] p-2.5 rounded border border-red-150 w-full mb-6 text-left leading-normal space-y-1">
-                <span className="font-bold block text-red-800">Cơ chế phát sinh ghi nhận phí đền bù:</span>
-                {mainAssetState !== 'correct' && <li>Tài sản chính đổi khác hoặc hư hại</li>}
-                {accessory1State !== 'enough' && <li>NP-FZ100 battery bị hao hụt/đổi khác</li>}
-                {accessory2State !== 'enough' && <li>SD card hoặc hộp sạc bị mất mát</li>}
-              </div>
-            )}
-            
-            <div className="flex gap-3 w-full">
-              <button 
-                onClick={() => setShowReturnConfirmModal(false)}
-                className="flex-1 py-2.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
-              >
-                Trở lại kiểm tra
-              </button>
-              <button 
-                onClick={handleConfirmReturnSubmit}
-                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 border-none text-white text-xs font-black rounded-lg transition"
-              >
-                Hoàn tất
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Title Header */}
-      <div>
-        <h2 className="text-2xl font-serif font-bold text-[#00236f]">Bàn giao và kiểm kê thiết bị</h2>
-        <p className="text-sm text-slate-500 mt-1">Xác lập an toàn chứng từ bàn giao, đối chiếu vật lý đầy đủ vật phẩm trước và sau cho thuê.</p>
       </div>
 
-      {/* Tabs list navigation system */}
-      <div className="flex border-b border-slate-200 gap-8 text-xs font-bold leading-none select-none">
-        <button 
-          onClick={() => {
-            setActivePageTab('handover');
-            setSelectedHandoverOrder(null);
-          }}
-          className={`pb-3.5 border-b-2 px-1 transition-all ${
-            activeTab === 'handover' 
-              ? 'border-blue-900 text-blue-900 font-black' 
-              : 'border-transparent text-slate-400 hover:text-slate-600'
-          }`}
-        >
-          1. Bàn giao thiết bị
-        </button>
-        <button 
-          onClick={() => {
-            setActivePageTab('return');
-            setSelectedHandoverOrder(null);
-          }}
-          className={`pb-3.5 border-b-2 px-1 transition-all ${
-            activeTab === 'return' 
-              ? 'border-blue-900 text-blue-900 font-black' 
-              : 'border-transparent text-slate-400 hover:text-slate-600'
-          }`}
-        >
-          2. Hoàn trả và kiểm kê
-        </button>
-      </div>
-
-      {selectedHandoverOrder === null ? (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm animate-fade-in text-xs">
-          <div className="p-5 border-b border-slate-150 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div>
-              <h3 className="text-sm font-bold text-slate-800">
-                {activeTab === 'handover' ? 'Danh sách đơn chờ bàn giao máy' : 'Danh sách đơn đang thuê chờ nhận máy & kiểm kê'}
-              </h3>
-              <p className="text-[11px] text-slate-400 mt-1">
-                {activeTab === 'handover' 
-                  ? 'Vui lòng kiểm duyệt hồ sơ cọc, cho khách kiểm máy trực tiếp và tích lập phiếu bàn giao.' 
-                  : 'Ghi nhận đối chiếu hiện trạng thiết bị, phụ kiện thu hồi từ khách hàng và khấu trừ cọc khi có phát sinh.'}
-              </p>
-            </div>
-            
-            <div className="relative w-full sm:w-64 shrink-0">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input 
-                type="text"
-                placeholder="Tìm mã đơn, tên khách..."
-                className="w-full text-xs pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500/50 transition-all font-medium"
-              />
-            </div>
+      {/* Search Filters Card */}
+      <div className="bg-white p-5 border border-slate-200 rounded-2xl shadow-sm">
+        <h3 className="text-xs uppercase font-extrabold text-slate-500 mb-3.5 flex items-center gap-1.5 tracking-wider">
+          <Search className="w-3.5 h-3.5 text-indigo-500" />
+          Bộ lọc tìm kiếm thông tin
+        </h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+          {/* Mã đơn hàng */}
+          <div className="space-y-1 text-left">
+            <label className="text-[10px] text-slate-400 font-bold uppercase">Mã đơn hàng</label>
+            <input 
+              type="text" 
+              placeholder="Ví dụ: ORD001"
+              value={filterOrderCode}
+              onChange={(e) => setFilterOrderCode(e.target.value)}
+              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-indigo-500"
+            />
           </div>
 
-          <div className="overflow-x-auto w-full">
-            <table className="w-full min-w-[900px] text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-250 text-slate-500 font-bold uppercase text-[10px]">
-                  <th className="px-6 py-4 whitespace-nowrap">Mã đơn</th>
-                  <th className="px-6 py-4 min-w-[150px]">Khách hàng</th>
-                  <th className="px-6 py-4 whitespace-nowrap">Thiết bị</th>
-                  <th className="px-6 py-4 whitespace-nowrap">Hạn thuê</th>
-                  <th className="px-6 py-4 whitespace-nowrap">Tổng đền cọc</th>
-                  <th className="px-6 py-4 text-center whitespace-nowrap">Trạng thái</th>
-                  <th className="px-6 py-4 text-right whitespace-nowrap">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-150 font-medium text-slate-600">
-                {MOCK_HANDOVER_ORDERS.filter(o => activeTab === 'handover' ? o.status === 'Chờ bàn giao' : o.status === 'Đang thuê').map((o) => (
-                  <tr key={o.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-5 font-mono text-xs font-bold text-[#00236f] whitespace-nowrap">{o.id}</td>
-                    <td className="px-6 py-5 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${o.avatarBg}`}>
-                          {o.customerName.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-slate-900 text-xs leading-none">{o.customerName}</p>
-                          <p className="text-[10px] text-slate-400 mt-1">{o.customerPhone}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-2.5">
-                        <img 
-                          src={o.image} 
-                          alt={o.equipmentName} 
-                          className="w-8 h-8 rounded border object-cover shrink-0"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="whitespace-nowrap">
-                          <p className="font-bold text-slate-800 text-xs leading-tight">{o.equipmentName}</p>
-                          <p className="text-[9px] font-mono text-[#00236f] bg-blue-50/70 inline-block px-1.5 py-0.5 rounded mt-0.5">{o.equipmentSN}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap text-slate-500 font-semibold text-[11px]">
-                      <div className="text-[11px] text-slate-600 space-y-0.5 leading-tight">
-                        <p><span className="text-slate-400">Từ:</span> {o.startDate}</p>
-                        <p><span className="text-slate-400">Đến:</span> {o.endDate}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 whitespace-nowrap font-bold text-slate-900">{o.totalPrice}</td>
-                    <td className="px-6 py-5 whitespace-nowrap text-center">
-                      <span className={`inline-flex px-2.5 py-0.5 border rounded-full text-[10px] font-bold ${
-                        activeTab === 'handover' 
-                          ? 'bg-amber-50 text-amber-750 border-amber-200 animate-pulse' 
-                          : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                      }`}>
-                        {activeTab === 'handover' ? 'Chờ nhận máy' : 'Đang thuê'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5 text-right whitespace-nowrap">
-                      <button 
-                        onClick={() => {
-                          setSelectedHandoverOrder(o);
-                          if (activeTab === 'return') {
-                            setMainAssetState('correct');
-                            setAccessory1State('enough');
-                            setAccessory2State('enough');
-                            setReturnNotes('');
-                          }
-                        }}
-                        className={`px-4 py-2 border rounded-lg text-[11px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer ${
-                          activeTab === 'handover' 
-                            ? 'border-blue-900 hover:bg-blue-900 hover:text-white text-blue-900' 
-                            : 'border-emerald-600 hover:bg-emerald-600 hover:text-white text-emerald-600'
-                        }`}
-                      >
-                        {activeTab === 'handover' ? 'Bàn giao ngay →' : 'Kiểm kê trả máy →'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Tên khách hàng */}
+          <div className="space-y-1 text-left">
+            <label className="text-[10px] text-slate-400 font-bold uppercase">Tên khách hàng</label>
+            <input 
+              type="text" 
+              placeholder="Nhập tên khách..."
+              value={filterCustomerName}
+              onChange={(e) => setFilterCustomerName(e.target.value)}
+              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-indigo-500"
+            />
           </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-55 p-4.5 rounded-xl border border-slate-200 shadow-xs mb-2 animate-fade-in text-xs">
-            <button 
-              onClick={() => setSelectedHandoverOrder(null)}
-              className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold hover:text-blue-950 rounded-lg transition shadow-xs flex items-center gap-1.5 text-xs inline-flex cursor-pointer"
+
+          {/* Ngày trả dự kiến */}
+          <div className="space-y-1 text-left">
+            <label className="text-[10px] text-slate-400 font-bold uppercase">Ngày trả dự kiến</label>
+            <input 
+              type="text" 
+              placeholder="dd/mm/yyyy"
+              value={filterExpectedReturnDate}
+              onChange={(e) => setFilterExpectedReturnDate(e.target.value)}
+              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-800 focus:bg-white focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* Trạng thái đơn hàng */}
+          <div className="space-y-1 text-left">
+            <label className="text-[10px] text-slate-400 font-bold uppercase">Trạng thái đơn hàng</label>
+            <select
+              value={filterOrderStatus}
+              onChange={(e) => setFilterOrderStatus(e.target.value)}
+              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none font-extrabold text-slate-700 cursor-pointer focus:bg-white focus:ring-1 focus:ring-indigo-500"
             >
-              
-              <span>← Quay lại danh sách đơn ({activeTab === 'handover' ? 'Chờ bàn giao máy' : 'Đang cho thuê'})</span>
-            </button>
-
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-slate-500">Đang xử lý hồ sơ:</span>
-              <strong className="text-xs text-blue-900 bg-blue-100 border border-blue-200 px-3 py-1 rounded-lg font-mono tracking-wider">{selectedHandoverOrder.id}</strong>
-            </div>
+              <option value="">Tất cả</option>
+              <option value="Đang thuê">Đang thuê</option>
+              <option value="Hoàn tất">Hoàn tất</option>
+            </select>
           </div>
 
-          {activeTab === 'handover' ? (
-        // HANDOVER FLOW
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fade-in text-xs">
-          
-          {/* Handover Details left card columns */}
-          <div className="lg:col-span-4 space-y-5">
-            {/* Block 1: Order Information */}
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-              <div className="p-4 border-b border-slate-200 bg-slate-50 font-bold font-serif text-slate-800">
-                Thông tin đơn thuê
-              </div>
-              <div className="p-5 space-y-3">
-                <div className="flex justify-between border-b border-slate-100 pb-2">
-                  <span className="text-slate-400 font-semibold uppercase text-[10px]">Mã đơn hàng</span>
-                  <strong className="text-blue-900 font-mono">{selectedHandoverOrder.id}</strong>
-                </div>
-                <div className="flex justify-between border-b border-slate-100 pb-2">
-                  <span className="text-slate-400 font-semibold uppercase text-[10px]">Ngày bắt đầu</span>
-                  <span className="font-semibold text-slate-800">{selectedHandoverOrder.startDate}</span>
-                </div>
-                <div className="flex justify-between border-b border-slate-100 pb-2">
-                  <span className="text-slate-400 font-semibold uppercase text-[10px]">Ngày kết thúc</span>
-                  <span className="font-semibold text-slate-800">{selectedHandoverOrder.endDate}</span>
-                </div>
-                <div className="flex justify-between pt-1">
-                  <span className="text-slate-400 font-semibold uppercase text-[10px]">Tổng đền cọc</span>
-                  <strong className="text-[#00236f] text-sm">{selectedHandoverOrder.totalPrice}</strong>
-                </div>
-              </div>
-            </div>
-
-            {/* Block 2: Customer info */}
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-              <div className="p-4 border-b border-slate-200 bg-slate-50 font-bold font-serif text-slate-800">
-                Thông tin khách hàng cọc
-              </div>
-              <div className="p-5 flex gap-4">
-                <div className={`w-11 h-11 rounded-full ${selectedHandoverOrder.avatarBg} flex items-center justify-center font-black text-xs shrink-0 shadow-inner`}>
-                  NB
-                </div>
-                <div className="space-y-2 flex-grow">
-                  <div>
-                    <h4 className="font-bold text-slate-800 text-sm">{selectedHandoverOrder.customerName}</h4>
-                    <p className="text-[10px] text-amber-800 uppercase font-black tracking-wider leading-none mt-1">Hạng: {selectedHandoverOrder.customerClass}</p>
-                  </div>
-                  <div className="space-y-1.5 text-[11px] text-slate-500 font-medium">
-                    <p className="flex items-center gap-1.5">
-                      <span>SDT:</span>
-                      <strong className="text-slate-700 font-mono">{selectedHandoverOrder.customerPhone}</strong>
-                    </p>
-                    <p className="flex items-center gap-1.5 text-emerald-700 font-bold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      CCCD cọc đã dán khớp
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Block 3: Verification Checkboxes gating actions */}
-            <div className="space-y-3">
-              <label 
-                className={`p-4 rounded-xl border flex gap-3 cursor-pointer transition select-none ${
-                  paperContractWarningResolved 
-                    ? 'bg-emerald-50/50 border-emerald-250 text-emerald-800' 
-                    : 'bg-amber-50/50 border-amber-200 text-amber-800'
-                }`}
-              >
-                <input 
-                  type="checkbox"
-                  checked={paperContractWarningResolved}
-                  onChange={(e) => setPaperContractWarningResolved(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded text-[#00236f] focus:ring-[#00236f]/20 border-slate-300"
-                />
-                <div className="leading-snug">
-                  <strong className="block text-[11px] uppercase tracking-wider font-extrabold mb-0.5">Xác nhận cập nhật Hợp Đồng Giấy</strong>
-                  <p className="text-[10px] opacity-90 font-medium">Đối tác đã đọc hợp đồng, ký kết mực lăn tay và hồ sơ biên nhận cọc đã đầy đủ.</p>
-                </div>
-              </label>
-
-              <label 
-                className={`p-4 rounded-xl border flex gap-3 cursor-pointer transition select-none ${
-                  paymentWarningResolved 
-                    ? 'bg-emerald-50/50 border-emerald-250 text-emerald-800' 
-                    : 'bg-red-50/50 border-red-200 text-red-800'
-                }`}
-              >
-                <input 
-                  type="checkbox"
-                  checked={paymentWarningResolved}
-                  onChange={(e) => setPaymentWarningResolved(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded text-[#00236f] focus:ring-[#00236f]/20 border-slate-300"
-                />
-                <div className="leading-snug">
-                  <strong className="block text-[11px] uppercase tracking-wider font-extrabold mb-0.5">Xác nhận thanh toán giữ máy</strong>
-                  <p className="text-[10px] opacity-90 font-medium">Khách hàng hoàn tất thanh toán tiền thuê khi nhận máy (Duyệt thu cọc).</p>
-                </div>
-              </label>
-            </div>
-
+          {/* Trạng thái thanh lý */}
+          <div className="space-y-1 text-left">
+            <label className="text-[10px] text-slate-400 font-bold uppercase">Trạng thái thanh lý</label>
+            <select
+              value={filterLiquidationStatus}
+              onChange={(e) => setFilterLiquidationStatus(e.target.value)}
+              className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none font-extrabold text-slate-700 cursor-pointer focus:bg-white focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="">Tất cả</option>
+              <option value="Chờ kiểm kê">Chờ kiểm kê</option>
+              <option value="Đã thanh lý">Đã thanh lý</option>
+            </select>
           </div>
+        </div>
+      </div>
 
-          {/* Handover asset audit column */}
-          <div className="lg:col-span-8 space-y-6">
-            
-            {/* Asset checklist list */}
-            <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="text-sm font-black font-serif text-slate-800 mb-4 block">1. Kiểm chứng tài sản thực tế bàn giao</h3>
-              
-              <div className="border border-slate-100 rounded-lg overflow-x-auto w-full mb-2">
-                <table className="w-full min-w-[700px] text-left">
-                  <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-500 uppercase tracking-wider text-[10px]">
-                    <tr>
-                      <th className="px-4 py-3 min-w-[150px]">Tên thiết bị</th>
-                      <th className="px-4 py-3 whitespace-nowrap">Mã Serial</th>
-                      <th className="px-4 py-3 whitespace-nowrap">Vị trí kho</th>
-                      <th className="px-4 py-3 whitespace-nowrap">Tình trạng</th>
-                      <th className="px-4 py-3 text-right whitespace-nowrap">Xác nhận khớp</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium text-slate-600">
-                    {selectedHandoverOrder.items.map((item, idx) => {
-                      const isChecked = !!checkedItems[item.sn];
-                      return (
-                        <tr 
-                          key={idx} 
-                          onClick={() => handleToggleItemCheck(item.sn)}
-                          className={`hover:bg-slate-50/50 transition cursor-pointer ${
-                            isChecked ? 'bg-emerald-50/30' : ''
-                          }`}
-                        >
-                          <td className="px-4 py-4 font-bold text-slate-800">{item.name}</td>
-                          <td className="px-4 py-4 font-mono font-bold text-[#00236f] whitespace-nowrap">{item.sn}</td>
-                          <td className="px-4 py-4 text-[11px] whitespace-nowrap">{item.location}</td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 whitespace-nowrap">
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-right">
-                            <input 
-                              type="checkbox"
-                              checked={isChecked}
-                              readOnly
-                              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500/20 border-slate-300"
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <p className="text-[10px] text-slate-400 italic font-medium">* Click vào từng dòng để tích xác nhận tình trạng vật phẩm nguyên vẹn đạt yêu cầu.</p>
-            </section>
-
-            {/* Accessories accompanying card bento rows */}
-            <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="text-sm font-black font-serif text-slate-800 mb-4 block">2. Đính kèm phụ kiện đi kèm theo hộp</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {selectedHandoverOrder.accessories.map((acc, idx) => {
-                  const Icon = acc.icon;
+      {/* Main Table List */}
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-[900px] text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-[#00236f] text-[10px] font-black uppercase tracking-wider">
+                <th className="px-6 py-4 whitespace-nowrap min-w-[130px]">Mã đơn hàng</th>
+                <th className="px-6 py-4 whitespace-nowrap min-w-[180px]">Tên khách hàng</th>
+                <th className="px-6 py-4 whitespace-nowrap min-w-[120px]">Ngày nhận</th>
+                <th className="px-6 py-4 whitespace-nowrap min-w-[140px]">Ngày trả dự kiến</th>
+                <th className="px-6 py-4 whitespace-nowrap text-right min-w-[140px]">Tổng tiền cọc</th>
+                <th className="px-6 py-4 whitespace-nowrap text-center min-w-[140px]">Trạng thái đơn</th>
+                <th className="px-6 py-4 whitespace-nowrap text-center min-w-[140px]">Trạng thái thanh lý</th>
+                <th className="px-6 py-4 whitespace-nowrap text-right min-w-[240px]">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-650">
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="px-6 py-12 text-center text-slate-400 italic font-bold">
+                    Không tìm thấy hợp đồng nào đang chờ thanh lý phù hợp với bộ lọc tìm kiếm.
+                  </td>
+                </tr>
+              ) : (
+                filteredOrders.map(o => {
+                  const isCompleted = o.liquidationStatus === 'Đã thanh lý';
                   return (
-                    <div key={idx} className="bg-slate-55 border border-slate-150 p-3 rounded-lg flex items-center justify-between shadow-xs">
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-4 h-4 text-blue-900 shrink-0" />
-                        <span className="font-bold text-slate-700">{acc.name}</span>
-                      </div>
-                      <strong className="text-[#00236f] font-mono text-sm">{acc.qty}</strong>
-                    </div>
+                    <tr key={o.orderCode} className="hover:bg-slate-50/50 transition duration-150">
+                      
+                      {/* Mã đơn */}
+                      <td className="px-6 py-4 text-[#00236f] font-mono font-bold leading-none">{o.orderCode}</td>
+                      
+                      {/* Tên khách */}
+                      <td className="px-6 py-4 font-bold text-slate-900">{o.customerName}</td>
+                      
+                      {/* Ngày nhận */}
+                      <td className="px-6 py-4 font-mono font-semibold">{o.receiveDate}</td>
+                      
+                      {/* Ngày trả dự */}
+                      <td className="px-6 py-4 font-mono font-semibold">{o.expectedReturnDate}</td>
+                      
+                      {/* Tổng tiền cọc */}
+                      <td className="px-6 py-4 text-right font-mono font-bold text-slate-800">{formatVND(o.depositAmount)}</td>
+                      
+                      {/* Trạng thái đơn */}
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border ${
+                          o.orderStatus === 'Đang thuê' 
+                            ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-250'
+                        }`}>
+                          {o.orderStatus}
+                        </span>
+                      </td>
+
+                      {/* Trạng thái thanh lý */}
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border ${
+                          o.liquidationStatus === 'Chờ kiểm kê' 
+                            ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                            : 'bg-slate-100 text-slate-500 border-slate-200'
+                        }`}>
+                          {o.liquidationStatus}
+                        </span>
+                      </td>
+
+                      {/* KHU VỰC THAO TÁC CÓ 2 NÚT NGANG HÀNG BẮT BUỘC KHÔNG ĐƯỢC CHẤP VÁ */}
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex gap-2 justify-end items-center">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDetail(o)}
+                            className="px-3 py-2 text-xs font-bold text-[#00236f] bg-[#00236f]/5 hover:bg-[#00236f]/10 rounded-xl transition cursor-pointer"
+                          >
+                            Xem chi tiết
+                          </button>
+
+                          <div className="relative group">
+                            <button
+                              type="button"
+                              disabled={isCompleted}
+                              onClick={() => handleOpenForm(o)}
+                              className={`px-3 py-2 text-xs font-bold rounded-xl transition ${
+                                isCompleted
+                                  ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs cursor-pointer'
+                              }`}
+                            >
+                              Lập phiếu trả và kiểm kê
+                            </button>
+                            
+                            {isCompleted && (
+                              <div className="absolute right-0 bottom-full mb-1.5 hidden group-hover:block transition duration-200 z-[100] max-w-[200px] w-48 text-left bg-slate-900 text-white rounded-lg p-2.5 shadow-2xl">
+                                <p className="text-[10px] font-bold font-sans">Đơn hàng đã được thanh lý</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                    </tr>
                   );
-                })}
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ========================================================= */}
+      {/* 1. MODAL BOX "XEM CHI TIẾT THANH LÝ" (Chỉ xem, tuyệt đối cấm nút nghiệp vụ chính) */}
+      {/* ========================================================= */}
+      {showDetailModal && selectedDetailOrder && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[1100] flex justify-end animate-fadeIn font-sans">
+          <div className="bg-white w-full max-w-2xl h-screen shadow-2xl flex flex-col animate-slideLeft text-slate-800 text-xs">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4.5 border-b border-slate-100 flex justify-between items-center bg-slate-50.">
+              <div>
+                <h3 className="text-sm font-black text-[#00236f] uppercase">Chi tiết hồ sơ thanh lý</h3>
+                <p className="text-[11px] text-slate-400 font-bold font-mono">Đơn thuê: {selectedDetailOrder.orderCode}</p>
               </div>
-            </section>
+              <button 
+                onClick={() => setShowDetailModal(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-900 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-            {/* Note & image zones */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Modal Content Scroll */}
+            <div className="flex-grow overflow-y-auto p-6 space-y-5.5 text-left font-semibold">
               
-              <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                <h3 className="text-[11px] font-extrabold uppercase text-[#00236f] mb-3 block">Ghi chú bàn giao</h3>
-                <textarea 
-                  rows="3.5"
-                  value={handoverNotes}
-                  onChange={(e) => setHandoverNotes(e.target.value)}
-                  placeholder="Ghi nhận vết hao mòn cũ hoặc lưu ý cọc giữ chỗ..."
-                  className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-1 focus:ring-blue-500/50 outline-none resize-none placeholder:text-slate-400 font-medium"
-                />
-              </section>
-
-              <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                <h3 className="text-[11px] font-extrabold uppercase text-[#00236f] mb-3 block">Ảnh chứng thực mòn máy</h3>
+              {/* Grid 1: Khách hàng và đơn hàng */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 
-                <div 
-                  onDragOver={handleDragOver}
-                  onDrop={handleDropHandoverImage}
-                  onClick={handleNewUploadClick}
-                  className="border-2 border-dashed border-slate-200 hover:bg-slate-50 rounded-lg h-28 flex flex-col items-center justify-center text-center cursor-pointer transition select-none group"
-                >
-                  <UploadCloud className="w-6 h-6 text-slate-300 group-hover:text-blue-900 transition-colors" />
-                  <span className="font-bold text-slate-650 mt-1 block">Kéo kéo thả hoặc nhấp để tệp lên</span>
-                  <span className="text-[9px] text-slate-400">Hỗ trợ ảnh JPG/PNG tối đa 10MB</span>
+                {/* Thông tin khách hàng */}
+                <div className="bg-slate-50 p-4 border border-slate-200/60 rounded-xl space-y-1.5">
+                  <span className="text-[9px] text-slate-400 font-extrabold uppercase block tracking-wider">Thông tin khách hàng</span>
+                  <div>
+                    <span className="text-slate-400">Họ tên:</span>
+                    <p className="text-slate-900 font-black">{selectedDetailOrder.customerName}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Email:</span>
+                    <p className="text-slate-850 font-mono font-bold">{selectedDetailOrder.customerEmail}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Số điện thoại:</span>
+                    <p className="text-slate-850 font-mono font-bold">{selectedDetailOrder.customerPhone}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-bold">Trạng thái xác minh:</span>
+                    <span className="ml-1.5 text-[10px] text-emerald-700 bg-emerald-55 px-2 py-0.5 rounded font-black border border-emerald-100">
+                      {selectedDetailOrder.verificationStatus}
+                    </span>
+                  </div>
                 </div>
 
-                {handoverImages.length > 0 && (
-                  <div className="flex gap-2.5 mt-3 overflow-x-auto pr-1">
-                    {handoverImages.map((img, idx) => (
-                      <div key={idx} className="relative w-11 h-11 rounded border overflow-hidden shrink-0 group">
-                        <img src={img} alt="Handover draft proof" className="w-full h-full object-cover" />
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setHandoverImages(handoverImages.filter((_, i) => i !== idx));
-                          }}
-                          className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >X?a
-                          
-                        </button>
-                      </div>
-                    ))}
+                {/* Thông tin đơn hàng */}
+                <div className="bg-slate-50 p-4 border border-slate-200/60 rounded-xl space-y-1.5">
+                  <span className="text-[9px] text-slate-400 font-extrabold uppercase block tracking-wider">Hợp đồng thuê máy</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-slate-400">Ngày nhận:</span>
+                      <p className="text-slate-850 font-mono font-bold">{selectedDetailOrder.receiveDate}</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Trả dự kiến:</span>
+                      <p className="text-slate-850 font-mono font-bold">{selectedDetailOrder.expectedReturnDate}</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Tổng tiền thuê:</span>
+                      <p className="text-[#00236f] font-mono font-black text-sm">{formatVND(selectedDetailOrder.rentAmount)}</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Tổng tiền cọc:</span>
+                      <p className="text-emerald-700 font-mono font-black text-sm">{formatVND(selectedDetailOrder.depositAmount)}</p>
+                    </div>
+                  </div>
+                  <div className="pt-1 flex gap-2 flex-wrap">
+                    <span className="text-[9px] font-black uppercase bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">
+                      Đơn: {selectedDetailOrder.orderStatus}
+                    </span>
+                    <span className="text-[9px] font-black uppercase bg-slate-150 text-slate-650 px-2 py-0.5 rounded border border-slate-200">
+                      Thanh lý: {selectedDetailOrder.liquidationStatus}
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Thông tin bàn giao */}
+              <div className="border border-slate-250 p-4 rounded-xl space-y-2 background-white">
+                <span className="text-[9.5px] text-slate-400 font-extrabold uppercase block tracking-wider border-b pb-1.5">Nhật ký bàn giao sơ bộ ban đầu</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <span className="text-slate-400">Ngày bàn giao:</span>
+                    <p className="text-slate-800 font-mono font-bold">{selectedDetailOrder.handoverDate || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Nhân viên bàn giao:</span>
+                    <p className="text-slate-800 font-bold">{selectedDetailOrder.handoverStaff || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Hợp đồng giấy:</span>
+                    <p className="text-indigo-700 font-bold font-mono">📄 {selectedDetailOrder.paperContract || 'Không có scan'}</p>
+                  </div>
+                </div>
+                {selectedDetailOrder.handoverPhoto && (
+                  <div className="pt-1.5">
+                    <span className="text-slate-400 block mb-1">Ảnh chụp lúc bàn giao thiết bị:</span>
+                    <span className="inline-flex px-2 py-1 bg-indigo-50 border border-indigo-150 rounded text-indigo-700 font-mono font-bold text-[10px]">
+                      🌌 {selectedDetailOrder.handoverPhoto}
+                    </span>
                   </div>
                 )}
-              </section>
+                {selectedDetailOrder.handoverNotes && (
+                  <div className="mt-1">
+                    <span className="text-slate-400">Ghi chú bàn giao:</span>
+                    <p className="text-slate-700 italic font-medium">"{selectedDetailOrder.handoverNotes}"</p>
+                  </div>
+                )}
+              </div>
 
-            </div>
-
-            {/* Action triggering layout */}
-            <div className="pt-2 flex justify-end gap-3 items-center">
-              <button 
-                type="button"
-                onClick={() => setShowInvoicePrintModal(true)}
-                className="px-6 py-3 border border-blue-900 hover:bg-blue-50 text-blue-900 font-bold rounded-lg transition active:scale-95 cursor-pointer shadow-xs flex items-center gap-1.5"
-              >
+              {/* Đã kiểm kê chưa? */}
+              <div className="space-y-3">
+                <span className="text-[10px] text-indigo-900 font-extrabold uppercase block tracking-wider">Danh sách tài sản &amp; phụ kiện gán theo combo bàn giao</span>
                 
-                Lập phiếu bàn giao
-              </button>
-              
-              {isHandoverReady ? (
-                <button 
-                  type="button"
-                  onClick={() => setShowHandoverConfirmModal(true)}
-                  className="px-8 py-3 bg-[#0a236f] hover:bg-blue-900 text-white font-black rounded-lg transition shadow-md active:scale-95 cursor-pointer select-none flex items-center gap-1.5 animate-pulse"
-                >
+                {selectedDetailOrder.combos && selectedDetailOrder.combos.map((cb, cIdx) => (
+                  <div key={cIdx} className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/20">
+                    <div className="bg-slate-100/50 px-4 py-2 flex justify-between items-center border-b border-slate-200">
+                      <strong className="text-slate-900 font-black">{cb.productName} #{cb.unitIndex}</strong>
+                      <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 font-bold font-mono rounded">
+                        {cb.items ? cb.items.length : 0} thành phần
+                      </span>
+                    </div>
+
+                    <div className="p-2 overflow-x-auto">
+                      <table className="w-full text-[11px] border-collapse">
+                        <thead>
+                          <tr className="text-slate-400 font-black text-left uppercase border-b border-slate-100">
+                            <th className="p-1.5">Thành phần</th>
+                            <th className="p-1.5 text-center">Gán sê-ri / SL</th>
+                            <th className="p-1.5">Hiện trạng giao</th>
+                            <th className="p-1.5">Trạng thái hiện tại</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                          {cb.items && cb.items.map((it, iIdx) => (
+                            <tr key={iIdx}>
+                              <td className="p-1.5 font-bold text-slate-950">{it.name}</td>
+                              <td className="p-1.5 text-center font-mono font-bold text-indigo-850">
+                                {it.managementType === 'IDENTIFIED_ASSET' ? (it.serial || it.assetCode) : `${it.deliveredQuantity} món`}
+                              </td>
+                              <td className="p-1.5">
+                                <span className="bg-slate-100 px-2 py-0.5 text-slate-600 rounded font-bold">{it.stateBefore}</span>
+                              </td>
+                              <td className="p-1.5">
+                                <span className={`px-2 py-0.5 rounded font-black ${
+                                  it.stateAfter === 'Hư hỏng' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                  it.stateAfter === 'Mất' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                  'bg-emerald-50 text-emerald-700 border-emerald-250'
+                                }`}>
+                                  {it.stateAfter || 'Sẵn sàng'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Kết quả kiểm kê sau thanh lý */}
+              {selectedDetailOrder.liquidationResults && (
+                <div className="bg-emerald-50/30 border border-emerald-200 p-4.5 rounded-xl space-y-3">
+                  <span className="text-[10px] text-emerald-800 font-black uppercase block tracking-wider border-b border-emerald-200/50 pb-1.5 flex items-center gap-1.5">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    Biên bản bàn trả và kết quả thanh lý cọc
+                  </span>
                   
-                  Xác nhận bàn giao
-                </button>
-              ) : (
-                <button 
-                  type="button"
-                  disabled
-                  title="Vui lòng kiểm duyệt và tích chọn khớp đầy đủ điều khoản dán cọc giấy và dán thanh toán"
-                  className="px-8 py-3 bg-slate-200 text-slate-450 font-bold rounded-lg cursor-not-allowed flex items-center gap-1.5 select-none"
-                >
-                  
-                  Xác nhận bàn giao (Gated)
-                </button>
-              )}
-            </div>
-
-            {!isHandoverReady && (
-              <p className="text-right text-[10px] text-red-500 font-medium">* Vui lòng tích chọn khớp máy móc sê-ri &amp; dọn đủ giấy cọc / thanh toán để mở khóa nút bàn giao.</p>
-            )}
-
-          </div>
-
-        </div>
-      ) : (
-        // RETURN & RECONCILIATION FLOW (TAB 2)
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fade-in text-xs">
-          
-          <div className="lg:col-span-8 space-y-6">
-            
-            {/* Block 1: Real-time renting invoice selection */}
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-              <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center font-bold text-[#00236f]">
-                <span className="font-serif">THÔNG TIN ĐƠN ĐANG THUÊ</span>
-                <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] uppercase font-black">
-                  Đang thuê máy
-                </span>
-              </div>
-              <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Mã đơn hàng</span>
-                  <strong className="text-lg text-blue-900 font-mono">#ORD-5001</strong>
-                </div>
-                <div>
-                  <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Khách cọc máy</span>
-                  <p className="font-bold text-slate-800 text-sm">Nguyễn Văn A</p>
-                  <p className="text-[10px] text-slate-400 font-mono font-medium">Phone: 0908 123 456</p>
-                </div>
-                <div>
-                  <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Thời gian giao trả</span>
-                  <p className="font-bold text-slate-800 text-sm">15/10 - 18/10/2026</p>
-                  <span className="text-[10px] text-red-600 font-black italic block mt-0.5">(Quá hạn giao nhận 2 giờ)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Block 2: Main asset reconciliation check */}
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-4 text-[#00236f] font-bold font-serif uppercase tracking-widest text-[11px]">
-                <ArrowLeftRight className="w-4 h-4 shrink-0 text-[#00236f]" />
-                Đối chiếu thiết bị cốt lõi chính
-              </div>
-
-              <div className="flex gap-4 p-4 bg-slate-50 border border-slate-150 rounded-lg items-center">
-                <div className="w-14 h-14 bg-white rounded border overflow-hidden p-1 shrink-0">
-                  <img src={EQUIPMENTS[0].image} alt="Sony alpha code" className="w-full h-full object-contain" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="font-bold text-slate-800 text-sm">Body Sony Alpha A7 IV</h4>
-                  <p className="text-[10px] text-slate-450 font-bold">
-                    Số Serial bàn giao gốc: <span className="font-mono bg-blue-50 px-2 py-0.5 rounded text-blue-900 font-black">SN-A74-99201</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Status Radio matrix switcher - SCREEN 30 style */}
-              <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3 bg-white font-bold select-none cursor-pointer">
-                
-                <div 
-                  onClick={() => setMainAssetState('correct')}
-                  className={`p-3.5 border rounded-xl flex flex-col items-center gap-2.5 transition text-center ${
-                    mainAssetState === 'correct' 
-                      ? 'border-emerald-500 bg-emerald-50/20 text-emerald-800 font-black' 
-                      : 'border-slate-200 text-slate-500 hover:bg-slate-50'
-                  }`}
-                >
-                  <input 
-                    type="radio" 
-                    checked={mainAssetState === 'correct'}
-                    readOnly
-                    className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <span>Đúng tài sản</span>
-                </div>
-
-                <div 
-                  onClick={() => setMainAssetState('wrong')}
-                  className={`p-3.5 border rounded-xl flex flex-col items-center gap-2.5 transition text-center ${
-                    mainAssetState === 'wrong' 
-                      ? 'border-red-500 bg-red-50/20 text-red-800 font-black' 
-                      : 'border-slate-200 text-slate-500 hover:bg-slate-50'
-                  }`}
-                >
-                  <input 
-                    type="radio" 
-                    checked={mainAssetState === 'wrong'}
-                    readOnly
-                    className="w-4 h-4 text-red-650 focus:ring-red-500"
-                  />
-                  <span>Sai sê-ri máy</span>
-                </div>
-
-                <div 
-                  onClick={() => setMainAssetState('missing')}
-                  className={`p-3.5 border rounded-xl flex flex-col items-center gap-2.5 transition text-center ${
-                    mainAssetState === 'missing' 
-                      ? 'border-amber-500 bg-amber-50/20 text-amber-800 font-black' 
-                      : 'border-slate-200 text-slate-500 hover:bg-slate-50'
-                  }`}
-                >
-                  <input 
-                    type="radio" 
-                    checked={mainAssetState === 'missing'}
-                    readOnly
-                    className="w-4 h-4 text-amber-600 focus:ring-amber-500"
-                  />
-                  <span>Thiếu hụt cọc</span>
-                </div>
-
-                <div 
-                  onClick={() => setMainAssetState('damaged')}
-                  className={`p-3.5 border rounded-xl flex flex-col items-center gap-2.5 transition text-center ${
-                    mainAssetState === 'damaged' 
-                      ? 'border-red-500 bg-red-50/20 text-red-800 font-black' 
-                      : 'border-slate-200 text-slate-500 hover:bg-slate-50'
-                  }`}
-                >
-                  <input 
-                    type="radio" 
-                    checked={mainAssetState === 'damaged'}
-                    readOnly
-                    className="w-4 h-4 text-red-600 focus:ring-red-500"
-                  />
-                  <span>Hư hỏng máy móc</span>
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* Block 3: Acc audit with 4 status options toggling */}
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-4 text-[#00236f] font-bold font-serif uppercase tracking-widest text-[11px]">
-                <ClipboardCheck className="w-4 h-4 shrink-0 text-[#00236f]" />
-                ĐỐI CHIẾU KIỂM KÊ PHỤ KIỆN HỘP
-              </div>
-
-              <div className="space-y-4">
-                
-                {/* Accessory item 1: Battery */}
-                <div className="border border-slate-150 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center shrink-0 border">
-                      <BatteryCharging className="w-5 h-5 text-blue-900" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-slate-400 block font-bold">Ghi chú kiểm kê:</span>
+                      <p className="text-slate-900 font-bold italic">"{selectedDetailOrder.liquidationResults.returnNotes}"</p>
                     </div>
                     <div>
-                      <p className="font-bold text-slate-800">Pin NP-FZ100 (Chính hãng)</p>
-                      <span className="text-[10px] text-slate-450 font-bold block mt-0.5">Số lượng bàn giao gốc: x2 quả</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {['enough', 'missing', 'lost', 'damaged'].map((st) => {
-                      const textMap = { enough: 'Đủ', missing: 'Thiếu', lost: 'Mất', damaged: 'Hỏng' };
-                      const isSel = accessory1State === st;
-                      const colors = st === 'enough' 
-                        ? 'border-emerald-500 bg-emerald-50/30 text-emerald-800' 
-                        : st === 'missing' 
-                        ? 'border-amber-500 bg-amber-50/20 text-amber-800' 
-                        : 'border-red-500 bg-red-50/20 text-red-800';
-                      return (
-                        <button
-                          key={st}
-                          type="button"
-                          onClick={() => setAccessory1State(st)}
-                          className={`px-3 py-1.5 rounded-full border text-[10px] font-bold transition active:scale-95 shrink-0 ${
-                            isSel ? colors : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
-                          }`}
-                        >
-                          {textMap[st]}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Accessory item 2: SD Card */}
-                <div className="border border-slate-150 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center shrink-0 border">
-                      <Database className="w-5 h-5 text-blue-900" />
+                      <span className="text-slate-400 block font-bold">Xử lý cọc:</span>
+                      <p className="text-slate-950 font-black uppercase text-[11px] text-indigo-700 mt-0.5">
+                        {selectedDetailOrder.liquidationResults.settlementType === 'REFUND_FULL' ? 'Hoàn cọc 100%' : 'Khấu trừ phạt cọc'}
+                      </p>
                     </div>
                     <div>
-                      <p className="font-bold text-slate-800">Thẻ nhớ Extreme SD 128GB</p>
-                      <span className="text-[10px] text-slate-450 font-bold block mt-0.5">Số lượng bàn giao gốc: x1 thẻ</span>
+                      <span className="text-slate-400 block font-bold">Đã hoàn khách cọc:</span>
+                      <p className="text-emerald-750 font-mono font-black text-sm">{formatVND(selectedDetailOrder.liquidationResults.depositReturned)}</p>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block font-bold">Đáo khấu đền bù:</span>
+                      <p className="text-rose-600 font-mono font-black text-sm">{formatVND(selectedDetailOrder.liquidationResults.depositDeducted)}</p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 font-bold">
-                    {['enough', 'missing', 'lost', 'damaged'].map((st) => {
-                      const textMap = { enough: 'Đủ', missing: 'Thiếu', lost: 'Mất', damaged: 'Hỏng' };
-                      const isSel = accessory2State === st;
-                      const colors = st === 'enough' 
-                        ? 'border-emerald-500 bg-emerald-50/30 text-emerald-800' 
-                        : st === 'missing' 
-                        ? 'border-amber-500 bg-amber-50/20 text-amber-800' 
-                        : 'border-red-500 bg-red-50/20 text-red-800';
-                      return (
-                        <button
-                          key={st}
-                          type="button"
-                          onClick={() => setAccessory2State(st)}
-                          className={`px-3 py-1.5 rounded-full border text-[10px] font-bold transition active:scale-95 shrink-0 ${
-                            isSel ? colors : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
-                          }`}
-                        >
-                          {textMap[st]}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
 
-              </div>
-            </div>
-
-          </div>
-
-          {/* Right column sidebar Return audit */}
-          <div className="lg:col-span-4 space-y-6">
-            
-            {/* Condition picture collection */}
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-3">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-sans">Hình ảnh thực tế lúc trả máy</span>
-              
-              <div 
-                onDragOver={handleDragOver}
-                onDrop={handleDropReturnImage}
-                onClick={() => setReturnImages([...returnImages, EQUIPMENTS[1].image])}
-                className="border-2 border-dashed border-slate-200 hover:bg-slate-50 rounded-xl p-5 shrink-0 text-center cursor-pointer transition select-none flex flex-col items-center justify-center group"
-              >
-                <UploadCloud className="w-7 h-7 text-slate-350 group-hover:text-blue-900 transition-colors" />
-                <p className="font-bold text-slate-650 mt-1">Gắp tệp thả kiểm kê</p>
-                <p className="text-[8px] text-slate-400">Hỗ trợ tối đa 5 file ảnh JPEG/PNG</p>
-              </div>
-
-              {returnImages.length > 0 && (
-                <div className="grid grid-cols-4 gap-2 pt-1.5">
-                  {returnImages.map((img, idx) => (
-                    <div key={idx} className="relative aspect-square rounded border border-slate-200 overflow-hidden group shadow-inner">
-                      <img src={img} alt="Return asset visual audit" className="w-full h-full object-cover" />
-                      <button 
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setReturnImages(returnImages.filter((_, i) => i !== idx));
-                        }}
-                        className="absolute inset-[1px] bg-red-600/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                      >X?a
-                        
-                      </button>
+                  {selectedDetailOrder.liquidationResults.deductedReason && (
+                    <div className="bg-white p-2.5 rounded-lg border border-red-100 text-slate-800">
+                      <span className="text-red-500 font-bold block uppercase text-[8.5px]">Lý do khấu trừ bồi thường:</span>
+                      <p className="font-extrabold text-xs">{selectedDetailOrder.liquidationResults.deductedReason}</p>
                     </div>
-                  ))}
+                  )}
+
+                  {selectedDetailOrder.liquidationResults.photos && selectedDetailOrder.liquidationResults.photos.length > 0 && (
+                    <div className="pt-1.5">
+                      <span className="text-slate-400 font-bold block mb-1">Ảnh thực chứng hồi lưu:</span>
+                      <div className="flex gap-2">
+                        {selectedDetailOrder.liquidationResults.photos.map(p => (
+                          <span key={p} className="bg-slate-100 font-bold font-mono text-[9.5px] text-slate-705 px-2.5 py-1 rounded">
+                            📸 {p}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
+
             </div>
 
-            {/* Note logs */}
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-3">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block font-sans">Ghi nhận tình trạng hư hỏng</span>
-              <textarea 
-                rows="4"
-                value={returnNotes}
-                onChange={(e) => setReturnNotes(e.target.value)}
-                placeholder="Ghi nhận chi tiết vết xước nhẹ, sensor bám bụi bẩn, hoặc lỗi phát sinh cần phạt cọc..."
-                className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-1 focus:ring-blue-500/50 outline-none resize-none placeholder:text-slate-400 font-medium"
-              />
-            </div>
-
-            {/* Overtime penalty alert info panel */}
-            <div className="p-4 bg-amber-50/50 border border-amber-200 text-amber-850 rounded-xl flex gap-3 text-[11px] leading-relaxed select-none">
-              <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <strong className="block text-slate-800 text-xs">Cơ chế tự động phạt trả trễ trọn ngày</strong>
-                <p className="mt-0.5 text-[10px] font-semibold text-slate-500 leading-normal">
-                  Ngày trả máy quy định là 18/10, đơn hàng hiện trễ hơn 2 tiếng. Hệ thống sẽ kết chuyển tự động phụ phí quá giờ vào hóa đơn đền bù cuối cùng.
-                </p>
-              </div>
-            </div>
-
-            {/* Return action buttons */}
-            <div className="space-y-2.5">
+            {/* Modal Footer (Tuyệt đối không có các nút nghiệp vụ gấu lợn) */}
+            <div className="p-4.5 bg-slate-50 border-t border-slate-100 flex justify-end">
               <button 
-                type="button"
-                onClick={() => setShowReturnConfirmModal(true)}
-                className="w-full py-3 bg-[#10b981] hover:bg-emerald-600 text-white font-black rounded-lg transition shadow-md active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                type="button" 
+                onClick={() => setShowDetailModal(false)}
+                className="px-5 py-2.5 bg-slate-250 text-slate-700 font-black rounded-xl hover:bg-slate-350 transition uppercase text-xs cursor-pointer"
               >
-                
-                Hoàn tất đối soát kiểm kê
-              </button>
-              
-              <button 
-                type="button"
-                onClick={() => {
-                  alert('Hệ thống đang lưu trữ và kết chuyển hồ sơ sự cố hư tổn sang bộ phận Quản lý Tranh Chấp (Disputes)...');
-                }}
-                className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-800 border border-red-200/50 font-bold rounded-lg transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer text-xs"
-              >
-                
-                Ghi nhận tranh chấp sự cố
+                Đóng chi tiết
               </button>
             </div>
 
           </div>
-
         </div>
       )}
+
+      {/* ========================================================= */}
+      {/* 2. MODAL DRAWER "LẬP PHIẾU TRẢ VÀ KIỂM KÊ" */}
+      {/* ========================================================= */}
+      {showFormModal && selectedFormOrder && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[1100] flex justify-end animate-fadeIn font-sans">
+          <div className="bg-white w-full max-w-5xl h-screen shadow-2xl flex flex-col animate-slideLeft">
+            
+            {/* Header */}
+            <div className="px-6 py-4.5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+              <div>
+                <span className="text-[10px] text-indigo-750 font-black uppercase flex items-center gap-1">
+                  <span className="w-2 h-2 bg-indigo-650 rounded-full animate-ping"></span>
+                  Lập biên bản kiểm kê &amp; Trả máy
+                </span>
+                <h3 className="text-base font-black text-[#00236f] uppercase mt-0.5">Biên bản trả máy và tất toán cọc đơn {selectedFormOrder.orderCode}</h3>
+              </div>
+              <button 
+                onClick={() => setShowFormModal(false)}
+                className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-900 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form Main Layout with standard sidebar inside */}
+            <div className="flex-grow overflow-y-auto p-6 space-y-6 text-slate-900 text-xs">
+              
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                {/* Left Area (A, B, C) */}
+                <div className="lg:col-span-8 space-y-5.5 text-left font-semibold">
+                  
+                  {/* A. THÔNG TIN KHÁCH HÀNG */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+                    <h4 className="text-[10.5px] text-[#00236f] font-black uppercase tracking-wider flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5" />
+                      A. Thông tin khách hàng
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs font-semibold pt-1">
+                      <div>
+                        <span className="text-slate-400 font-bold block uppercase text-[9px]">Họ tên khách hàng</span>
+                        <p className="text-slate-950 font-black">{selectedFormOrder.customerName}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-bold block uppercase text-[9px]">Email</span>
+                        <p className="text-slate-800 font-mono font-bold truncate">{selectedFormOrder.customerEmail}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-bold block uppercase text-[9px]">Số điện thoại</span>
+                        <p className="text-slate-800 font-mono font-bold">{selectedFormOrder.customerPhone || '0901234567'}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-bold block uppercase text-[9px]">Xác minh đối chất</span>
+                        <p className="text-emerald-700 bg-emerald-50 border border-emerald-150 px-2 py-0.5 rounded-full inline-block font-black text-[10px]">
+                          {selectedFormOrder.verificationStatus}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* B. THÔNG TIN ĐƠN HÀNG */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+                    <h4 className="text-[10.5px] text-[#00236f] font-black uppercase tracking-wider flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" />
+                      B. Thông tin hợp đồng thuê
+                    </h4>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-semibold pt-1">
+                      <div>
+                        <span className="text-slate-400 font-bold block uppercase text-[9px]">Đơn hàng cọc máy</span>
+                        <p className="text-slate-950 font-extrabold">{selectedFormOrder.orderCode}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-bold block uppercase text-[9px]">Chu kỳ ngày thuê</span>
+                        <p className="text-slate-850 font-bold font-mono">
+                          {selectedFormOrder.receiveDate} → {selectedFormOrder.expectedReturnDate} ({selectedFormOrder.durationDays || 3} ngày)
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-bold block uppercase text-[9px]">Tổng tiền thuê trả</span>
+                        <p className="text-[#00236f] font-mono font-black">{formatVND(selectedFormOrder.rentAmount || 2400000)}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-bold block uppercase text-[9px]">Cọc quỹ bảo an ký thác</span>
+                        <p className="text-emerald-700 font-mono font-black text-sm">{formatVND(selectedFormOrder.depositAmount)}</p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex gap-3 border-t border-slate-200 mt-2 text-[10.5px] text-slate-500 font-bold">
+                      <span>• Đơn: <strong className="text-indigo-600">{selectedFormOrder.orderStatus}</strong></span>
+                      <span>• Thanh lý: <strong className="text-amber-600">{selectedFormOrder.liquidationStatus}</strong></span>
+                    </div>
+                  </div>
+
+                  {/* C. KIỂM KÊ TÀI SẢN VÀ PHỤ KIỆN THEO TỪNG COMBO */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-[11px] text-[#00236f] font-black uppercase tracking-wider flex items-center gap-1.5">
+                        <FileCheck className="w-4 h-4 text-indigo-600" />
+                        C. Kiểm kê chi tiết tài sản/phụ kiện theo từng Combo bệ gá
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const filled = formCombos.map(combo => {
+                            return {
+                              ...combo,
+                              items: combo.items.map(item => {
+                                if (item.managementType === 'IDENTIFIED_ASSET') {
+                                  // For fuji we prefill damaged lens, for Sony everything is good as specified in requirement
+                                  const isDamagedFujiLens = (combo.productName.includes('Fuji') && item.name.includes('Lens'));
+                                  return {
+                                    ...item,
+                                    stateAfter: isDamagedFujiLens ? 'Hư hỏng' : 'Tốt',
+                                    isDamaged: isDamagedFujiLens,
+                                    isMissing: false
+                                  };
+                                } else {
+                                  return {
+                                    ...item,
+                                    returnedQuantity: item.deliveredQuantity,
+                                    damagedQuantity: 0,
+                                    missingQuantity: 0
+                                  };
+                                }
+                              })
+                            };
+                          });
+                          setFormCombos(filled);
+                          recalculateSettlementStates(filled);
+                          showToast('Tự động kiểm kê lấp đầy dữ liệu mẫu');
+                        }}
+                        className="text-[10px] font-black text-indigo-700 hover:text-indigo-900 border border-indigo-250 bg-indigo-50/50 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg transition"
+                      >
+                        ⚡ Điền nhanh kiểm kê mẫu
+                      </button>
+                    </div>
+
+                    {formCombos.map((combo, comboIdx) => {
+                      const badgeState = getAccordionBadgeState(combo);
+                      return (
+                        <div key={comboIdx} className="border border-slate-250 rounded-2xl overflow-hidden bg-white shadow-xs">
+                          
+                          {/* Accordion Header */}
+                          <div className="bg-slate-50 border-b border-slate-200 p-3.5 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <span className="text-slate-400 font-extrabold rotate-0 transition text-[10px]">▼</span>
+                              <strong className="text-slate-900 text-[13px] font-black">{combo.productName} #{combo.unitIndex}</strong>
+                              <span className="px-2 py-0.5 bg-slate-200/60 rounded text-[10px] font-mono font-bold">4 thiết bị</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] px-2.5 py-0.5 rounded-full border bg-slate-100 font-bold">
+                                {badgeState.countLabel}
+                              </span>
+                              <span className={`text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full border ${badgeState.bg}`}>
+                                {badgeState.label}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Detail Table */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse mx-0">
+                              <thead>
+                                <tr className="bg-slate-50/60 text-slate-500 font-black text-[9.5px] uppercase tracking-wider border-b border-slate-100 whitespace-nowrap">
+                                  <th className="p-3 whitespace-nowrap">Thành phần</th>
+                                  <th className="p-3 whitespace-nowrap">Phân loại</th>
+                                  <th className="p-3 text-center whitespace-nowrap">Mã TS / SL Giao</th>
+                                  <th className="p-3 font-mono whitespace-nowrap">Mã sê-ri</th>
+                                  <th className="p-3 whitespace-nowrap">Tình trạng giao</th>
+                                  <th className="p-3 min-w-[140px] whitespace-nowrap">Hiện trạng khi trả</th>
+                                  <th className="p-3 text-center min-w-[110px] whitespace-nowrap">Số lượng trả</th>
+                                  <th className="p-3 text-center min-w-[80px] whitespace-nowrap">Hư hỏng</th>
+                                  <th className="p-3 text-center min-w-[80px] whitespace-nowrap">Mất/Thiếu</th>
+                                  <th className="p-3 min-w-[150px] whitespace-nowrap">Ghi chú kiểm tra</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 font-semibold text-xs text-slate-705">
+                                {combo.items && combo.items.map((item, itemIdx) => {
+                                  
+                                  const isSerial = item.managementType === 'IDENTIFIED_ASSET';
+                                  
+                                  return (
+                                    <tr key={itemIdx} className="hover:bg-slate-100/20">
+                                      
+                                      {/* Tên */}
+                                      <td className="p-3 font-extrabold text-slate-900 whitespace-nowrap">{item.name}</td>
+                                      
+                                      {/* Phân loại quản lý */}
+                                      <td className="p-3 whitespace-nowrap">
+                                        <span className={`px-2 py-0.5 rounded font-black text-[9.5px] border ${
+                                          isSerial ? 'bg-indigo-50 text-indigo-700 border-indigo-150' : 'bg-amber-50 text-amber-700 border-amber-150'
+                                        }`}>
+                                          {isSerial ? 'Serial' : 'Số lượng'}
+                                        </span>
+                                      </td>
+
+                                      {/* Mã hoặc SL bàn giao */}
+                                      <td className="p-3 text-center font-mono font-bold whitespace-nowrap">
+                                        {isSerial ? item.assetCode : item.deliveredQuantity}
+                                      </td>
+
+                                      {/* Serial */}
+                                      <td className="p-3 font-mono font-bold text-indigo-900 whitespace-nowrap">
+                                        {isSerial ? item.serial : '-'}
+                                      </td>
+
+                                      {/* Tình trạng giao */}
+                                      <td className="p-3 whitespace-nowrap">
+                                        <span className="bg-slate-150 px-2 py-0.5 text-slate-700 font-semibold rounded">{item.stateBefore}</span>
+                                      </td>
+
+                                      {/* Hiện trạng khi trả */}
+                                      <td className="p-3">
+                                        {isSerial ? (
+                                          <select
+                                            value={item.stateAfter || ''}
+                                            onChange={(e) => handleSerialConditionChange(comboIdx, itemIdx, e.target.value)}
+                                            className="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold outline-none text-slate-800 focus:border-indigo-500"
+                                          >
+                                            <option value="">-- Chọn tình trạng --</option>
+                                            <option value="Tốt">Tốt</option>
+                                            <option value="Trầy xước nhẹ">Trầy xước nhẹ</option>
+                                            <option value="Hư hỏng">Hư hỏng</option>
+                                            <option value="Mất">Mất</option>
+                                          </select>
+                                        ) : (
+                                          <span className="text-slate-400 pl-3.5">-</span>
+                                        )}
+                                      </td>
+
+                                      {/* Số lượng trả (Phụ kiện) */}
+                                      <td className="p-3 text-center">
+                                        {!isSerial ? (
+                                          <input 
+                                            type="number"
+                                            min="0"
+                                            max={item.deliveredQuantity}
+                                            value={item.returnedQuantity ?? 0}
+                                            onChange={(e) => handleQuantityReturnedChange(comboIdx, itemIdx, e.target.value)}
+                                            className="w-14 text-center bg-white border border-slate-200 rounded-lg py-1 font-bold outline-none text-slate-800"
+                                          />
+                                        ) : (
+                                          <span className="text-slate-455 font-semibold text-slate-400 font-mono">-</span>
+                                        )}
+                                      </td>
+
+                                      {/* Hư hỏng Check/Input */}
+                                      <td className="p-3 text-center">
+                                        {isSerial ? (
+                                          <input 
+                                            type="checkbox"
+                                            checked={item.isDamaged || false}
+                                            disabled={true} // Readonly because controlled by dropdown Condition
+                                            className="w-3.5 h-3.5 text-indigo-600 border-slate-350 rounded pointer-events-none"
+                                          />
+                                        ) : (
+                                          <input 
+                                            type="number"
+                                            min="0"
+                                            max={item.returnedQuantity || 0}
+                                            value={item.damagedQuantity ?? 0}
+                                            onChange={(e) => handleQuantityDamagedChange(comboIdx, itemIdx, e.target.value)}
+                                            className="w-14 text-center bg-white border border-slate-200 rounded-lg py-1 font-bold outline-none text-slate-800"
+                                          />
+                                        )}
+                                      </td>
+
+                                      {/* Mất/Thiếu Check/Display */}
+                                      <td className="p-3 text-center font-mono font-bold text-rose-500">
+                                        {isSerial ? (
+                                          <input 
+                                            type="checkbox"
+                                            checked={item.isMissing || false}
+                                            disabled={true}
+                                            className="w-3.5 h-3.5 text-rose-600 border-slate-350 rounded pointer-events-none"
+                                          />
+                                        ) : (
+                                          item.missingQuantity || 0
+                                        )}
+                                      </td>
+
+                                      {/* Ghi chú */}
+                                      <td className="p-3">
+                                        <input 
+                                          type="text"
+                                          placeholder="Nhập ghi chú mòn xước..."
+                                          value={item.notes || ''}
+                                          onChange={(e) => {
+                                            const updated = [...formCombos];
+                                            updated[comboIdx].items[itemIdx].notes = e.target.value;
+                                            setFormCombos(updated);
+                                          }}
+                                          className="w-full text-xs bg-slate-50 border border-slate-150 rounded-lg px-2 py-1.5 font-medium outline-none text-slate-800"
+                                        />
+                                      </td>
+
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                </div>
+
+                {/* Right Panel containing Upload, Refund settlements, Maintenance suggestion, notes & confirm buttons (D, E, F, G, H) */}
+                <div className="lg:col-span-4 space-y-5 flex flex-col">
+                  
+                  {/* D. UPLOAD ẢNH KHI TRẢ (Nằm trong form) */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4.5 space-y-3.5 text-left font-semibold">
+                    <div>
+                      <h4 className="text-[10.5px] text-[#00236f] font-black uppercase tracking-wider">D. Ảnh nhận máy khi trả</h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Tải lên ảnh chụp tình trạng hiện tại của thiết bị để đối soát bồi hoàn.</p>
+                    </div>
+
+                    <div 
+                      onClick={handleFileUploadSimulated}
+                      className="border-2 border-dashed border-slate-300 bg-white hover:bg-slate-100 p-4 text-center rounded-xl cursor-pointer transition flex flex-col items-center justify-center"
+                    >
+                      <UploadCloud className="w-7 h-7 text-indigo-600 mb-1" />
+                      <span className="text-[11px] text-slate-700 font-extrabold block">Bấm hoặc Kéo thả ảnh vào đây</span>
+                      <span className="text-[9px] text-slate-400 font-medium block mt-0.5">Hỗ trợ định dạng JPG, PNG, tối đa 10MB</span>
+                    </div>
+
+                    {formPhotos.length > 0 && (
+                      <div className="space-y-2 pt-1 border-t border-slate-150">
+                        {formPhotos.map((f, idx) => (
+                          <div key={idx} className="flex items-center gap-2 bg-white border border-slate-200/80 p-2 rounded-lg text-[10.5px]">
+                            <img 
+                              src={f.previewUrl} 
+                              alt="preview" 
+                              className="w-8 h-8 rounded object-cover shadow-xs border border-slate-200 shrink-0"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="flex-grow overflow-hidden font-sans">
+                              <p className="font-bold text-slate-800 truncate leading-tight">{f.name}</p>
+                              <span className="text-[9.5px] text-slate-400 block font-mono font-medium">{f.size}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhoto(idx)}
+                              className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded transition"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* E. XỬ LÝ CỌC */}
+                  <div className="bg-slate-50 border border-slate-205 rounded-2xl p-4.5 space-y-4 text-left font-semibold">
+                    <div>
+                      <h4 className="text-[10.5px] text-[#00236f] font-black uppercase tracking-wider">E. Ghi nhận phương án xử lý cọc</h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Lựa chọn khấu trừ hoặc hoàn lại đặt cọc dựa trên kiểm kê.</p>
+                    </div>
+
+                    {/* Radio Options */}
+                    <div className="grid grid-cols-2 gap-2 max-w-full">
+                      <label className={`flex flex-col items-center justify-center p-3.5 border-2 rounded-xl cursor-pointer transition select-none ${
+                        settlementType === 'REFUND_FULL'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-500'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      }`}>
+                        <input 
+                          type="radio" 
+                          name="settlementType" 
+                          value="REFUND_FULL"
+                          checked={settlementType === 'REFUND_FULL'}
+                          onChange={() => {
+                            setSettlementType('REFUND_FULL');
+                            setDeductionAmount(0);
+                            setRefundAmount(selectedFormOrder.depositAmount);
+                          }}
+                          className="sr-only"
+                        />
+                        <span className="text-base font-black">🟢</span>
+                        <span className="text-xs font-black uppercase mt-1">Hoàn cọc</span>
+                      </label>
+
+                      <label className={`flex flex-col items-center justify-center p-3.5 border-2 rounded-xl cursor-pointer transition select-none ${
+                        settlementType === 'DEDUCT'
+                          ? 'bg-rose-50 text-rose-800 border-rose-500'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      }`}>
+                        <input 
+                          type="radio" 
+                          name="settlementType" 
+                          value="DEDUCT"
+                          checked={settlementType === 'DEDUCT'}
+                          onChange={() => {
+                            setSettlementType('DEDUCT');
+                            setDeductionAmount(1000000);
+                            setRefundAmount(selectedFormOrder.depositAmount - 1000000);
+                          }}
+                          className="sr-only"
+                        />
+                        <span className="text-base font-black">🔴</span>
+                        <span className="text-xs font-black uppercase mt-1">Khấu trừ cọc</span>
+                      </label>
+                    </div>
+
+                    {/* If complete good is selected but fuji lens is broken, show validation alert warning */}
+                    {settlementType === 'REFUND_FULL' && selectedFormOrder.orderCode === 'ORD001' && (
+                      <div className="bg-amber-100/80 border border-amber-300 text-amber-900 rounded-xl p-3 flex gap-2 text-[10.5px]">
+                        <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="block font-bold">Lưu ý kiểm soát:</strong>
+                          <span className="font-semibold block mt-0.5">Đơn hàng ORD001 chứa thiết bị Lens XF 35mm được kiểm kê là "Hư hỏng". T-Rent khuyến cáo chọn "Ghi nhận khấu trừ cọc". Nếu hoàn 100% cọc, bạn sẽ không thể bồi thường thiệt hại được.</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Form for settlement details */}
+                    <div className="space-y-3.5 pt-1 border-t border-slate-200">
+                      
+                      <div className="space-y-1">
+                        <span className="text-slate-400 block font-bold text-[9px] uppercase font-mono">Đặt cọc giữ tủ ban đầu</span>
+                        <p className="text-slate-800 font-mono font-bold text-sm bg-slate-100 rounded-lg px-2.5 py-1.5">{formatVND(selectedFormOrder.depositAmount)}</p>
+                      </div>
+
+                      {settlementType === 'REFUND_FULL' ? (
+                        <>
+                          <div className="space-y-1">
+                            <span className="text-slate-400 block font-bold text-[9px] uppercase font-mono">Số tiền hoàn cọc thực tế (VND)</span>
+                            <p className="text-emerald-700 font-mono font-black text-sm bg-emerald-50 rounded-lg px-2.5 py-1.5">{formatVND(selectedFormOrder.depositAmount)}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-slate-400 block font-bold text-[9.5px]">Phương thức hoàn cọc</span>
+                            <select className="w-full text-xs font-bold p-2 bg-white border border-slate-200 rounded-lg outline-none cursor-pointer">
+                              <option>VNPAY Sandbox (Mặc định)</option>
+                            </select>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="space-y-1 text-left">
+                            <label className="text-slate-400 block font-bold text-[9px] uppercase font-mono">Số tiền khấu trừ bồi hoàn (VND) <span className="text-rose-500">*</span></label>
+                            <input 
+                              type="number"
+                              required
+                              value={deductionAmount}
+                              onChange={(e) => {
+                                const val = Math.max(0, parseInt(e.target.value) || 0);
+                                setDeductionAmount(val);
+                                setRefundAmount(selectedFormOrder.depositAmount - val);
+                              }}
+                              className="w-full font-mono text-sm font-black p-2 bg-white border border-slate-250 rounded-lg outline-none text-slate-800 focus:border-rose-500"
+                            />
+                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">Tiền dư trả lại khách: <strong className="text-slate-700 font-bold">{formatVND(refundAmount)}</strong></p>
+                          </div>
+
+                          <div className="space-y-1 text-left">
+                            <label className="text-slate-400 block font-bold text-[9.5px] uppercase">Lý do khấu trừ <span className="text-rose-500">*</span></label>
+                            <input 
+                              type="text"
+                              required
+                              value={deductionReason}
+                              onChange={(e) => setDeductionReason(e.target.value)}
+                              placeholder="Nhập lý do hỏng hoặc mất thiết bị..."
+                              className="w-full p-2 bg-white border border-slate-250 rounded-lg outline-none text-slate-800 font-bold text-xs"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                    </div>
+                  </div>
+
+                  {/* F. ĐỀ XUẤT TẠO HỒ SƠ BẢO TRÌ (Nằm trong form thanh lý) */}
+                  {maintenanceRecords.length > 0 && (
+                    <div className="bg-amber-50/40 border border-amber-300 rounded-2xl p-4.5 space-y-3 text-left font-semibold">
+                      <div className="flex gap-1.5 items-center">
+                        <Wrench className="w-4 h-4 text-amber-700 shrink-0" />
+                        <h4 className="text-[10.5px] text-[#00236f] font-black uppercase tracking-wider">F. Tạo đề xuất Hồ sơ bảo trì</h4>
+                      </div>
+                      <p className="text-[10px] text-slate-500 font-medium">Phát hiện thiết bị bị tổn hao / hư hỏng. Hệ thống tự động đề xuất lập hồ sơ chuyển bảo trì kỹ thuật ngay sau thanh lý.</p>
+
+                      {maintenanceRecords.map((m, idx) => (
+                        <div key={idx} className="bg-white border text-[11px] border-amber-200/80 p-3 rounded-xl space-y-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className="text-[8px] bg-amber-100 text-amber-800 px-1.5 py-0.5 font-bold rounded font-mono">BẢO TRÌ</span>
+                              <strong className="block text-slate-900 font-extrabold mt-1 text-xs">{m.equipmentName} ({m.assetCode})</strong>
+                              <span className="text-[9.5px] text-slate-500 block font-mono mt-0.5">Serial: {m.serial}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-1 pt-1.5 border-t border-slate-100 text-xs">
+                            <span className="text-slate-400 font-bold block text-[9px]">Lý do bảo trì:</span>
+                            <input 
+                              type="text"
+                              value={m.reason}
+                              onChange={(e) => {
+                                const cloned = [...maintenanceRecords];
+                                cloned[idx].reason = e.target.value;
+                                setMaintenanceRecords(cloned);
+                              }}
+                              className="w-full bg-slate-50 border border-slate-200 p-1.5 rounded text-xs text-slate-800 font-bold"
+                            />
+                          </div>
+
+                          <div className="space-y-1 text-xs">
+                            <span className="text-slate-400 font-bold block text-[9px]">Ghi chú kỹ thuật đầu:</span>
+                            <textarea 
+                              rows="2"
+                              value={m.note}
+                              onChange={(e) => {
+                                const cloned = [...maintenanceRecords];
+                                cloned[idx].note = e.target.value;
+                                setMaintenanceRecords(cloned);
+                              }}
+                              className="w-full bg-slate-50 border border-slate-200 p-1.5 rounded text-xs text-slate-800 font-medium font-sans resize-none"
+                            />
+                          </div>
+
+                          {m.saved ? (
+                            <div className="flex items-center gap-1.5 text-emerald-700 text-[10px] font-black uppercase">
+                              <Check className="w-3.5 h-3.5" />
+                              Đồng ý tạo phiếu chuyển kho bảo trì
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const cloned = [...maintenanceRecords];
+                                cloned[idx].saved = true;
+                                setMaintenanceRecords(cloned);
+                                showToast('Đã phê duyệt đề cử bảo trì thành phần');
+                              }}
+                              className="text-[10px] bg-amber-500 hover:bg-amber-600 text-white w-full py-1.5 rounded-lg font-bold uppercase transition"
+                            >
+                              Phê duyệt chuyển bảo trì
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* G. GHI CHÚ BÀN TRẢ */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4.5 space-y-2 text-left font-semibold">
+                    <label className="text-[10.5px] text-[#00236f] font-black uppercase block tracking-wider">G. Ghi chú thanh lý dứt điểm</label>
+                    <textarea 
+                      rows="2.5"
+                      value={liquidationNotes}
+                      onChange={(e) => setLiquidationNotes(e.target.value)}
+                      placeholder="Nhập ghi chú kiểm kê hoặc thông tin cần lưu lại sau khi khách trả thiết bị."
+                      className="w-full p-2.5 bg-white border border-slate-250 rounded-xl outline-none text-slate-800 font-bold text-xs"
+                    />
+                  </div>
+
+                  {/* H. NÚT XÁC NHẬN - CUỐI FORM CHỈ CÓ 2 NÚT HỦY VÀ XÁC NHẬN */}
+                  <div className="pt-2 flex gap-3">
+                    <button 
+                      type="button" 
+                      onClick={() => setShowFormModal(false)}
+                      className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 border border-slate-250 rounded-xl font-bold uppercase tracking-wider text-slate-700 transition"
+                    >
+                      Hủy, bỏ qua
+                    </button>
+                    <button 
+                      type="submit"
+                      onClick={handleConfirmSubmitLiquidation}
+                      className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase tracking-wider shadow-md transition"
+                    >
+                      Xác nhận thanh lý
+                    </button>
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
         </div>
       )}
 

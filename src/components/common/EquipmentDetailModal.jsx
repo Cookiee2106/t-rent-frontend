@@ -94,8 +94,8 @@ export default function EquipmentDetailModal({
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 z-10 w-9 h-9 bg-gray-100 hover:bg-red-50 text-[#444651] hover:text-red-600 rounded-full flex items-center justify-center transition-colors"
-        >??ng
-          
+        >
+          <X className="w-5 h-5" />
         </button>
 
         <div className="flex-grow overflow-y-auto p-6 md:p-8">
@@ -235,7 +235,7 @@ export default function EquipmentDetailModal({
                       type="submit"
                       className="flex-grow py-3 px-6 bg-[#fea619] hover:bg-[#fea619]/90 text-[#2a1700] hover:scale-[1.01] active:scale-[0.98] text-xs font-black rounded-lg transition-all shadow-md flex items-center justify-center gap-2"
                     >
-                      
+                      <ShoppingCart className="w-4 h-4" />
                       Gửi bảo chứng & Book thuê ngay
                     </button>
                     

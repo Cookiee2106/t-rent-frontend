@@ -80,8 +80,8 @@ export default function OTPModal({ isOpen, onClose, phone = '0987 *** 321', onVe
         <button
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition"
-        >??ng
-          
+        >
+          <X className="w-4 h-4" />
         </button>
 
         <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -133,6 +133,7 @@ export default function OTPModal({ isOpen, onClose, phone = '0987 *** 321', onVe
         >
           {isLoading ? (
             <>
+              <RefreshCw className="w-4 h-4 animate-spin" />
               Đang xác minh...
             </>
           ) : (

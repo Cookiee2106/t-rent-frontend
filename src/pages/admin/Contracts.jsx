@@ -219,7 +219,7 @@ export default function Contracts() {
             onClick={() => alert('Đang xuất mẫu Excel báo cáo hồ sơ lưu kho vật lý...')}
             className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-sm flex items-center gap-2"
           >
-            
+            <Download className="w-4 h-4" />
             Xuất báo cáo
           </button>
           <button 
@@ -227,7 +227,7 @@ export default function Contracts() {
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 bg-[#fea619] hover:bg-[#fea619]/90 text-[#2a1700] rounded-lg text-xs font-black shadow-sm flex items-center gap-1.5 active:scale-95 transition-all"
           >
-            
+            <Plus className="w-4 h-4" />
             Tạo hợp đồng mới
           </button>
         </div>
@@ -288,37 +288,30 @@ export default function Contracts() {
           >
             Xóa bộ lọc
           </button>
-          <button 
-            type="button" 
-            onClick={() => {}}
-            className="px-5 py-2 bg-[#00236f] hover:bg-blue-900 text-white text-xs font-bold rounded-lg transition-all shadow-sm"
-          >
-            Lọc kết quả
-          </button>
         </div>
       </section>
 
       {/* Contract Listing Table */}
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+      <section className="table-wrapper rounded-xl border border-slate-205 shadow-sm overflow-hidden">
+        <div className="w-full">
+          <table className="data-table text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-150 text-xs font-bold text-slate-500 uppercase">
-                <th className="px-6 py-4 whitespace-nowrap">Mã hợp đồng</th>
-                <th className="px-6 py-4 whitespace-nowrap">Mã đơn thuê</th>
-                <th className="px-6 py-4 min-w-[170px]">Khách hàng</th>
-                <th className="px-6 py-4 whitespace-nowrap">Ngày ký</th>
-                <th className="px-6 py-4 whitespace-nowrap">Người lập</th>
-                <th className="px-6 py-4 whitespace-nowrap">Trạng thái</th>
-                <th className="px-6 py-4 text-right whitespace-nowrap">Thao tác</th>
+              <tr className="bg-slate-50 border-b border-slate-150 text-[#0f172a] text-[13px] font-semibold">
+                <th className="px-6 py-4 whitespace-nowrap font-semibold">Mã hợp đồng</th>
+                <th className="px-6 py-4 whitespace-nowrap font-semibold">Mã đơn thuê</th>
+                <th className="px-6 py-4 min-w-[170px] font-semibold">Khách hàng</th>
+                <th className="px-6 py-4 whitespace-nowrap font-semibold">Ngày ký</th>
+                <th className="px-6 py-4 whitespace-nowrap font-semibold">Người lập</th>
+                <th className="px-6 py-4 whitespace-nowrap font-semibold">Trạng thái</th>
+                <th className="px-6 py-4 text-right whitespace-nowrap font-semibold">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-150">
+            <tbody className="divide-y divide-slate-150 font-semibold text-slate-705">
               {filteredContracts.length > 0 ? (
                 filteredContracts.map((ctr) => (
                   <tr key={ctr.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4 font-black text-[#00236f] font-mono whitespace-nowrap">{ctr.id}</td>
-                    <td className="px-6 py-4 text-slate-600 font-mono font-medium whitespace-nowrap">{ctr.orderCode}</td>
+                    <td className="px-6 py-4 font-black text-[#00236f] font-mono whitespace-nowrap cell-code">{ctr.id}</td>
+                    <td className="px-6 py-4 text-slate-600 font-mono font-medium whitespace-nowrap cell-code">{ctr.orderCode}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2.5">
                         <div className={`w-7 h-7 rounded-full ${ctr.avatarBg} flex items-center justify-center font-black text-[10px] shrink-0`}>
@@ -330,33 +323,32 @@ export default function Contracts() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-600 font-semibold whitespace-nowrap">{ctr.signDate}</td>
+                    <td className="px-6 py-4 text-slate-600 font-semibold whitespace-nowrap cell-date">{ctr.signDate}</td>
                     <td className="px-6 py-4 text-slate-600 font-medium whitespace-nowrap">{ctr.creator}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {ctr.status === 'uploaded' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-150 whitespace-nowrap">
+                        <span className="status-badge bg-emerald-50 text-emerald-700 border border-emerald-150 whitespace-nowrap">
                           {ctr.statusLabel}
                         </span>
                       )}
                       {ctr.status === 'signed' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-150 whitespace-nowrap">
+                        <span className="status-badge bg-blue-50 text-blue-700 border border-blue-150 whitespace-nowrap">
                           {ctr.statusLabel}
                         </span>
                       )}
                       {ctr.status === 'pending' && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-150 whitespace-nowrap">
+                        <span className="status-badge bg-amber-50 text-amber-700 border border-amber-150 whitespace-nowrap">
                           {ctr.statusLabel}
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">
-                      <div className="flex justify-end gap-1.5 opacity-70 group-hover:opacity-100 transition-opacity">
+                      <div className="table-action-group justify-end">
                         <button 
                           onClick={() => handleOpenDetail(ctr)}
-                          title="Xem chi tiết hợp đồng"
-                          className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-[#00236f] rounded-lg transition-colors cursor-pointer whitespace-nowrap"
-                        >Hi?n
-                          
+                          className="table-action-button text-[#00236f] bg-[#00236f]/5 hover:bg-[#00236f]/10 cursor-pointer whitespace-nowrap"
+                        >
+                          Xem chi tiết
                         </button>
                       </div>
                     </td>
@@ -387,8 +379,8 @@ export default function Contracts() {
               <button 
                 onClick={() => setShowDetailModal(false)}
                 className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition"
-              >??ng
-                
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -526,8 +518,8 @@ export default function Contracts() {
                         type="button"
                         onClick={handleDeleteAttachedFile}
                         className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition shrink-0 cursor-pointer"
-                      >X?a
-                        
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -562,7 +554,7 @@ export default function Contracts() {
                 onClick={handleSaveContract}
                 className="px-6 py-2.5 bg-[#00236f] hover:bg-blue-900 border-none text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center gap-1.5 active:scale-95 cursor-pointer"
               >
-                
+                <Save className="w-4 h-4" />
                 Lưu thay đổi
               </button>
             </div>
@@ -583,8 +575,8 @@ export default function Contracts() {
                 type="button"
                 onClick={() => setShowCreateModal(false)}
                 className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400"
-              >??ng
-                
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
             
