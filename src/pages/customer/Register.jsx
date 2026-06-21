@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Eye, EyeOff, AlertTriangle, CheckCircle2, User, Mail, Phone, Lock } from 'lucide-react';
+import { Eye, EyeOff, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
   const [fullname, setFullname] = useState('');
@@ -8,30 +8,45 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [termsAccepted, setTermsAccepted] = useState(false);
   
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   
-  // Custom mock error state to match the exact image design
-  const [mockErrorActive, setMockErrorActive] = useState(false);
+  // Custom error state
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const isPasswordMismatch = confirmPassword !== '' && password !== confirmPassword;
+  // Email/SĐT giả định đã tồn tại để test báo lỗi
+  const EXISTING_EMAILS = ['test@gmail.com', 'client@t-rent.vn', 'admin@t-rent.vn', 'staff@t-rent.vn'];
+  const EXISTING_PHONES = ['0901234567', '0912345678', '0987654321'];
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (isPasswordMismatch) {
-      setMockErrorActive(true);
-      return;
-    }
-    if (!termsAccepted) {
-      alert('Vui lòng đồng ý với điều khoản sử dụng và chính sách bảo mật để tiếp tục.');
+    setErrorMessage('');
+
+    // 1. Kiểm tra thiếu thông tin
+    if (!fullname.trim() || !email.trim() || !phone.trim() || !password.trim() || !confirmPassword.trim()) {
+      setErrorMessage('Vui lòng điền đầy đủ tất cả các trường thông tin.');
       return;
     }
 
-    setMockErrorActive(false);
-    // Open the success modal first as in the mock design
+    // 2. Kiểm tra email hoặc sđt đã tồn tại
+    if (EXISTING_EMAILS.includes(email.trim().toLowerCase())) {
+      setErrorMessage('Địa chỉ email này đã được đăng ký trên hệ thống.');
+      return;
+    }
+    if (EXISTING_PHONES.includes(phone.trim())) {
+      setErrorMessage('Số điện thoại này đã được đăng ký trên hệ thống.');
+      return;
+    }
+
+    // 3. Kiểm tra mật khẩu không khớp
+    if (password !== confirmPassword) {
+      setErrorMessage('Mật khẩu xác nhận không trùng khớp.');
+      return;
+    }
+
+    // Đạt điều kiện hợp lệ
     setShowSuccessModal(true);
   };
 
@@ -44,17 +59,8 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
     });
   };
 
-  const loadDemoMismatchState = () => {
-    setFullname('Nguyễn Văn A');
-    setEmail('nguyenvana@gmail.com');
-    setPhone('0912345678');
-    setPassword('demopassword123');
-    setConfirmPassword('differingpassword');
-    setMockErrorActive(true);
-  };
-
   return (
-    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[#f8f9fa]">
+    <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[#f8f9fa]">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -62,31 +68,77 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
         className="w-full max-w-[480px] bg-white rounded-xl border border-[#c5c5d3] shadow-md overflow-hidden p-8 md:p-10"
       >
         {/* Brand identity */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="text-2xl font-black text-[#00236f] mb-4 select-none">T-Rent</div>
-          <h1 className="text-2xl font-extrabold text-[#00236f] text-center mb-2">Đăng ký tài khoản</h1>
-          <p className="text-sm text-[#444651] text-center">
-            Tạo tài khoản để thuê máy ảnh và thiết bị quay chụp dễ dàng hơn.
+        <div className="flex flex-col items-center mb-6">
+          <div className="text-3xl font-black text-[#00236f] mb-3 select-none tracking-tight font-serif">T-Rent</div>
+          <h1 className="text-xl font-black text-[#00236f] text-center mb-1 uppercase tracking-wide">Đăng ký tài khoản</h1>
+          <p className="text-xs text-[#757682] text-center">
+            Trải nghiệm nền tảng thuê máy chụp hình & thiết bị chất lượng số 1
           </p>
         </div>
 
-        {/* Mismatch error state trigger */}
-        <div className="mb-4 text-center">
-          <button 
-            type="button"
-            onClick={loadDemoMismatchState}
-            className="text-xs text-[#00236f] hover:underline bg-[#dce1ff] px-3 py-1.5 rounded-full font-semibold transition"
-          >
-            Tải mẫu lỗi xác nhận mật khẩu (giống ảnh mẫu)
-          </button>
+        {/* Demo trigger helper */}
+        <div className="mb-4 bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-center">
+          <p className="text-[10px] text-slate-500 font-bold mb-1.5">Bộ dữ liệu giả lập lỗi khi đăng ký thử nghiệm:</p>
+          <div className="flex flex-wrap justify-center gap-1.5 text-[9px] font-bold">
+            <button 
+              type="button"
+              onClick={() => {
+                setFullname('Lê Minh');
+                setEmail('test@gmail.com');
+                setPhone('0999999999');
+                setPassword('123456');
+                setConfirmPassword('123456');
+              }}
+              className="bg-red-50 text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-100"
+            >
+              Email đã tồn tại
+            </button>
+            <button 
+              type="button"
+              onClick={() => {
+                setFullname('Phan Hải');
+                setEmail('phan@gmail.com');
+                setPhone('0901234567');
+                setPassword('123456');
+                setConfirmPassword('123456');
+              }}
+              className="bg-red-50 text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-100"
+            >
+              SĐT đã tồn tại
+            </button>
+            <button 
+              type="button"
+              onClick={() => {
+                setFullname('Nguyễn Văn A');
+                setEmail('nv@gmail.com');
+                setPhone('0988111222');
+                setPassword('123');
+                setConfirmPassword('456');
+              }}
+              className="bg-red-50 text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-100"
+            >
+              Mật khẩu không khớp
+            </button>
+          </div>
         </div>
 
+        {errorMessage && (
+          <motion.div 
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 bg-rose-50 border border-rose-200 text-[#ba1a1a] text-xs rounded-lg flex items-start gap-2 font-bold"
+          >
+            <AlertTriangle className="w-4 h-4 text-rose-550 shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </motion.div>
+        )}
+
         {/* Register form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           
           {/* Full name */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#444651]" htmlFor="fullname">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-500" htmlFor="fullname">
               Họ và tên
             </label>
             <input 
@@ -96,14 +148,14 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
               placeholder="Nhập họ và tên"
               value={fullname}
               onChange={(e) => setFullname(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-[#c5c5d3] bg-gray-50 focus:outline-none focus:border-[#1e3a8a] focus:ring-1 focus:ring-[#1e3a8a] text-sm text-[#111827] transition-all"
+              className="w-full h-11 px-4 rounded-lg border border-[#c5c5d3] bg-gray-50 focus:outline-none focus:border-[#00236f] text-sm text-[#111827] font-semibold transition-all"
             />
           </div>
 
           {/* Email */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#444651]" htmlFor="email">
-              Email
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-500" htmlFor="email">
+              Địa chỉ Email
             </label>
             <input 
               id="email"
@@ -112,29 +164,29 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
               placeholder="example@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-[#c5c5d3] bg-gray-50 focus:outline-none focus:border-[#1e3a8a] focus:ring-1 focus:ring-[#1e3a8a] text-sm text-[#111827] transition-all"
+              className="w-full h-11 px-4 rounded-lg border border-[#c5c5d3] bg-gray-50 focus:outline-none focus:border-[#00236f] text-sm text-[#111827] font-semibold transition-all"
             />
           </div>
 
           {/* Phone number */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#444651]" htmlFor="phone">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-500" htmlFor="phone">
               Số điện thoại
             </label>
             <input 
               id="phone"
               type="tel"
               required
-              placeholder="09xx xxx xxx"
+              placeholder="VD: 0901234567"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-[#c5c5d3] bg-gray-50 focus:outline-none focus:border-[#1e3a8a] focus:ring-1 focus:ring-[#1e3a8a] text-sm text-[#111827] transition-all"
+              className="w-full h-11 px-4 rounded-lg border border-[#c5c5d3] bg-gray-50 focus:outline-none focus:border-[#00236f] text-sm text-[#111827] font-semibold font-mono transition-all"
             />
           </div>
 
           {/* Password */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#444651]" htmlFor="password">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-500" htmlFor="password">
               Mật khẩu
             </label>
             <div className="relative">
@@ -145,12 +197,12 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-11 px-4 rounded-lg border border-[#c5c5d3] bg-gray-50 focus:outline-none focus:border-[#1e3a8a] focus:ring-1 focus:ring-[#1e3a8a] text-sm text-[#111827] transition-all pr-12"
+                className="w-full h-11 px-4 rounded-lg border border-[#c5c5d3] bg-gray-50 focus:outline-none focus:border-[#00236f] text-sm text-[#111827] font-semibold transition-all pr-12"
               />
               <button 
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#757682] hover:text-[#00236f] transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#00236f]"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -159,8 +211,8 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
           </div>
 
           {/* Confirm password */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#444651]" htmlFor="confirm-password">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-500" htmlFor="confirm-password">
               Xác nhận mật khẩu
             </label>
             <div className="relative">
@@ -170,70 +222,37 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
                 required
                 placeholder="••••••••"
                 value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  if (mockErrorActive) setMockErrorActive(false);
-                }}
-                className={`w-full h-11 px-4 rounded-lg border ${
-                  mockErrorActive || isPasswordMismatch ? 'border-red-500 bg-red-50/10' : 'border-[#c5c5d3]'
-                } bg-gray-50 focus:outline-none focus:border-[#1e3a8a] focus:ring-1 focus:ring-[#1e3a8a] text-sm text-[#111827] transition-all pr-12`}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full h-11 px-4 rounded-lg border border-[#c5c5d3] bg-gray-50 focus:outline-none focus:border-[#00236f] text-sm text-[#111827] font-semibold transition-all pr-12"
               />
               <button 
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#757682] hover:text-[#00236f] transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#00236f]"
                 tabIndex={-1}
               >
                 {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
-            
-            {/* Password Mismatch Warning State directly mimicking the image layout */}
-            {(mockErrorActive || isPasswordMismatch) && (
-              <motion.span 
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-red-600 text-xs font-medium flex items-center gap-1 mt-1"
-                id="password-match-error-msg"
-              >
-                <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
-                Mật khẩu xác nhận không khớp
-              </motion.span>
-            )}
-          </div>
-
-          {/* Terms checkbox */}
-          <div className="flex items-start gap-3 py-2 select-none">
-            <input 
-              id="terms"
-              type="checkbox"
-              required
-              checked={termsAccepted}
-              onChange={(e) => setTermsAccepted(e.target.checked)}
-              className="mt-1 w-4 h-4 rounded border-[#c5c5d3] text-[#00236f] focus:ring-[#1e3a8a] cursor-pointer"
-            />
-            <label className="text-xs text-[#444651] leading-relaxed cursor-pointer" htmlFor="terms">
-              Tôi đồng ý với <a href="#" onClick={(e) => { e.preventDefault(); alert('Điều khoản sử dụng của T-Rent bao gồm trách nhiệm bồi thường nếu có hư hỏng vật lý hoặc rơi vỡ thiết bị.'); }} className="text-[#00236f] font-bold hover:underline">điều khoản sử dụng</a> và chính sách bảo mật của T-Rent.
-            </label>
           </div>
 
           {/* Submit action */}
           <button 
             type="submit"
-            className="w-full bg-[#fea619] text-[#2a1700] hover:bg-[#fea619]/90 font-extrabold py-3.5 rounded-lg transition-all active:scale-[0.98] shadow-sm text-sm"
+            className="w-full bg-[#fea619] text-[#2a1700] hover:bg-[#fea619]/90 font-extrabold h-12 rounded-lg transition-all active:scale-[0.98] shadow-sm text-sm uppercase tracking-wide mt-4"
           >
-            Đăng ký
+            Đăng ký tài khoản
           </button>
         </form>
 
-        {/* Login Link redirector */}
-        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-          <p className="text-sm text-[#444651]">
+        {/* Login redirector */}
+        <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+          <p className="text-xs text-slate-500">
             Đã có tài khoản?{' '}
             <button 
               type="button"
               onClick={onNavigateToLogin}
-              className="text-[#00236f] font-bold hover:underline focus:outline-none"
+              className="text-[#00236f] font-black hover:underline"
             >
               Đăng nhập ngay
             </button>
@@ -241,30 +260,29 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
         </div>
       </motion.div>
 
-      {/* Success Modal Overlay (Mimics the exact markup screenshot design) */}
+      {/* Success Modal */}
       <AnimatePresence>
         {showSuccessModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#00113a]/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#00113a]/40 backdrop-blur-sm">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white w-full max-w-[400px] rounded-xl shadow-2xl p-8 text-center border border-[#c5c5d3]"
-              id="successModal"
+              className="bg-white w-full max-w-[400px] rounded-2xl shadow-xl p-8 text-center border border-[#c5c5d3]"
             >
-              <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-                <CheckCircle2 className="w-10 h-10" />
+              <div className="w-14 h-14 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-5 border border-green-100">
+                <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h2 className="text-xl font-extrabold text-[#00236f] mb-3">Đăng ký thành công</h2>
-              <p className="text-sm text-[#444651] mb-8 leading-relaxed">
-                Tài khoản của bạn đã được tạo thành công. Chào mừng bạn đến với cộng đồng T-Rent!
+              <h2 className="text-lg font-black text-[#00236f] mb-2 uppercase">Đăng ký thành công</h2>
+              <p className="text-xs text-slate-550 mb-6 leading-relaxed font-medium">
+                Tài khoản của bạn đã được khởi tạo thành công trên hệ thống T-Rent.
               </p>
               <button 
                 type="button"
                 onClick={handleModalProceed}
-                className="w-full bg-[#fea619] hover:bg-[#fea619]/90 text-[#2a1700] font-extrabold py-3.5 rounded-lg transition-all active:scale-[0.98]"
+                className="w-full bg-[#fea619] hover:bg-[#fea619]/90 text-[#2a1700] font-black h-12 rounded-lg transition-all active:scale-[0.98] uppercase text-xs"
               >
-                Đăng nhập ngay
+                Tiến sang Đăng nhập
               </button>
             </motion.div>
           </div>

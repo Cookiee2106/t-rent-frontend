@@ -121,7 +121,7 @@ export default function OTPModal({ isOpen, onClose, phone = '0987 *** 321', onVe
 
         {/* Demo Tip */}
         <div className="text-[10px] text-gray-400 bg-gray-50 border border-gray-100 rounded-lg p-2.5 mb-6">
-          <span className="font-bold text-[#00236f] block mb-0.5">Demo:</span>
+          <span className="font-bold text-[#00236f] block mb-0.5">💡 Chế độ Demo:</span>
           Nhập bất kỳ mã nào để Xác thực thành công. Nhập <strong className="font-bold text-red-600">000000</strong> để hiển thị thông báo lỗi.
         </div>
 

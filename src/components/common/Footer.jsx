@@ -36,7 +36,7 @@ const YoutubeIcon = (props) => (
   </svg>
 );
 
-export default function Footer({ onNavToPage }) {
+export default function Footer({ onNavToPage, userRole, onRoleToggle }) {
   const handleNavClick = (page, e) => {
     e.preventDefault();
     onNavToPage(page);
@@ -114,6 +114,32 @@ export default function Footer({ onNavToPage }) {
             </span>
           </div>
         </div>
+
+        {onRoleToggle && (
+          <div className="mt-6 pt-4 border-t border-gray-950 flex flex-wrap gap-4 items-center justify-center md:justify-start text-[11px] text-[#717482]">
+            <span>Chuyển chế độ xem mô phỏng:</span>
+            <button 
+              onClick={() => onRoleToggle('customer')} 
+              className={`hover:text-white transition cursor-pointer font-semibold ${userRole === 'customer' ? 'text-[#fea619]' : 'text-[#a0a2af]'}`}
+            >
+              Khách hàng
+            </button>
+            <span className="text-gray-800">|</span>
+            <button 
+              onClick={() => onRoleToggle('staff')} 
+              className={`hover:text-white transition cursor-pointer font-semibold ${userRole === 'staff' ? 'text-[#fea619]' : 'text-[#a0a2af]'}`}
+            >
+              Nhân viên
+            </button>
+            <span className="text-gray-800">|</span>
+            <button 
+              onClick={() => onRoleToggle('admin')} 
+              className={`hover:text-white transition cursor-pointer font-semibold ${userRole === 'admin' ? 'text-[#fea619]' : 'text-[#a0a2af]'}`}
+            >
+              Quản trị viên
+            </button>
+          </div>
+        )}
 
       </div>
     </footer>
