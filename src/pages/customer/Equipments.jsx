@@ -14,127 +14,10 @@ import {
   Minus, 
   Check, 
   Eye, 
-  HelpCircle 
+  HelpCircle,
+  RefreshCw
 } from 'lucide-react';
-
-// DỮ LIỆU MẪU BẮT BUỘC ÍT NHẤT 6 CARD THEO ĐẶC TẢ
-const EQUIPMENTS_DATA = [
-  {
-    id: 'sony-a7iv',
-    name: 'Sony A7 IV',
-    brand: 'Sony',
-    category: 'camera',
-    pricePerDay: 800000,
-    deposit: 3000000,
-    descriptionShort: 'Body full-frame phù hợp chụp ảnh và quay video chuyên nghiệp.',
-    descriptionLong: 'Body full-frame phù hợp chụp ảnh, quay video sự kiện, sản phẩm và nội dung chuyên nghiệp.',
-    image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600',
-    bundle: [
-      { name: 'Pin NP-FZ100', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Pin rời đi kèm body Sony' },
-      { name: 'Lens 24-70 GM', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Lens đi kèm combo Sony' },
-      { name: 'Túi Sony', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Túi đựng bộ Sony' }
-    ],
-    availableQuantity: 2
-  },
-  {
-    id: 'fuji-xt5',
-    name: 'Fuji X-T5',
-    brand: 'Fujifilm',
-    category: 'camera',
-    pricePerDay: 700000,
-    deposit: 3000000,
-    descriptionShort: 'Body mirrorless nhỏ gọn, màu phim đẹp, phù hợp chụp ảnh du lịch.',
-    descriptionLong: 'Body mirrorless nhỏ gọn, màu phim đẹp, phù hợp chụp ảnh du lịch, chân dung và đời thường.',
-    image: 'https://images.unsplash.com/photo-1510127034890-ba27508e9f1c?w=600',
-    bundle: [
-      { name: 'Pin Fuji NP-W235', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Pin rời đi kèm body Fuji' },
-      { name: 'Lens XF 35mm', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Lens đi kèm combo Fuji' },
-      { name: 'Túi Fuji', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Túi đựng bộ Fuji' }
-    ],
-    availableQuantity: 1
-  },
-  {
-    id: 'lens-2470gm',
-    name: 'Lens 24-70 GM',
-    brand: 'Sony',
-    category: 'lens',
-    pricePerDay: 500000,
-    deposit: 2000000,
-    descriptionShort: 'Lens zoom đa dụng cho chụp sự kiện, chân dung và quay video.',
-    descriptionLong: 'Thấu kính zoom cao cấp thuộc phân khúc G Master mang đến độ sắc nét vượt trội, phù hợp cho đa dạng thể loại quay chụp từ phong cảnh tới chân dung.',
-    image: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=600',
-    bundle: [
-      { name: 'Nắp đậy Lens trước', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Nắp bảo trì' },
-      { name: 'Nắp đậy Lens sau', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Nắp bảo trì' },
-      { name: 'Hộp đựng chống sốc', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Hộp bảo quản' }
-    ],
-    availableQuantity: 3
-  },
-  {
-    id: 'lens-xf35',
-    name: 'Lens XF 35mm',
-    brand: 'Fujifilm',
-    category: 'lens',
-    pricePerDay: 300000,
-    deposit: 1500000,
-    descriptionShort: 'Lens tiêu cự cố định nhỏ gọn, phù hợp chụp chân dung và đời thường.',
-    descriptionLong: 'Ống kính một tiêu cự nhỏ gọn siêu bền bỉ với khẩu độ lớn giúp chụp ảnh xóa phông mượt mà và làm việc xuất sắc trong môi trường thiếu sáng.',
-    image: 'https://images.unsplash.com/photo-1520390138845-fd2d229dd553?w=600',
-    bundle: [
-      { name: 'Nắp trước', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Bảo quản thấu kính' },
-      { name: 'Nắp sau', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Bảo quản thấu kính' }
-    ],
-    availableQuantity: 4
-  },
-  {
-    id: 'canon-r6',
-    name: 'Canon EOS R6',
-    brand: 'Canon',
-    category: 'camera',
-    pricePerDay: 750000,
-    deposit: 3000000,
-    descriptionShort: 'Body full-frame cân bằng giữa chụp ảnh và quay video.',
-    descriptionLong: 'Thân máy ảnh không gương lật Full-frame tiên tiến của Canon, mang lại khả năng chống rung tuyệt đối và lấy nét tự động chính xác nhanh chóng.',
-    image: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=600',
-    bundle: [
-      { name: 'Pin Canon LP-E6NH', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Pin zin theo máy' },
-      { name: 'Túi Canon đựng máy', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Túi đeo bảo quản' },
-      { name: 'Sạc rời Canon', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Sạc theo máy' }
-    ],
-    isAlwaysUnavailable: true, // Mock "Hết thiết bị theo ngày chọn" để Khách hàng thấy rõ
-    availableQuantity: 0
-  },
-  {
-    id: 'pin-npfz100',
-    name: 'Pin NP-FZ100',
-    brand: 'Sony',
-    category: 'accessory',
-    pricePerDay: 80000,
-    deposit: 500000,
-    descriptionShort: 'Pin rời dùng cho các body Sony tương thích.',
-    descriptionLong: 'Pin sạc Lithium-ion dung lượng cao, hoạt động ổn định và lâu dài cho các dòng máy ảnh Sony Alpha thế hệ mới.',
-    image: 'https://images.unsplash.com/photo-1624456930905-513665559132?w=600',
-    bundle: [
-      { name: 'Kén sạc pin', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Kén sạc bảo hộ pin' }
-    ],
-    availableQuantity: 5
-  },
-  {
-    id: 'pin-fuji-npw235',
-    name: 'Pin Fuji NP-W235',
-    brand: 'Fujifilm',
-    category: 'accessory',
-    pricePerDay: 80000,
-    deposit: 500000,
-    descriptionShort: 'Pin rời dùng cho các body Fujifilm tương thích.',
-    descriptionLong: 'Pin rời dung lượng cao thế hệ mới, hoạt động bền bỉ, hỗ trợ kén sạc nhanh và chống tụt nhiệt độ.',
-    image: 'https://images.unsplash.com/photo-1624456930905-513665559132?w=600',
-    bundle: [
-      { name: 'Kén sạc pin Fuji', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Kén bảo quản rời' }
-    ],
-    availableQuantity: 5
-  }
-];
+import deviceApi from '../../api/deviceApi';
 
 const CUSTOMER_CATEGORIES = [
   { id: 'all', name: 'Tất cả' },
@@ -149,7 +32,7 @@ const getRelatedModelsFor = (eq, searchStartDate, searchEndDate, allEquipmentsLi
   // If Sony A7 IV or Sony Alpha A7 IV is selected:
   if (cleanName === 'sony a7 iv' || cleanName === 'sony alpha a7 iv') {
     return allEquipmentsList.filter(item => {
-      const nameLower = item.name.toLowerCase();
+      const nameLower = (item.name || '').toLowerCase();
       return nameLower.includes('24-70 gm') || nameLower.includes('pin np-fz100') || nameLower.includes('canon eos r6');
     });
   }
@@ -157,7 +40,7 @@ const getRelatedModelsFor = (eq, searchStartDate, searchEndDate, allEquipmentsLi
   // If Fuji X-T5 is selected:
   if (cleanName === 'fuji x-t5') {
     return allEquipmentsList.filter(item => {
-      const nameLower = item.name.toLowerCase();
+      const nameLower = (item.name || '').toLowerCase();
       return nameLower.includes('xf 35mm') || nameLower.includes('pin fuji np-w235') || nameLower.includes('sony a7 iv') || nameLower.includes('sony alpha a7 iv');
     });
   }
@@ -176,6 +59,9 @@ export default function Equipments({
   cartItems = [],       // to check existing items in shopping bag
   user                  // current simulation user
 }) {
+  const [allModels, setAllModels] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   // Filters local states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('all');
@@ -206,6 +92,21 @@ export default function Equipments({
   // Get current local formatted date dynamically to assign to "min"
   // Defaulting to "2026-06-21" according to local mock metadata
   const systemTodayStr = '2026-06-21';
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        setLoading(true);
+        const res = await deviceApi.getDeviceModels({ limit: 100 });
+        setAllModels(res.data?.data?.items || res.data?.data || []);
+      } catch (error) {
+        console.error('Failed to fetch device models:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchModels();
+  }, []);
 
   // -------------------------------------------------------------
   // TRẠNG THÁI KHẢ DỤNG CỦA CARD Ở DANH SÁCH NGOÀI
@@ -245,43 +146,69 @@ export default function Equipments({
   const brands = ['all', 'Sony', 'Fujifilm', 'Canon'];
 
   // Main Filtering query logic
-  const filteredModels = EQUIPMENTS_DATA.filter((eq) => {
+  const filteredModels = allModels.filter((eq) => {
     // 1. Category check
-    // map our local categories
-    let mappedCat = eq.category; 
-    const isCatMatched = selectedCategory === 'all' || mappedCat === selectedCategory;
+    const mappedCat = eq.category?.name?.toLowerCase() || (typeof eq.category === 'string' ? eq.category.toLowerCase() : ''); 
+    let isCatMatched = selectedCategory === 'all';
+    if (!isCatMatched) {
+      if (selectedCategory === 'camera') {
+        isCatMatched = mappedCat.includes('camera') || mappedCat.includes('máy ảnh') || mappedCat.includes('body') || mappedCat === 'camera';
+      } else if (selectedCategory === 'lens') {
+        isCatMatched = mappedCat.includes('lens') || mappedCat.includes('ống kính') || mappedCat === 'lens';
+      } else if (selectedCategory === 'accessory') {
+        isCatMatched = mappedCat.includes('phụ kiện') || mappedCat.includes('accessory') || mappedCat === 'accessory';
+      }
+    }
 
     // 2. Brand check
-    const isBrandMatched = selectedBrand === 'all' || eq.brand.toLowerCase() === selectedBrand.toLowerCase();
+    const brandName = eq.brand?.name || eq.brand || '';
+    const isBrandMatched = selectedBrand === 'all' || brandName.toLowerCase() === selectedBrand.toLowerCase();
 
     // 3. Search text query check
     const isSearchMatched = 
-      eq.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      eq.brand.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      eq.descriptionShort.toLowerCase().includes(searchQuery.toLowerCase());
+      (eq.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+      brandName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (eq.description || eq.descriptionShort || '').toLowerCase().includes(searchQuery.toLowerCase());
 
     // 4. Price range checks
+    const dailyPrice = eq.dailyPrice || eq.pricePerDay || 0;
     let isPriceMatched = true;
     if (priceRange === 'under500') {
-      isPriceMatched = eq.pricePerDay < 500000;
+      isPriceMatched = dailyPrice < 500000;
     } else if (priceRange === '500to1000') {
-      isPriceMatched = eq.pricePerDay >= 500000 && eq.pricePerDay <= 1000000;
+      isPriceMatched = dailyPrice >= 500000 && dailyPrice <= 1000000;
     } else if (priceRange === 'above1000') {
-      isPriceMatched = eq.pricePerDay > 1000000;
+      isPriceMatched = dailyPrice > 1000000;
     }
 
     return isCatMatched && isBrandMatched && isSearchMatched && isPriceMatched;
   });
 
   // Open detail popup modal handler with synchronized values
-  const handleOpenDetailModal = (eq) => {
-    setSelectedModel(eq);
-    // Synced dates from main index if provided and correct
-    setDetailStartDate(mainStartDate || '');
-    setDetailEndDate(mainEndDate || '');
-    setDetailQuantity(1);
-    setCheckResult(null);
-    setModalFeedback({ success: '', error: '' });
+  const handleOpenDetailModal = async (eq) => {
+    try {
+      const res = await deviceApi.getDeviceModelDetail(eq.id);
+      const detail = res.data?.data || res.data;
+      
+      setSelectedModel({
+        ...detail,
+        bundle: detail.includedItems?.map(item => ({
+          name: item.name || item.item?.name,
+          type: item.type || 'Phụ kiện',
+          qty: item.quantity || item.qty || 1,
+          required: item.isRequired ? 'Có' : 'Không',
+          note: item.note || ''
+        })) || []
+      });
+      // Synced dates from main index if provided and correct
+      setDetailStartDate(mainStartDate || '');
+      setDetailEndDate(mainEndDate || '');
+      setDetailQuantity(1);
+      setCheckResult(null);
+      setModalFeedback({ success: '', error: '' });
+    } catch (error) {
+      console.error('Failed to fetch model details:', error);
+    }
   };
 
   // Close detail popup modal handler
@@ -330,7 +257,7 @@ export default function Equipments({
 
     // 6. Mẫu thiết bị có đang hoạt động không (Giả định tất cả trong list đang hoạt động)
     
-    // 7. Check if model is Canon EOS R6 (Always out of stock in this mock)
+    // 7. Check if model is always unavailable
     if (selectedModel.isAlwaysUnavailable) {
       setCheckResult({
         status: 'unavailable',
@@ -342,10 +269,11 @@ export default function Equipments({
     }
 
     // 8. Check if requested qty exceeds safety stock limit
-    if (detailQuantity > selectedModel.availableQuantity) {
+    const availableQty = selectedModel.availableQuantity ?? 10;
+    if (detailQuantity > availableQty) {
       setCheckResult({
         status: 'unavailable',
-        qty: selectedModel.availableQuantity,
+        qty: availableQty,
         message: 'Mẫu thiết bị không đủ số lượng khả dụng trong thời gian đã chọn.'
       });
       showModalError('Mẫu thiết bị không đủ số lượng khả dụng trong thời gian đã chọn');
@@ -355,7 +283,7 @@ export default function Equipments({
     // If fully passed
     setCheckResult({
       status: 'available',
-      qty: selectedModel.availableQuantity,
+      qty: availableQty,
       message: 'Mẫu thiết bị còn khả dụng trong thời gian đã chọn.'
     });
     showModalSuccess('Kiểm tra sẵn sàng thành công! Thiết bị có thể thêm vào giỏ hàng.');
@@ -413,12 +341,12 @@ export default function Equipments({
       equipment: {
         id: selectedModel.id,
         name: selectedModel.name,
-        brand: selectedModel.brand,
-        category: selectedModel.category,
-        pricePerDay: selectedModel.pricePerDay,
-        deposit: selectedModel.deposit,
-        image: selectedModel.image,
-        description: selectedModel.descriptionLong
+        brand: selectedModel.brand?.name || selectedModel.brand,
+        category: selectedModel.category?.name || selectedModel.category,
+        pricePerDay: selectedModel.dailyPrice || selectedModel.pricePerDay,
+        deposit: selectedModel.depositAmount || selectedModel.deposit,
+        image: selectedModel.imageUrl || selectedModel.image,
+        description: selectedModel.description || selectedModel.descriptionLong
       },
       days: daysCalc,
       
@@ -427,8 +355,8 @@ export default function Equipments({
       startDate: detailStartDate,
       endDate: detailEndDate,
       quantity: detailQuantity,
-      dailyPrice: selectedModel.pricePerDay,
-      depositAmount: selectedModel.deposit
+      dailyPrice: selectedModel.dailyPrice || selectedModel.pricePerDay,
+      depositAmount: selectedModel.depositAmount || selectedModel.deposit
     };
 
     // Push callback to top App
@@ -574,7 +502,12 @@ export default function Equipments({
       </div>
 
       {/* DANH SÁCH MẪU THIẾT BỊ DẠNG GRID */}
-      {filteredModels.length === 0 ? (
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <RefreshCw className="w-8 h-8 text-[#00236f] animate-spin mb-4" />
+          <p className="text-sm text-slate-500 font-semibold">Đang tải danh sách thiết bị...</p>
+        </div>
+      ) : filteredModels.length === 0 ? (
         <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <Info className="w-10 h-10 text-slate-400 mx-auto mb-3" />
           <p className="text-sm text-slate-850 font-black mb-1">Không tìm thấy mẫu thiết bị phù hợp</p>
@@ -612,7 +545,7 @@ export default function Equipments({
                 <div className="relative aspect-video overflow-hidden bg-slate-50 border-b border-slate-100 flex items-center justify-center">
                   <img 
                     alt={eq.name} 
-                    src={eq.image} 
+                    src={eq.imageUrl || eq.image} 
                     className="w-full h-full object-cover transition-transform duration-550 group-hover:scale-105" 
                     referrerPolicy="no-referrer"
                   />
@@ -637,7 +570,7 @@ export default function Equipments({
                   </div>
 
                   <div className="absolute bottom-3 right-3 bg-slate-900/95 text-white px-3 py-1 rounded-xl font-bold text-xs font-mono border border-white/10">
-                    {eq.pricePerDay.toLocaleString('vi-VN')}đ / ngày
+                    {(eq.dailyPrice || eq.pricePerDay || 0).toLocaleString('vi-VN')}đ / ngày
                   </div>
                 </div>
 
@@ -645,7 +578,7 @@ export default function Equipments({
                 <div className="p-5 flex flex-col flex-grow text-left space-y-3.5">
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-[#fea619] mb-0.5 block">
-                      {eq.brand}
+                      {eq.brand?.name || eq.brand}
                     </span>
                     <h3 className="text-base font-extrabold text-slate-800 hover:text-[#00236f] transition-all">
                       {eq.name}
@@ -653,17 +586,17 @@ export default function Equipments({
                   </div>
 
                   <p className="text-xs text-slate-500 font-semibold leading-relaxed line-clamp-2">
-                    {eq.descriptionShort}
+                    {eq.description || eq.descriptionShort}
                   </p>
 
                   <div className="bg-slate-50 border border-slate-150 rounded-2xl p-3 text-xs text-slate-700 space-y-1.5 font-semibold">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-450 font-bold">Giá thuê một ngày:</span>
-                      <strong className="text-slate-900 font-mono font-black">{eq.pricePerDay.toLocaleString('vi-VN')} VNĐ</strong>
+                      <strong className="text-slate-900 font-mono font-black">{(eq.dailyPrice || eq.pricePerDay || 0).toLocaleString('vi-VN')} VNĐ</strong>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-slate-450 font-bold">Tiền đặt cọc tối thiểu:</span>
-                      <strong className="text-rose-900 font-mono font-black">{eq.deposit.toLocaleString('vi-VN')} VNĐ</strong>
+                      <strong className="text-rose-900 font-mono font-black">{(eq.depositAmount || eq.deposit || 0).toLocaleString('vi-VN')} VNĐ</strong>
                     </div>
                   </div>
 
@@ -711,10 +644,10 @@ export default function Equipments({
               <div className="px-6 py-4 bg-slate-50 border-b border-slate-150 flex justify-between items-center sticky top-0 z-[10] shrink-0">
                 <div>
                   <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1">
-                    <span>{selectedModel.brand}</span>
+                    <span>{selectedModel.brand?.name || selectedModel.brand}</span>
                     <span>•</span>
                     <span className="text-[#00236f]">
-                      {selectedModel.category === 'camera' ? 'Body máy ảnh' : selectedModel.category === 'lens' ? 'Ống kính' : 'Phụ kiện'}
+                      {selectedModel.category?.name || (selectedModel.category === 'camera' ? 'Body máy ảnh' : selectedModel.category === 'lens' ? 'Ống kính' : 'Phụ kiện')}
                     </span>
                   </div>
                   <h3 className="font-black text-[#00236f] text-base uppercase mt-0.5">{selectedModel.name}</h3>
@@ -751,7 +684,7 @@ export default function Equipments({
                   {/* Aspect ratio frame for product image */}
                   <div className="sm:col-span-5 bg-slate-50 border border-slate-150 p-2.5 rounded-2xl">
                     <img 
-                      src={selectedModel.image} 
+                      src={selectedModel.imageUrl || selectedModel.image} 
                       alt={selectedModel.name} 
                       className="w-full aspect-square object-cover rounded-xl shadow-xs"
                       referrerPolicy="no-referrer"
@@ -762,20 +695,20 @@ export default function Equipments({
                   <div className="sm:col-span-7 space-y-3 text-left">
                     <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">A. Thông tin mẫu thiết bị</h4>
                     <p className="text-xs text-slate-600 leading-relaxed font-semibold">
-                      {selectedModel.descriptionLong}
+                      {selectedModel.description || selectedModel.descriptionLong}
                     </p>
 
                     <div className="grid grid-cols-2 gap-3 bg-slate-50 border border-slate-150 rounded-2xl p-3.5 mt-2">
                       <div>
                         <span className="text-[9.5px] uppercase font-bold text-slate-400 block mb-0.5">Giá thuê thiết bị</span>
                         <strong className="text-sm font-black text-[#00236f] font-mono leading-none">
-                          {selectedModel.pricePerDay.toLocaleString('vi-VN')} VNĐ / ngày
+                          {(selectedModel.dailyPrice || selectedModel.pricePerDay || 0).toLocaleString('vi-VN')} VNĐ / ngày
                         </strong>
                       </div>
                       <div>
                         <span className="text-[9.5px] uppercase font-bold text-slate-400 block mb-0.5">Tiền đặt cọc</span>
                         <strong className="text-sm font-black text-rose-800 font-mono leading-none">
-                          {selectedModel.deposit.toLocaleString('vi-VN')} VNĐ
+                          {(selectedModel.depositAmount || selectedModel.deposit || 0).toLocaleString('vi-VN')} VNĐ
                         </strong>
                       </div>
                     </div>
@@ -957,29 +890,29 @@ export default function Equipments({
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {getRelatedModelsFor(selectedModel, detailStartDate, detailEndDate, EQUIPMENTS_DATA).map((item) => {
+                    {getRelatedModelsFor(selectedModel, detailStartDate, detailEndDate, allModels).map((item) => {
                       const itemStatus = getAvailabilityStatus(item, detailStartDate, detailEndDate);
                       return (
                         <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 flex flex-col space-y-3 hover:border-indigo-200 transition-all shadow-xs">
                           {/* Item header */}
                           <div className="flex gap-3">
                             <img 
-                              src={item.image} 
+                              src={item.imageUrl || item.image} 
                               alt={item.name} 
                               className="w-14 h-14 object-cover rounded-xl border border-slate-200 shrink-0" 
                               referrerPolicy="no-referrer"
                             />
                             <div className="min-w-0">
-                              <span className="text-[8px] font-black uppercase text-[#fea619] block leading-none">{item.brand}</span>
+                              <span className="text-[8px] font-black uppercase text-[#fea619] block leading-none">{item.brand?.name || item.brand}</span>
                               <h5 className="text-[11px] font-bold text-slate-800 tracking-tight truncate mt-1">{item.name}</h5>
-                              <p className="text-[9.5px] text-slate-450 truncate font-semibold">{item.descriptionShort}</p>
+                              <p className="text-[9.5px] text-slate-450 truncate font-semibold">{item.description || item.descriptionShort}</p>
                             </div>
                           </div>
 
                           <div className="flex justify-between items-center text-[10px] border-t border-slate-150 pt-2">
                             <div className="flex flex-col">
-                              <strong className="text-slate-800 font-mono font-extrabold">{item.pricePerDay.toLocaleString('vi-VN')} VNĐ / ngày</strong>
-                              <span className="text-[8.5px] text-slate-400">Cọc: {item.deposit.toLocaleString('vi-VN')}đ</span>
+                              <strong className="text-slate-800 font-mono font-extrabold">{(item.dailyPrice || item.pricePerDay || 0).toLocaleString('vi-VN')} VNĐ / ngày</strong>
+                              <span className="text-[8.5px] text-slate-400">Cọc: {(item.depositAmount || item.deposit || 0).toLocaleString('vi-VN')}đ</span>
                             </div>
                             <div>
                               {itemStatus === 'Chưa chọn ngày thuê' && (

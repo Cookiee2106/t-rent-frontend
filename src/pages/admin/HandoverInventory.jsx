@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import orderApi from '../../api/orderApi';
 import { 
   Search, 
   Trash2, 
@@ -21,198 +22,163 @@ const formatVND = (value) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 };
 
-// INITIAL MOCK DATA ACCORDING TO DETAILED REQUIREMENTS
-const INITIAL_LIQUIDATION_ORDERS = [
-  {
-    orderCode: 'ORD001',
-    customerName: 'Nguyễn Văn A',
-    customerEmail: 'nguyenvana@example.com',
-    customerPhone: '0901234567',
-    verificationStatus: 'Đã duyệt',
-    receiveDate: '20/06/2026',
-    expectedReturnDate: '23/06/2026',
-    durationDays: 3,
-    rentAmount: 2400000,
-    depositAmount: 6000000,
-    orderStatus: 'Đang thuê',
-    liquidationStatus: 'Chờ kiểm kê',
-    // Handover Details
-    handoverDate: '20/06/2026',
-    handoverStaff: 'Trần Tú (Nhân viên)',
-    paperContract: 'hop_dong_ORD001_signed.pdf',
-    handoverPhoto: 'anh_ban_giao_ORD001.png',
-    handoverNotes: 'Thiết bị hoạt động tốt, đầy đủ phụ kiện, pin sạc cáp bọc nilon bảo quản.',
-    // Items data loaded inside return form structure
-    combos: [
-      {
-        productName: 'Sony A7 IV',
-        unitIndex: 1,
-        items: [
-          {
-            id: 'item-1',
-            name: 'Body chính',
-            category: 'BODY',
-            managementType: 'IDENTIFIED_ASSET',
-            assetCode: 'BODY001',
-            serial: 'SN-A7IV-001',
-            stateBefore: 'Tốt',
-            stateAfter: 'Tốt', // Default state after return: Good
-            isDamaged: false,
-            isMissing: false,
-            notes: ''
-          },
-          {
-            id: 'item-2',
-            name: 'Pin NP-FZ100',
-            category: 'ACCESSORY',
-            managementType: 'IDENTIFIED_ASSET',
-            assetCode: 'PIN003',
-            serial: 'SN-PIN-S001',
-            stateBefore: 'Tốt',
-            stateAfter: 'Tốt',
-            isDamaged: false,
-            isMissing: false,
-            notes: ''
-          },
-          {
-            id: 'item-3',
-            name: 'Lens 24-70 GM',
-            category: 'ACCESSORY',
-            managementType: 'IDENTIFIED_ASSET',
-            assetCode: 'LEN005',
-            serial: 'SN-LEN-S001',
-            stateBefore: 'Tốt',
-            stateAfter: 'Tốt',
-            isDamaged: false,
-            isMissing: false,
-            notes: ''
-          },
-          {
-            id: 'item-4',
-            name: 'Túi Sony',
-            category: 'ACCESSORY',
-            managementType: 'QUANTITY',
-            deliveredQuantity: 1,
-            returnedQuantity: 1,
-            damagedQuantity: 0,
-            missingQuantity: 0,
-            stateBefore: 'Tốt',
-            notes: 'Đầy đủ quai đeo'
-          }
-        ]
-      },
-      {
-        productName: 'Fuji X-T5',
-        unitIndex: 1,
-        items: [
-          {
-            id: 'item-5',
-            name: 'Body chính',
-            category: 'BODY',
-            managementType: 'IDENTIFIED_ASSET',
-            assetCode: 'FUJI002',
-            serial: 'SN-FUJI-001',
-            stateBefore: 'Tốt',
-            stateAfter: 'Tốt',
-            isDamaged: false,
-            isMissing: false,
-            notes: ''
-          },
-          {
-            id: 'item-6',
-            name: 'Pin Fuji NP-W235',
-            category: 'ACCESSORY',
-            managementType: 'IDENTIFIED_ASSET',
-            assetCode: 'PIN008',
-            serial: 'SN-PIN-F001',
-            stateBefore: 'Tốt',
-            stateAfter: 'Tốt',
-            isDamaged: false,
-            isMissing: false,
-            notes: ''
-          },
-          {
-            id: 'item-7',
-            name: 'Lens XF 35mm',
-            category: 'ACCESSORY',
-            managementType: 'IDENTIFIED_ASSET',
-            assetCode: 'LEN012',
-            serial: 'SN-LEN-F001',
-            stateBefore: 'Tốt',
-            stateAfter: 'Hư hỏng', // Pre-filled as damaged to trigger usecase scenarios
-            isDamaged: true,
-            isMissing: false,
-            notes: 'Kính xước dăm sâu vết móp cơ cấu xoay zoom rít cứng'
-          },
-          {
-            id: 'item-8',
-            name: 'Túi Fuji',
-            category: 'ACCESSORY',
-            managementType: 'QUANTITY',
-            deliveredQuantity: 1,
-            returnedQuantity: 1,
-            damagedQuantity: 0,
-            missingQuantity: 0,
-            stateBefore: 'Tốt',
-            notes: 'Không lấm bẩn'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    orderCode: 'ORD002',
-    customerName: 'Trần Minh B',
-    customerEmail: 'tranminhb@example.com',
-    customerPhone: '0982738221',
-    verificationStatus: 'Đã duyệt',
-    receiveDate: '18/06/2026',
-    expectedReturnDate: '21/06/2026',
-    durationDays: 3,
-    rentAmount: 1800000,
-    depositAmount: 3000000,
-    orderStatus: 'Hoàn tất',
-    liquidationStatus: 'Đã thanh lý',
-    // Handover Details
-    handoverDate: '18/06/2026',
-    handoverStaff: 'Trần Tú (Nhân viên)',
-    paperContract: 'hop_dong_ORD002_signed.pdf',
-    handoverPhoto: 'anh_ban_giao_ORD002.png',
-    handoverNotes: 'Hợp đồng hoàn chỉnh, khách thanh toán luôn tiền cọc.',
-    combos: [
-      {
-        productName: 'Sony A7 IV',
-        unitIndex: 1,
-        items: [
-          {
-            id: 'item-9',
-            name: 'Body chính',
-            category: 'BODY',
-            managementType: 'IDENTIFIED_ASSET',
-            assetCode: 'BODY002',
-            serial: 'SN-A7IV-002',
-            stateBefore: 'Tốt',
-            stateAfter: 'Tốt',
-            isDamaged: false,
-            isMissing: false,
-            notes: 'Trả nguyên vẹn'
-          }
-        ]
-      }
-    ],
-    liquidationResults: {
-      returnNotes: 'Thiết bị trả rất tốt, không trầy xước, bàn giao vệ sinh bụi sạch sẽ.',
-      photos: ['tra_may_ORD002.png'],
-      settlementType: 'REFUND_FULL', // REFUND_FULL / DEDUCT
-      depositReturned: 3000000,
-      depositDeducted: 0,
-      deductedReason: ''
-    }
-  }
-];
-
 export default function HandoverInventory() {
-  const [orders, setOrders] = useState(INITIAL_LIQUIDATION_ORDERS);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const returnImagesInputRef = useRef(null);
+  const [uploadingReturnImages, setUploadingReturnImages] = useState(false);
+  const [uploadedReturnImageUrls, setUploadedReturnImageUrls] = useState([]);
+
+  // Mapper cho danh sách thanh lý
+  const mapLiquidation = (o) => ({
+    id: o.id,
+    orderCode: o.ma_don || o.orderCode || '',
+    customerName: o.khach_hang?.ho_ten || o.customerName || 'Khách hàng',
+    customerEmail: o.khach_hang?.email || o.customerEmail || '',
+    customerPhone: o.khach_hang?.so_dien_thoai || o.customerPhone || '',
+    expectedReturnDate: o.ngay_tra?.split('T')[0] || o.expectedReturnDate || '',
+    receiveDate: o.ngay_nhan?.split('T')[0] || o.receiveDate || '',
+    depositAmount: Number(o.tong_tien_coc || o.depositAmount) || 0,
+    orderStatus: o.trang_thai || o.orderStatus || 'DANG_THUE',
+    liquidationStatus: o.phieu_tra?.id ? 'Đã thanh lý' : 'Chờ thanh lý',
+  });
+
+  // Helper to match physical assets to their product models by name/code heuristics
+  const findMatchingChiTiet = (tb, chiTietList) => {
+    if (!chiTietList || chiTietList.length === 0) return null;
+    const code = (tb.ma_tai_san || '').toLowerCase();
+    const serial = (tb.so_serial || '').toLowerCase();
+
+    // DJI RS 4 Pro -> TS-RS4-001, RS4
+    if (code.includes('rs4') || serial.includes('rs4') || code.includes('dji') || serial.includes('dji')) {
+      const match = chiTietList.find(ct => {
+        const name = (ct.ten_mau || '').toLowerCase();
+        return name.includes('rs4') || name.includes('rs 4') || name.includes('dji');
+      });
+      if (match) return match;
+    }
+
+    // Sony FE 24-70mm -> TS-2470-001, LENS
+    if (code.includes('2470') || serial.includes('2470') || code.includes('24-70') || serial.includes('24-70')) {
+      const match = chiTietList.find(ct => {
+        const name = (ct.ten_mau || '').toLowerCase();
+        return name.includes('24-70') || name.includes('2470');
+      });
+      if (match) return match;
+    }
+
+    // Sony Alpha A7 IV -> TS-A74-001, A7
+    if (code.includes('a74') || code.includes('a7iv') || code.includes('a7') || serial.includes('a7')) {
+      const match = chiTietList.find(ct => {
+        const name = (ct.ten_mau || '').toLowerCase();
+        return name.includes('a7 iv') || name.includes('a7iv') || name.includes('a7') || name.includes('sony');
+      });
+      if (match) return match;
+    }
+
+    // Canon EOS R5 -> TS-EOSR5-001, R5
+    if (code.includes('eosr5') || code.includes('r5') || serial.includes('r5') || code.includes('canon') || serial.includes('canon')) {
+      const match = chiTietList.find(ct => {
+        const name = (ct.ten_mau || '').toLowerCase();
+        return name.includes('r5') || name.includes('canon');
+      });
+      if (match) return match;
+    }
+
+    // Fuji X-T5 -> TS-XT5-001, XT5, FUJI
+    if (code.includes('xt5') || serial.includes('xt5') || code.includes('fuji') || serial.includes('fuji')) {
+      const match = chiTietList.find(ct => {
+        const name = (ct.ten_mau || '').toLowerCase();
+        return name.includes('xt5') || name.includes('fuji');
+      });
+      if (match) return match;
+    }
+
+    // Generic fallback: word overlap
+    const codeWords = code.split(/[^a-z0-9]/).filter(w => w.length > 1);
+    for (const ct of chiTietList) {
+      const name = (ct.ten_mau || '').toLowerCase();
+      for (const word of codeWords) {
+        if (word !== 'ts' && word !== 'sn' && name.includes(word)) {
+          return ct;
+        }
+      }
+    }
+
+    return chiTietList[0];
+  };
+
+  // Mapper cho chi tiết thanh lý
+  const mapLiquidationDetail = (o) => {
+    const detail = {
+      id: o.id,
+      orderCode: o.ma_don || o.orderCode || '',
+      customerName: o.khach_hang?.ho_ten || o.customerName || 'Khách hàng',
+      customerEmail: o.khach_hang?.email || o.customerEmail || '',
+      customerPhone: o.khach_hang?.so_dien_thoai || o.customerPhone || '',
+      expectedReturnDate: o.ngay_tra?.split('T')[0] || o.expectedReturnDate || '',
+      receiveDate: o.ngay_nhan?.split('T')[0] || o.receiveDate || '',
+      depositAmount: Number(o.tong_tien_coc || o.depositAmount) || 0,
+      orderStatus: o.trang_thai || o.orderStatus || 'DANG_THUE',
+      liquidationStatus: o.phieu_tra?.id ? 'Đã thanh lý' : 'Chờ thanh lý',
+      notes: o.ghi_chu || o.notes || '',
+      handoverNotes: o.phieu_ban_giao?.ghi_chu || o.handoverNotes || '',
+    };
+
+    const combos = [];
+    if (o.chi_tiet_don_thue) {
+      o.chi_tiet_don_thue.forEach((ct) => {
+        const matchingPhysical = (o.thiet_bi_gan_voi_don || []).filter((tb) => {
+          if (tb.chi_tiet_don_thue_id) {
+            return tb.chi_tiet_don_thue_id === ct.id;
+          }
+          const matchedCt = findMatchingChiTiet(tb, o.chi_tiet_don_thue);
+          return matchedCt && matchedCt.id === ct.id;
+        });
+        
+        for (let i = 0; i < ct.so_luong; i++) {
+          const physical = matchingPhysical[i];
+          const items = [];
+          if (physical) {
+            items.push({
+              id: physical.id,
+              thiet_bi_id: physical.thiet_bi_id,
+              name: ct.ten_mau || 'Thiết bị chính',
+              managementType: 'IDENTIFIED_ASSET',
+              serial: physical.so_serial,
+              assetCode: physical.ma_tai_san,
+              stateBefore: physical.tinh_trang_truoc || 'Tốt',
+              stateAfter: physical.tinh_trang_sau || 'Sẵn sàng',
+            });
+          }
+          
+          combos.push({
+            productName: ct.ten_mau || 'Thiết bị',
+            unitIndex: i + 1,
+            items: items
+          });
+        }
+      });
+    }
+    detail.combos = combos;
+    return detail;
+  };
+
+  const fetchLiquidations = async () => {
+    try {
+      setLoading(true);
+      const res = await orderApi.admin.getLiquidations();
+      const rawData = res.data?.data || res.data;
+      const list = Array.isArray(rawData) ? rawData : (rawData?.danh_sach || []);
+      setOrders(list.map(mapLiquidation));
+    } catch (err) {
+      console.error('Lỗi tải danh sách thanh lý:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchLiquidations(); }, []);
   const [toast, setToast] = useState(null);
 
   // Filters state
@@ -234,20 +200,12 @@ export default function HandoverInventory() {
   const [formCombos, setFormCombos] = useState([]);
   const [formPhotos, setFormPhotos] = useState([]);
   const [settlementType, setSettlementType] = useState('DEDUCT'); // 'REFUND_FULL' or 'DEDUCT'
-  const [refundAmount, setRefundAmount] = useState(5000000);
-  const [deductionAmount, setDeductionAmount] = useState(1000000);
-  const [deductionReason, setDeductionReason] = useState('Lens XF 35mm bị hư hỏng');
-  const [liquidationNotes, setLiquidationNotes] = useState('Cần chuyển lens sang bộ phận bảo trì gấp');
-  const [maintenanceRecords, setMaintenanceRecords] = useState([
-    {
-      assetCode: 'LEN012',
-      equipmentName: 'Lens XF 35mm',
-      serial: 'SN-LEN-F001',
-      reason: 'Hư hỏng khi khách hàng trả',
-      note: 'Tạo từ quá trình thanh lý hợp đồng ORD001',
-      saved: true
-    }
-  ]);
+  const [refundAmount, setRefundAmount] = useState(0);
+  const [deductionAmount, setDeductionAmount] = useState(0);
+  const [deductionReason, setDeductionReason] = useState('');
+  const [liquidationNotes, setLiquidationNotes] = useState('');
+  const [maintenanceRecords, setMaintenanceRecords] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -256,65 +214,79 @@ export default function HandoverInventory() {
     }, 4000);
   };
 
-  // Pre-fill form when opening ORD001
-  const handleOpenForm = (order) => {
+  // Pre-fill form when opening ORD001 - Lấy chi tiết thật từ BE trước
+  const handleOpenForm = async (order) => {
     if (order.liquidationStatus === 'Đã thanh lý') {
       return; // Handled by disabled button or direct warning
     }
     
-    setSelectedFormOrder(order);
-    // Clone combos safely
-    const clonedCombos = JSON.parse(JSON.stringify(order.combos || []));
-    setFormCombos(clonedCombos);
-    
-    // Default initial files for display
-    setFormPhotos([
-      { name: 'anh_tra_may_lens_fuji_xước.jpg', size: '1.2 MB', previewUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=150' }
-    ]);
+    try {
+      setLoading(true);
+      const res = await orderApi.admin.getLiquidationDetail(order.id);
+      const detailData = res.data?.data || res.data;
+      const mappedDetail = mapLiquidationDetail(detailData);
 
-    // Pre-fill fields for ORD001 scenario
-    if (order.orderCode === 'ORD001') {
-      setSettlementType('DEDUCT');
-      setDeductionAmount(1000000);
-      setDeductionReason('Lens XF 35mm bị hư hỏng');
-      setLiquidationNotes('Cần chuyển lens sang bảo trì');
-      setRefundAmount(5000000);
-      setMaintenanceRecords([
-        {
-          assetCode: 'LEN012',
-          equipmentName: 'Lens XF 35mm',
-          serial: 'SN-LEN-F001',
-          reason: 'Hư hỏng khi khách hàng trả',
-          note: 'Tạo từ quá trình thanh lý hợp đồng ORD001',
-          saved: true
-        }
-      ]);
-    } else {
+      setSelectedFormOrder(mappedDetail);
+      // Clone combos safely
+      const clonedCombos = JSON.parse(JSON.stringify(mappedDetail.combos || []));
+      setFormCombos(clonedCombos);
+      
+      // Reset form photos and uploaded URLs
+      setFormPhotos([]);
+      setUploadedReturnImageUrls([]);
+
+      // Reset form fields
       setSettlementType('REFUND_FULL');
       setDeductionAmount(0);
       setDeductionReason('');
-      setRefundAmount(order.depositAmount);
+      setRefundAmount(mappedDetail.depositAmount || 0);
       setLiquidationNotes('');
       setMaintenanceRecords([]);
-    }
 
-    setShowFormModal(true);
+      setShowFormModal(true);
+    } catch (err) {
+      alert('Không thể lấy chi tiết đơn thuê để lập phiếu trả: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleOpenDetail = (order) => {
-    setSelectedDetailOrder(order);
+  const handleOpenDetail = async (order) => {
+    try {
+      const res = await orderApi.admin.getLiquidationDetail(order.id);
+      const detailData = res.data?.data || res.data;
+      setSelectedDetailOrder(mapLiquidationDetail(detailData));
+    } catch {
+      setSelectedDetailOrder(order); // Fallback to list data
+    }
     setShowDetailModal(true);
   };
 
-  // Simulate file drag drops
-  const handleFileUploadSimulated = () => {
-    const freshFile = {
-      name: `tra_thiet_bi_photo_${Math.floor(Math.random() * 899 + 100)}.png`,
-      size: '2.4 MB',
-      previewUrl: 'https://images.unsplash.com/photo-1495707902641-75cac588d2e9?w=150'
-    };
-    setFormPhotos([...formPhotos, freshFile]);
-    showToast('Tải ảnh trả máy thành công');
+  // Upload return images via API 16
+  const handleUploadReturnImages = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    try {
+      setUploadingReturnImages(true);
+      const res = await orderApi.admin.uploadReturnImages(selectedFormOrder.id, files);
+      const images = res.data?.data?.danh_sach_anh || res.data?.data?.images || res.data?.images || [];
+      setUploadedReturnImageUrls(prev => [...prev, ...images]);
+      // Add to formPhotos for UI display
+      const newPhotos = files.map((f, i) => ({
+        name: f.name,
+        size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
+        previewUrl: images[i]?.file_url || images[i]?.fileUrl || URL.createObjectURL(f)
+      }));
+      setFormPhotos(prev => [...prev, ...newPhotos]);
+      showToast('Tải ảnh trả máy thành công');
+    } catch (err) {
+      console.error('Lỗi upload ảnh trả máy:', err);
+      showToast('Lỗi khi tải ảnh, vui lòng thử lại');
+    } finally {
+      setUploadingReturnImages(false);
+      // Reset input so same file can be re-selected
+      if (returnImagesInputRef.current) returnImagesInputRef.current.value = '';
+    }
   };
 
   const handleRemovePhoto = (idx) => {
@@ -410,12 +382,14 @@ export default function HandoverInventory() {
       }
     }
 
-    // Dynamic regeneration of suggestion cards for maintenance
+    // Dynamic regeneration of suggestion cards for maintenance (lưu cả ID thiết bị)
     const repairs = [];
     combosList.forEach(cb => {
       cb.items.forEach(it => {
         if (it.managementType === 'IDENTIFIED_ASSET' && it.stateAfter === 'Hư hỏng') {
           repairs.push({
+            thiet_bi_id: it.thiet_bi_id,
+            thiet_bi_gan_voi_don_id: it.id,
             assetCode: it.assetCode,
             equipmentName: it.name,
             serial: it.serial,
@@ -478,7 +452,7 @@ export default function HandoverInventory() {
   };
 
   // Main Submit handler for Liquidation
-  const handleConfirmSubmitLiquidation = (e) => {
+  const handleConfirmSubmitLiquidation = async (e) => {
     e.preventDefault();
 
     // 1. Validation checks
@@ -545,34 +519,74 @@ export default function HandoverInventory() {
       }
     }
 
-    // Save success scenario
-    const updatedOrders = orders.map(o => {
-      if (o.orderCode === selectedFormOrder.orderCode) {
-        return {
-          ...o,
-          orderStatus: 'Hoàn tất',
-          liquidationStatus: 'Đã thanh lý',
-          liquidationResults: {
-            returnNotes: liquidationNotes || 'Thanh lý hoàn tất phiếu kiểm kê.',
-            photos: formPhotos.map(p => p.name),
-            settlementType: settlementType,
-            depositReturned: settlementType === 'REFUND_FULL' ? o.depositAmount : o.depositAmount - deductionAmount,
-            depositDeducted: settlementType === 'REFUND_FULL' ? 0 : deductionAmount,
-            deductedReason: settlementType === 'REFUND_FULL' ? '' : deductionReason
-          }
-        };
-      }
-      return o;
+    // Build assets payload for API 17 (dùng tiếng Việt theo DB)
+    const assetsPayload = [];
+    formCombos.forEach(cb => {
+      cb.items.forEach(it => {
+        assetsPayload.push({
+          thiet_bi_gan_voi_don_id: it.id,
+          bi_hu_hong: it.stateAfter === 'Hư hỏng',
+          bi_mat: it.stateAfter === 'Mất',
+          tinh_trang: it.stateAfter || 'Sẵn sàng',
+          ghi_chu: it.notes || ''
+        });
+      });
     });
 
-    setOrders(updatedOrders);
-    setShowFormModal(false);
+    try {
+      setSubmitting(true);
+      const orderId = selectedFormOrder.id;
 
-    // Show sequence logs representing programmatic alerts required
-    showToast('Thanh lý hợp đồng thành công!');
-    setTimeout(() => {
-      alert('Thanh lý hợp đồng thành công\n\n- Ghi nhận khấu trừ cọc thành công\n- Tạo hồ sơ bảo trì thành công\n- Lập phiếu trả và kiểm kê thành công');
-    }, 500);
+      // Step 1: API 17 – Create return inspection
+      await orderApi.admin.createReturnInspection(orderId, {
+        danh_sach_tai_san: assetsPayload,
+        danh_sach_anh_url: uploadedReturnImageUrls,
+        ghi_chu: liquidationNotes || 'Thanh lý hoàn tất phiếu kiểm kê.',
+        ket_qua: hasIssueInAudit ? 'CO_SU_CO' : 'HOP_LE'
+      });
+
+      // Step 2: API 18 or 19 – Process deposit
+      if (settlementType === 'REFUND_FULL') {
+        await orderApi.admin.processRefundDeposit(orderId, {
+          so_tien: selectedFormOrder.depositAmount,
+          ma_giao_dich: 'REFUND_' + Date.now(),
+          ghi_chu: 'Hoàn cọc 100% - thiết bị trả nguyên vẹn'
+        });
+      } else {
+        await orderApi.admin.processDeductDeposit(orderId, {
+          danh_sach_phi: [{
+            so_tien: deductionAmount,
+            ly_do: deductionReason
+          }],
+          ma_giao_dich: 'DEDUCT_' + Date.now(),
+          ghi_chu: liquidationNotes || 'Khấu trừ cọc do hư hỏng/mất thiết bị'
+        });
+      }
+
+      // Step 3: API 20 – Create maintenance records for damaged items
+      for (const m of maintenanceRecords) {
+        if (m.saved) {
+          await orderApi.admin.createMaintenanceRecord(orderId, {
+            thiet_bi_id: m.thiet_bi_id,
+            thiet_bi_gan_voi_don_id: m.thiet_bi_gan_voi_don_id,
+            ly_do: m.reason,
+            ghi_chu: m.note
+          });
+        }
+      }
+
+      setShowFormModal(false);
+      showToast('Thanh lý hợp đồng thành công!');
+
+      // Refresh the list from server
+      await fetchLiquidations();
+    } catch (err) {
+      console.error('Lỗi thanh lý hợp đồng:', err);
+      const errMsg = err.response?.data?.message || 'Có lỗi xảy ra khi thanh lý hợp đồng';
+      alert(`Lỗi: ${errMsg}`);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Filters application
@@ -1184,7 +1198,7 @@ export default function HandoverInventory() {
                             <div className="flex items-center gap-2">
                               <span className="text-slate-400 font-extrabold rotate-0 transition text-[10px]">▼</span>
                               <strong className="text-slate-900 text-[13px] font-black">{combo.productName} #{combo.unitIndex}</strong>
-                              <span className="px-2 py-0.5 bg-slate-200/60 rounded text-[10px] font-mono font-bold">4 thiết bị</span>
+                              <span className="px-2 py-0.5 bg-slate-200/60 rounded text-[10px] font-mono font-bold">{combo.items.length} thiết bị</span>
                             </div>
 
                             <div className="flex items-center gap-2">
@@ -1358,12 +1372,22 @@ export default function HandoverInventory() {
                       <p className="text-[10px] text-slate-400 mt-0.5">Tải lên ảnh chụp tình trạng hiện tại của thiết bị để đối soát bồi hoàn.</p>
                     </div>
 
+                    <input
+                      type="file"
+                      ref={returnImagesInputRef}
+                      onChange={handleUploadReturnImages}
+                      accept="image/jpeg,image/png"
+                      multiple
+                      className="hidden"
+                    />
                     <div 
-                      onClick={handleFileUploadSimulated}
+                      onClick={() => returnImagesInputRef.current?.click()}
                       className="border-2 border-dashed border-slate-300 bg-white hover:bg-slate-100 p-4 text-center rounded-xl cursor-pointer transition flex flex-col items-center justify-center"
                     >
                       <UploadCloud className="w-7 h-7 text-indigo-600 mb-1" />
-                      <span className="text-[11px] text-slate-700 font-extrabold block">Bấm hoặc Kéo thả ảnh vào đây</span>
+                      <span className="text-[11px] text-slate-700 font-extrabold block">
+                        {uploadingReturnImages ? 'Đang tải lên...' : 'Bấm hoặc Kéo thả ảnh vào đây'}
+                      </span>
                       <span className="text-[9px] text-slate-400 font-medium block mt-0.5">Hỗ trợ định dạng JPG, PNG, tối đa 10MB</span>
                     </div>
 
@@ -1608,9 +1632,10 @@ export default function HandoverInventory() {
                     <button 
                       type="submit"
                       onClick={handleConfirmSubmitLiquidation}
-                      className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase tracking-wider shadow-md transition"
+                      disabled={submitting}
+                      className={`flex-1 py-3 rounded-xl font-black uppercase tracking-wider shadow-md transition ${submitting ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
                     >
-                      Xác nhận thanh lý
+                      {submitting ? 'Đang xử lý...' : 'Xác nhận thanh lý'}
                     </button>
                   </div>
 

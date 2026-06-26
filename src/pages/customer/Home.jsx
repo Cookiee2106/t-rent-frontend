@@ -1,7 +1,8 @@
 import React, { useState, forwardRef } from 'react';
 import { motion } from 'motion/react';
 import { Camera, Layers, Video, Mic, Lightbulb, Sliders, Eye, Search, FileText, CreditCard, RefreshCw, Star, Info, Check } from 'lucide-react';
-import { EQUIPMENTS, CATEGORIES } from '../../data';
+import { CATEGORIES } from '../../data';
+import deviceApi from '../../api/deviceApi';
 
 const Home = forwardRef(({
   setActivePage,
@@ -11,8 +12,23 @@ const Home = forwardRef(({
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
 
-  // List of active equipment displaying top 4
-  const popularEquipments = EQUIPMENTS.slice(0, 4);
+  const [popularEquipments, setPopularEquipments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchPopular = async () => {
+      try {
+        setLoading(true);
+        const res = await deviceApi.getDeviceModels({ limit: 4 });
+        setPopularEquipments(res.data?.data || []);
+      } catch (err) {
+        console.error('Failed to fetch popular equipments', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPopular();
+  }, []);
 
   // Map category icons to lucide icons
   const renderCategoryIcon = (iconName) => {
@@ -157,50 +173,58 @@ const Home = forwardRef(({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {popularEquipments.map((eq) => (
-              <motion.div 
-                whileHover={{ y: -8 }}
-                key={eq.id}
-                className="bg-white border border-[#c5c5d3] rounded-xl overflow-hidden group hover:shadow-lg transition-all duration-300 flex flex-col h-full"
-              >
-                {/* Product Image Stage */}
-                <div className="relative aspect-square overflow-hidden bg-gray-100 flex items-center justify-center">
-                  <img 
-                    alt={eq.name} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    src={eq.image} 
-                  />
-                  <span className="absolute top-3 left-3 bg-green-100 border border-green-300 text-green-800 text-[10px] font-extrabold px-2 py-1 rounded uppercase tracking-wider">
-                    Còn sẵn
-                  </span>
-                  <div className="absolute bottom-3 right-3 bg-[#00236f] text-white px-3 py-1.5 rounded font-extrabold text-xs">
-                    {eq.pricePerDay.toLocaleString('vi-VN')}đ / ngày
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <RefreshCw className="w-8 h-8 text-[#00236f] animate-spin" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {popularEquipments.map((eq) => (
+                <motion.div 
+                  whileHover={{ y: -8 }}
+                  key={eq.id}
+                  className="bg-white border border-[#c5c5d3] rounded-xl overflow-hidden group hover:shadow-lg transition-all duration-300 flex flex-col h-full"
+                >
+                  {/* Product Image Stage */}
+                  <div className="relative aspect-square overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <img 
+                      alt={eq.name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      src={eq.imageUrl || eq.image} 
+                    />
+                    {eq.status === 'ACTIVE' && (
+                      <span className="absolute top-3 left-3 bg-green-100 border border-green-300 text-green-800 text-[10px] font-extrabold px-2 py-1 rounded uppercase tracking-wider">
+                        Còn sẵn
+                      </span>
+                    )}
+                    <div className="absolute bottom-3 right-3 bg-[#00236f] text-white px-3 py-1.5 rounded font-extrabold text-xs">
+                      {Number(eq.dailyPrice || eq.pricePerDay || 0).toLocaleString('vi-VN')}đ / ngày
+                    </div>
                   </div>
-                </div>
 
-                <div className="p-6 flex flex-col flex-grow">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#444651] mb-1">
-                    {eq.brand}
-                  </span>
-                  <h3 className="text-lg font-bold text-[#00236f] mb-2 line-clamp-1 group-hover:text-[#fea619] transition-colors">
-                    {eq.name}
-                  </h3>
-                  <p className="text-xs text-[#444651] mb-5">
-                    Giá cọc: <span className="text-[#00236f] font-bold">{eq.deposit.toLocaleString('vi-VN')}đ</span>
-                  </p>
-                  
-                  <button 
-                    onClick={() => onOpenEquipmentDetail(eq)}
-                    className="mt-auto w-full py-3 border border-[#00236f] text-[#00236f] font-bold rounded-lg hover:bg-[#00236f] hover:text-white transition-all duration-300 text-sm flex items-center justify-center gap-1.5"
-                  >
-                    <Eye className="w-4 h-4" />
-                    Xem chi tiết
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                  <div className="p-6 flex flex-col flex-grow">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#444651] mb-1">
+                      {eq.brand?.name || eq.brand}
+                    </span>
+                    <h3 className="text-lg font-bold text-[#00236f] mb-2 line-clamp-1 group-hover:text-[#fea619] transition-colors">
+                      {eq.name}
+                    </h3>
+                    <p className="text-xs text-[#444651] mb-5">
+                      Giá cọc: <span className="text-[#00236f] font-bold">{Number(eq.depositAmount || eq.deposit || 0).toLocaleString('vi-VN')}đ</span>
+                    </p>
+                    
+                    <button 
+                      onClick={() => onOpenEquipmentDetail(eq)}
+                      className="mt-auto w-full py-3 border border-[#00236f] text-[#00236f] font-bold rounded-lg hover:bg-[#00236f] hover:text-white transition-all duration-300 text-sm flex items-center justify-center gap-1.5"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Xem chi tiết
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

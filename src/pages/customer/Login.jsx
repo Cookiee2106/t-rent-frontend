@@ -1,83 +1,62 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import authApi from '../../api/authApi';
 
 export default function Login({ onLoginSuccess, onNavigateToRegister }) {
-  const [loginInput, setLoginInput] = useState(''); // Email hoặc Số điện thoại
+  const [loginInput, setLoginInput] = useState(''); // Email
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Sơ đồ tài khoản thử nghiệm theo Use Case
-  const MOCK_ACCOUNTS = [
-    {
-      login: 'khach@t-rent.vn',
-      phone: '0901234567',
-      password: 'password123',
-      role: 'customer',
-      status: 'active',
-      name: 'Nguyễn Văn Tiến',
-    },
-    {
-      login: 'nhanvien@t-rent.vn',
-      phone: '0912345678',
-      password: 'password123',
-      role: 'staff',
-      status: 'active',
-      name: 'Trần Tú (Nhân viên)',
-    },
-    {
-      login: 'admin@t-rent.vn',
-      phone: '0987654321',
-      password: 'password123',
-      role: 'admin',
-      status: 'active',
-      name: 'Lê Hoàng (Admin)',
-    },
-    {
-      login: 'lock@t-rent.vn',
-      phone: '0333444555',
-      password: 'password123',
-      role: 'customer',
-      status: 'blocked',
-      name: 'Khách Hàng Bị Khóa',
-    }
-  ];
-
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
 
     if (!loginInput.trim() || !password.trim()) {
-      setErrorMessage('Vui lòng nhập đầy đủ thông tin đăng nhập');
+      setErrorMessage('Vui lòng nhập đầy đủ email và mật khẩu');
       return;
     }
 
-    // Tìm tài khoản khớp email hoặc số điện thoại
-    const account = MOCK_ACCOUNTS.find(
-      (acc) =>
-        (acc.login.toLowerCase() === loginInput.trim().toLowerCase() || acc.phone === loginInput.trim()) &&
-        acc.password === password
-    );
+    try {
+      setLoading(true);
+      const res = await authApi.login(loginInput.trim(), password);
+      
+      const token = res.data?.data?.token;
+      const rawUser = res.data?.data?.nguoi_dung || res.data?.data?.user;
 
-    if (!account) {
-      setErrorMessage('Thông tin đăng nhập không chính xác');
-      return;
+      if (!token || !rawUser) {
+        throw new Error('Dữ liệu trả về không hợp lệ');
+      }
+
+      // Chuẩn hóa thông tin người dùng từ backend sang frontend
+      const mappedRole = rawUser.vai_tro === 'QUAN_TRI' ? 'admin' 
+                      : rawUser.vai_tro === 'NHAN_VIEN' ? 'staff' 
+                      : 'customer';
+
+      const user = {
+        id: rawUser.id,
+        fullName: rawUser.ho_ten || rawUser.fullName || rawUser.name,
+        email: rawUser.email,
+        phone: rawUser.so_dien_thoai || rawUser.phone,
+        role: mappedRole
+      };
+
+      // Đăng nhập thành công -> Trả về thông tin đầy đủ gồm cả vai trò
+      onLoginSuccess({
+        token,
+        email: user.email,
+        phone: user.phone,
+        name: user.fullName,
+        role: user.role
+      });
+    } catch (err) {
+      console.error(err);
+      setErrorMessage(err.response?.data?.message || 'Thông tin đăng nhập không chính xác');
+    } finally {
+      setLoading(false);
     }
-
-    // Kiểm tra trạng thái tài khoản lẻ
-    if (account.status === 'blocked') {
-      setErrorMessage('Tài khoản của bạn đã bị khóa');
-      return;
-    }
-
-    // Đăng nhập thành công -> Trả về thông tin đầy đủ gồm cả vai trò
-    onLoginSuccess({
-      email: account.login,
-      phone: account.phone,
-      name: account.name,
-      role: account.role
-    });
   };
 
   return (
@@ -98,52 +77,7 @@ export default function Login({ onLoginSuccess, onNavigateToRegister }) {
           </p>
         </div>
 
-        {/* Demo trigger helper - Rất hữu ích cho GV phản biện & Test nghiệp vụ */}
-        <div className="mb-4 bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs">
-          <p className="text-[10px] text-[#00236f] font-black mb-1.5 uppercase tracking-wide">Sổ tài khoản test nhanh:</p>
-          <div className="flex flex-col gap-1.5 text-[9.5px] font-bold">
-            <button 
-              type="button"
-              onClick={() => {
-                setLoginInput('khach@t-rent.vn');
-                setPassword('password123');
-              }}
-              className="bg-blue-50 text-[#00236f] py-1 border border-blue-200 rounded text-left px-2 hover:bg-blue-105"
-            >
-              🙋 Khách hàng: khach@t-rent.vn
-            </button>
-            <button 
-              type="button"
-              onClick={() => {
-                setLoginInput('nhanvien@t-rent.vn');
-                setPassword('password123');
-              }}
-              className="bg-purple-50 text-purple-800 py-1 border border-purple-200 rounded text-left px-2 hover:bg-purple-105"
-            >
-              💼 Nhân viên: nhanvien@t-rent.vn
-            </button>
-            <button 
-              type="button"
-              onClick={() => {
-                setLoginInput('admin@t-rent.vn');
-                setPassword('password123');
-              }}
-              className="bg-rose-50 text-rose-800 py-1 border border-rose-200 rounded text-left px-2 hover:bg-rose-105"
-            >
-              👑 Quản trị viên: admin@t-rent.vn
-            </button>
-            <button 
-              type="button"
-              onClick={() => {
-                setLoginInput('lock@t-rent.vn');
-                setPassword('password123');
-              }}
-              className="bg-red-50 text-red-700 py-1 border border-red-200 rounded text-left px-2 hover:bg-red-105"
-            >
-              🔒 Máy Bị Khóa: lock@t-rent.vn
-            </button>
-          </div>
-        </div>
+
 
         {errorMessage && (
           <motion.div 
@@ -201,10 +135,11 @@ export default function Login({ onLoginSuccess, onNavigateToRegister }) {
 
           <button 
             type="submit"
-            className="w-full bg-[#fea619] text-[#2a1700] hover:bg-[#fea619]/90 font-black h-12 rounded-lg transition-all active:scale-[0.98] shadow-sm text-xs uppercase tracking-wider pt-0.5"
+            disabled={loading}
+            className="w-full bg-[#fea619] text-[#2a1700] hover:bg-[#fea619]/90 font-black h-12 rounded-lg transition-all active:scale-[0.98] shadow-sm text-xs uppercase tracking-wider pt-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
             id="login-submit-button"
           >
-            Đăng nhập
+            {loading ? 'Đang xử lý...' : 'Đăng nhập'}
           </button>
         </form>
 

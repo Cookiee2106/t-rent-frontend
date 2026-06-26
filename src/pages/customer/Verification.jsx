@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   User, 
@@ -13,8 +13,10 @@ import {
   Eye,
   Trash2,
   X,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw
 } from 'lucide-react';
+import customerApi from '../../api/customerApi';
 
 export default function Verification({
   user,
@@ -23,21 +25,65 @@ export default function Verification({
   setActivePage
 }) {
   // -------------------------------------------------------------
-  // MOCK SYSTEM DATA & LOCAL STATE
-  // Mặc định Khách hàng là Nguyễn Văn A, trạng thái là BỊ TỪ CHỐI
-  // đúng theo đặc tả yêu cầu của đề bài.
+  // REAL DATA FROM API
   // -------------------------------------------------------------
   const [profile, setProfile] = useState({
-    fullName: 'Nguyễn Văn A',
-    email: 'nguyenvana@example.com',
-    phone: '0901234567',
-    address: '123 Nguyễn Trãi, Quận 1, TP.HCM',
-    identityNumber: '079204000001',
-    accountStatus: 'ACTIVE',       // Hoạt động, Bị khóa, Không hoạt động
-    verificationStatus: 'REJECTED', // Chưa xác minh, Chờ duyệt, Đã duyệt, Bị từ chối
-    rejectReason: 'Ảnh giấy tờ bị mờ, không đọc rõ thông tin',
-    reviewedAt: '18/06/2026'
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+    identityNumber: '',
+    accountStatus: 'ACTIVE',
+    verificationStatus: 'UNVERIFIED',
+    rejectReason: null,
+    reviewedAt: null
   });
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+
+  useEffect(() => {
+    const fetchAccount = async () => {
+      try {
+        setLoading(true);
+        setFetchError(null);
+        const res = await customerApi.getAccount();
+        const data = res.data?.data;
+        if (data) {
+          const hk = data.ho_so_khach_hang;
+          const statusMap = {
+            'DA_DUYET': 'APPROVED',
+            'CHO_DUYET': 'PENDING',
+            'TU_CHOI': 'REJECTED',
+            'CHUA_XAC_MINH': 'UNVERIFIED'
+          };
+          const rawStatus = hk?.trang_thai_xac_minh || 'CHUA_XAC_MINH';
+          const mappedStatus = statusMap[rawStatus] || 'UNVERIFIED';
+
+          const xacMinhMoiNhat = hk?.ho_so_xac_minh_moi_nhat;
+          const rawDate = xacMinhMoiNhat?.duyet_luc || xacMinhMoiNhat?.created_at;
+
+          setProfile({
+            fullName: data.ho_ten || data.fullName || '',
+            email: data.email || '',
+            phone: data.so_dien_thoai || data.phone || '',
+            address: hk?.dia_chi || data.profile?.address || '',
+            identityNumber: hk?.so_cccd || data.profile?.identityNumber || '',
+            accountStatus: data.trang_thai === 'HOAT_DONG' ? 'ACTIVE' : 'INACTIVE',
+            verificationStatus: mappedStatus,
+            rejectReason: xacMinhMoiNhat?.ly_do_tu_choi || null,
+            reviewedAt: rawDate
+              ? new Date(rawDate).toLocaleDateString('vi-VN')
+              : null,
+          });
+        }
+      } catch (err) {
+        setFetchError('Không thể tải thông tin hồ sơ');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAccount();
+  }, []);
 
   // Modal / Drawer Control States
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -51,9 +97,11 @@ export default function Verification({
     identityNumber: ''
   });
 
-  // Form Gửi hồ sơ xác minh
-  const [frontImage, setFrontImage] = useState(null); // { name, previewUrl }
-  const [backImage, setBackImage] = useState(null);   // { name, previewUrl }
+  // Form Gửi hồ sơ xác minh - real file upload
+  const [frontImage, setFrontImage] = useState(null); // File object
+  const [backImage, setBackImage] = useState(null);   // File object
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState(null);
 
   // Notification States
   const [errorMsg, setErrorMsg] = useState(null);
@@ -155,78 +203,82 @@ export default function Verification({
     setShowVerifyModal(true);
   };
 
-  // Simulated upload clicks / drop triggers
-  const handleSimulateUpload = (side) => {
-    setErrorMsg(null);
-    const mockFilename = side === 'front' 
-      ? `front_${profile.fullName.toLowerCase().replace(/\s/g, '')}.jpg` 
-      : `back_${profile.fullName.toLowerCase().replace(/\s/g, '')}.jpg`;
-    
-    const mockPreview = side === 'front'
-      ? 'https://images.unsplash.com/photo-1554774853-aae0a22c8aa4?w=600'
-      : 'https://images.unsplash.com/photo-1563013544-824ae1d704d3?w=600';
+  // Real file upload via hidden input
+  const frontInputRef = React.useRef(null);
+  const backInputRef = React.useRef(null);
 
+  const handleFileSelect = (side, file) => {
+    setErrorMsg(null);
+    setVerifyError(null);
     if (side === 'front') {
-      setFrontImage({ name: mockFilename, previewUrl: mockPreview });
+      setFrontImage(file);
     } else {
-      setBackImage({ name: mockFilename, previewUrl: mockPreview });
+      setBackImage(file);
     }
   };
 
   const handleRemoveImage = (side, e) => {
-    e.stopPropagation(); // Stop click bubble back to simulate upload trigger
-    if (side === 'front') setFrontImage(null);
-    else setBackImage(null);
+    e.stopPropagation();
+    if (side === 'front') {
+      setFrontImage(null);
+      if (frontInputRef.current) frontInputRef.current.value = '';
+    } else {
+      setBackImage(null);
+      if (backInputRef.current) backInputRef.current.value = '';
+    }
   };
 
-  const handleSubmitVerification = (e) => {
+  const handleSubmitVerification = async (e) => {
     e.preventDefault();
     setErrorMsg(null);
+    setVerifyError(null);
 
-    // Khách hàng chưa đăng nhập kiểm tra (luôn thỏa mãn vì đây là màn hình Khách hàng)
     if (!profile.email) {
       setErrorMsg('Vui lòng đăng nhập để thực hiện');
       return;
     }
 
-    // Kiểm tra hồ sơ cá nhân đầy đủ
-    if (
-      !profile.fullName.trim() ||
-      !profile.phone.trim() ||
-      !profile.address.trim() ||
-      !profile.identityNumber.trim()
-    ) {
-      setErrorMsg('Vui lòng cập nhật đầy đủ hồ sơ cá nhân trước khi gửi xác minh');
-      return;
-    }
-
-    // Kiểm tra ảnh mặt trước
     if (!frontImage) {
       setErrorMsg('Vui lòng upload ảnh mặt trước giấy tờ');
       return;
     }
 
-    // Kiểm tra ảnh mặt sau
     if (!backImage) {
       setErrorMsg('Vui lòng upload ảnh mặt sau giấy tờ');
       return;
     }
 
-    // Đổi trạng thái xác minh thành Chờ duyệt
-    setProfile(prev => ({
-      ...prev,
-      verificationStatus: 'PENDING',
-      rejectReason: null,
-      reviewedAt: null
-    }));
+    try {
+      setVerifying(true);
+      const formData = new FormData();
+      formData.append('anh_mat_truoc', frontImage);
+      formData.append('anh_mat_sau', backImage);
+      if (profile.identityNumber) {
+        formData.append('so_cccd', profile.identityNumber);
+      }
 
-    // Gửi thông báo lên App chính (nếu cần)
-    if (onVerifySubmit) {
-      // Gọi callback để App đồng bộ
+      await customerApi.submitVerification(formData);
+
+      setProfile(prev => ({
+        ...prev,
+        verificationStatus: 'PENDING',
+        rejectReason: null,
+        reviewedAt: null
+      }));
+
+      if (onVerifySubmit) {
+        onVerifySubmit();
+      }
+
+      setShowVerifyModal(false);
+      setFrontImage(null);
+      setBackImage(null);
+      triggerSuccessMsg('Gửi hồ sơ xác minh thành công');
+    } catch (err) {
+      setVerifyError(err.response?.data?.message || 'Gửi hồ sơ thất bại. Vui lòng thử lại.');
+    } finally {
+      setVerifying(false);
     }
-
-    setShowVerifyModal(false);
-    triggerSuccessMsg('Gửi hồ sơ xác minh thành công');
   };
 
   // Helper colors for statuses
@@ -310,7 +362,18 @@ export default function Verification({
         </div>
       )}
 
-      {/* 2 CARDS LAYOUT FOR CUSTOMER SYSTEM */}
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <RefreshCw className="w-8 h-8 text-[#00236f] animate-spin mb-4" />
+          <p className="text-sm text-slate-500 font-semibold">Đang tải thông tin hồ sơ...</p>
+        </div>
+      ) : fetchError ? (
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-start gap-2">
+          <AlertCircle className="w-4.5 h-4.5 text-rose-600 mt-0.5 shrink-0" />
+          <span>{fetchError}</span>
+        </div>
+      ) : (
       <div className="flex flex-col gap-6">
         
         {/* CARD 1: THÔNG TIN CÁ NHÂN */}
@@ -417,6 +480,7 @@ export default function Verification({
         </div>
 
       </div>
+      )}
 
       {/* DIRECT ACTION FIELD ON SCREEN (KHU VỰC THAO TÁC TRỰC TIẾP TRÊN TRANG CHÍNH) */}
       <div className="bg-[#00236f]/5 border border-[#00236f]/10 p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 select-none">
@@ -715,7 +779,7 @@ export default function Verification({
                       <span className="text-[10.5px] text-slate-500 font-extrabold block">Ảnh mặt trước giấy tờ <span className="text-rose-500">*</span></span>
                       
                       <div 
-                        onClick={() => handleSimulateUpload('front')}
+                        onClick={() => frontInputRef.current?.click()}
                         className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer flex flex-col items-center justify-center min-h-[140px] relative transition-all ${
                           frontImage ? 'border-emerald-500 bg-emerald-50/5' : 'border-slate-205 bg-slate-50 hover:bg-slate-100'
                         }`}
@@ -723,7 +787,7 @@ export default function Verification({
                         {frontImage ? (
                           <div className="w-full text-center space-y-2">
                             <div className="w-full h-16 rounded overflow-hidden border border-slate-200 relative group">
-                              <img src={frontImage.previewUrl} alt="Mặt trước preview" className="w-full h-full object-cover" />
+                              <img src={URL.createObjectURL(frontImage)} alt="Mặt trước preview" className="w-full h-full object-cover" />
                               <div className="absolute inset-0 bg-slate-950/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
                                 <Eye className="w-4 h-4 text-white" />
                               </div>
@@ -748,6 +812,15 @@ export default function Verification({
                           </div>
                         )}
                       </div>
+                      <input
+                        ref={frontInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleFileSelect('front', e.target.files[0]);
+                        }}
+                      />
                     </div>
 
                     {/* MAT SAU */}
@@ -755,7 +828,7 @@ export default function Verification({
                       <span className="text-[10.5px] text-slate-500 font-extrabold block">Ảnh mặt sau giấy tờ <span className="text-rose-500">*</span></span>
                       
                       <div 
-                        onClick={() => handleSimulateUpload('back')}
+                        onClick={() => backInputRef.current?.click()}
                         className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer flex flex-col items-center justify-center min-h-[140px] relative transition-all ${
                           backImage ? 'border-emerald-500 bg-emerald-50/5' : 'border-slate-205 bg-slate-50 hover:bg-slate-100'
                         }`}
@@ -763,7 +836,7 @@ export default function Verification({
                         {backImage ? (
                           <div className="w-full text-center space-y-2">
                             <div className="w-full h-16 rounded overflow-hidden border border-slate-200 relative group">
-                              <img src={backImage.previewUrl} alt="Mặt sau preview" className="w-full h-full object-cover" />
+                              <img src={URL.createObjectURL(backImage)} alt="Mặt sau preview" className="w-full h-full object-cover" />
                               <div className="absolute inset-0 bg-slate-950/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
                                 <Eye className="w-4 h-4 text-white" />
                               </div>
@@ -788,10 +861,26 @@ export default function Verification({
                           </div>
                         )}
                       </div>
+                      <input
+                        ref={backInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) handleFileSelect('back', e.target.files[0]);
+                        }}
+                      />
                     </div>
 
                   </div>
                 </div>
+
+                {verifyError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 font-bold rounded-xl flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <span>{verifyError}</span>
+                  </div>
+                )}
 
                 {/* STICK ACTIONS BAR BOTTOM */}
                 <div className="pt-4 border-t border-slate-150 flex justify-end gap-2.5 select-none shrink-0">
@@ -804,9 +893,10 @@ export default function Verification({
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-[#00236f] hover:bg-slate-800 text-white font-extrabold rounded-xl transition shadow-sm cursor-pointer"
+                    disabled={verifying}
+                    className="px-5 py-2.5 bg-[#00236f] hover:bg-slate-800 text-white font-extrabold rounded-xl transition shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Gửi hồ sơ xác minh
+                    {verifying ? 'Đang gửi...' : 'Gửi hồ sơ xác minh'}
                   </button>
                 </div>
 

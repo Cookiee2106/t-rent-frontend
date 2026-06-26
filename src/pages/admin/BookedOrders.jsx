@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import orderApi from '../../api/orderApi';
 import { 
   Search, 
   Trash2, 
@@ -101,88 +102,88 @@ const GET_PRODUCT_COMPONENTS_MAP = (productName) => {
     ];
   }
   return [
-    { name: `Pin sạc cho ${pName}`, type: 'IDENTIFIED_ASSET', required: true },
-    { name: `Lồng bảo vệ cho ${pName}`, type: 'IDENTIFIED_ASSET', required: true },
+    { name: `Pin sạc cho ${pName}`, type: 'QUANTITY', required: true, defaultQty: 1, maxQtyAvailable: 10 },
+    { name: `Lồng bảo vệ cho ${pName}`, type: 'QUANTITY', required: true, defaultQty: 1, maxQtyAvailable: 10 },
     { name: `Túi đựng tiêu chuẩn`, type: 'QUANTITY', required: true, defaultQty: 1, maxQtyAvailable: 10 }
   ];
 };
 
-// Danh sách đơn hàng trạng thái khớp DB định nghĩa
-const INITIAL_ORDERS = [
-  {
-    orderCode: 'ORD001',
-    customerName: 'Nguyễn Văn A',
-    customerPhone: '0901 123 456',
-    customerEmail: 'an.nv@gmail.com',
-    customerVerification: 'Đã xác minh (CCCD Đạt)',
-    startDate: '2026-06-20',
-    endDate: '2026-06-23',
-    equipments: [
-      { id: 'eq-1', name: 'Sony Alpha A7 IV', qty: 1, price: 500000, deposit: 30000000, allocatedSerial: '', allocatedAccessories: [] },
-      { id: 'eq-2', name: 'Fuji X-T5', qty: 1, price: 400000, deposit: 25000000, allocatedSerial: '', allocatedAccessories: [] }
-    ],
-    totalPrice: 2700000,
-    deposit: 55000000,
-    status: 'Đã đặt cọc', // Chờ bàn giao (Waiting), Đã đặt cọc (Deposited), Đang thuê (RENTING), Đã trả máy (RETURNED), Hoàn thành (COMPLETED), Đã hủy (CANCELLED)
-    handoverPhotos: [],
-    handoverSlipCode: ''
-  },
-  {
-    orderCode: 'TR-ORD-5001',
-    customerName: 'Nguyễn Văn An',
-    customerPhone: '0901 234 567',
-    customerEmail: 'an.nv@gmail.com',
-    customerVerification: 'Đã xác minh (CCCD Đạt)',
-    startDate: '2026-06-25',
-    endDate: '2026-06-27',
-    equipments: [
-      { id: 'eq-1b', name: 'Sony Alpha A7 IV', qty: 1, price: 500000, deposit: 30000000, allocatedSerial: '', allocatedAccessories: [] }
-    ],
-    totalPrice: 1000000,
-    deposit: 30000000,
-    status: 'Chờ bàn giao', 
-    handoverPhotos: [],
-    handoverSlipCode: ''
-  },
-  {
-    orderCode: 'TR-ORD-5002',
-    customerName: 'Trần Thị Mỹ Duyên',
-    customerPhone: '0988 777 666',
-    customerEmail: 'duyen.ttm@gmail.com',
-    customerVerification: 'Đã xác minh (CCCD Đạt)',
-    startDate: '2026-06-22',
-    endDate: '2026-06-24',
-    equipments: [
-      { id: 'eq-2', name: 'Canon EOS R5', qty: 1, price: 900000, deposit: 60000000, allocatedSerial: 'SN-EOSR5-554401', allocatedAccessories: ['Pin Canon LP-E6N'] }
-    ],
-    totalPrice: 1800000,
-    deposit: 60000000,
-    status: 'Đang thuê',
-    handoverPhotos: ['banner_camera_check.png'],
-    handoverSlipCode: 'HOS-5002'
-  },
-  {
-    orderCode: 'TR-ORD-5003',
-    customerName: 'Hoàng Minh Tuấn',
-    customerPhone: '0912 345 678',
-    customerEmail: 'tuan.hm@gmail.com',
-    customerVerification: 'Đã xác minh (CCCD Đạt)',
-    startDate: '2026-06-28',
-    endDate: '2026-06-30',
-    equipments: [
-      { id: 'eq-3', name: 'Sony Alpha A7 IV', qty: 2, price: 500000, deposit: 30000000, allocatedSerial: '', allocatedAccessories: [] },
-      { id: 'eq-4', name: 'Fuji X-T5', qty: 1, price: 400000, deposit: 25000000, allocatedSerial: '', allocatedAccessories: [] }
-    ],
-    totalPrice: 2800000,
-    deposit: 85000000,
-    status: 'Chờ bàn giao',
-    handoverPhotos: [],
-    handoverSlipCode: ''
+const STATUS_MAP = {
+  'PENDING_DEPOSIT': 'Chờ thanh toán cọc',
+  'CHO_XU_LY': 'Chờ thanh toán cọc',
+  'RESERVED': 'Đã đặt cọc',
+  'DA_GIU_CHO': 'Đã đặt cọc',
+  'RENTING': 'Đang thuê',
+  'DANG_THUE': 'Đang thuê',
+  'COMPLETED': 'Hoàn thành',
+  'HOAN_THANH': 'Hoàn thành',
+  'CANCELLED': 'Đã hủy',
+  'DA_HUY': 'Đã hủy',
+};
+
+const mapOrder = (o) => {
+  const rawVerify = o.customer_profiles?.verification_status || o.ho_so_khach_hang?.trang_thai_xac_minh || o.khach_hang?.trang_thai_xac_minh;
+  let customerVerification = 'Chưa xác minh';
+  if (rawVerify === 'APPROVED' || rawVerify === 'DA_DUYET') {
+    customerVerification = 'Đã duyệt';
+  } else if (rawVerify === 'PENDING' || rawVerify === 'CHO_DUYET') {
+    customerVerification = 'Chờ duyệt';
+  } else if (rawVerify === 'REJECTED' || rawVerify === 'TU_CHOI') {
+    customerVerification = 'Bị từ chối';
   }
-];
+
+  return {
+    id: o.id,
+    orderCode: o.order_code || o.ma_don || '',
+    customerName: o.customer_profiles?.users?.full_name || o.ho_so_khach_hang?.nguoi_dung?.ho_ten || o.khach_hang?.ho_ten || '',
+    customerEmail: o.customer_profiles?.users?.email || o.ho_so_khach_hang?.nguoi_dung?.email || o.khach_hang?.email || '',
+    customerPhone: o.customer_profiles?.users?.phone || o.ho_so_khach_hang?.nguoi_dung?.so_dien_thoai || o.khach_hang?.so_dien_thoai || '',
+    startDate: o.start_date?.split('T')[0] || o.ngay_nhan?.split('T')[0] || o.start_date || o.ngay_nhan,
+    endDate: o.end_date?.split('T')[0] || o.ngay_tra?.split('T')[0] || o.end_date || o.ngay_tra,
+    totalPrice: Number(o.total_rental_amount || o.tong_tien_thue) || 0,
+    deposit: Number(o.total_deposit_amount || o.tong_tien_coc) || 0,
+    status: STATUS_MAP[o.status || o.trang_thai] || o.status || o.trang_thai,
+    equipments: (o.rental_order_items || o.chi_tiet_don_thue || []).map(item => ({
+      id: item.id,
+      productModelId: item.product_models?.id || item.mau_thiet_bi_id || item.mau_thiet_bi?.id || '',
+      name: item.product_models?.name || item.mau_thiet_bi?.ten_mau || item.ten_mau || '',
+      qty: item.quantity || item.so_luong || 1,
+      price: Number(item.daily_price_snapshot || item.gia_thue_ngay_snapshot || item.price) || 0,
+      deposit: Number(item.deposit_amount_snapshot || item.tien_coc_snapshot || item.deposit) || 0,
+    })),
+    customerVerification,
+    cancelReason: o.cancel_reason || o.ly_do_huy || '',
+    rawStatus: o.status || o.trang_thai,
+  };
+};
 
 export default function BookedOrders() {
-  const [orders, setOrders] = useState(INITIAL_ORDERS);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [availableAssets, setAvailableAssets] = useState([]);
+  const [loadingAssets, setLoadingAssets] = useState(false);
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const res = await orderApi.admin.getOrders();
+      const rawData = res.data?.data;
+      const rawOrders = Array.isArray(rawData) ? rawData 
+                      : Array.isArray(rawData?.danh_sach) ? rawData.danh_sach
+                      : Array.isArray(res.data) ? res.data
+                      : [];
+      setOrders(rawOrders.map(mapOrder));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const [activeView, setActiveView] = useState('list'); // 'list' | 'detail' | 'handover'
   const [selectedOrder, setSelectedOrder] = useState(null);
 
@@ -234,6 +235,15 @@ export default function BookedOrders() {
   // Ghi chú bàn giao
   const [hoNotes, setHoNotes] = useState('');
 
+  // File refs for real file uploads
+  const contractFileInputRef = useRef(null);
+  const handoverFileInputRef = useRef(null);
+  const [uploadingContract, setUploadingContract] = useState(false);
+  const [uploadingHandover, setUploadingHandover] = useState(false);
+  const [submittingHandover, setSubmittingHandover] = useState(false);
+  // Store uploaded URLs from API 12 to pass to API 13
+  const [uploadedHandoverImageUrls, setUploadedHandoverImageUrls] = useState([]);
+
   const [toastMsg, setToastMsg] = useState(null);
 
   const triggerToast = (msg) => {
@@ -255,8 +265,8 @@ export default function BookedOrders() {
   };
 
   // Bắt đầu Lập phiếu bàn giao từ danh sách
-  const handleStartHandoverDirect = (o) => {
-    if (o.status !== 'Chờ bàn giao' && o.status !== 'Đã đặt cọc') {
+  const handleStartHandoverDirect = async (o) => {
+    if (!['RESERVED', 'DA_GIU_CHO'].includes(o.rawStatus)) {
       alert('Đơn hàng chưa đủ điều kiện lập phiếu bàn giao');
       return;
     }
@@ -282,6 +292,19 @@ export default function BookedOrders() {
     setHoContractFile(null);
     setHoHandoverFile(null);
     setHoNotes('Thiết bị chuẩn sạch chuẩn khớp tem niêm phong niêm yết.');
+
+    // Nạp danh sách tài sản sẵn sàng từ database qua API
+    setAvailableAssets([]);
+    try {
+      setLoadingAssets(true);
+      const res = await orderApi.admin.getAvailableAssets(o.id);
+      const rawAssets = res.data?.data?.tai_san_san_sang || res.data?.tai_san_san_sang || [];
+      setAvailableAssets(rawAssets);
+    } catch (err) {
+      console.error("Lỗi khi tải tài sản sẵn sàng từ BE:", err);
+    } finally {
+      setLoadingAssets(false);
+    }
 
     // Khởi tạo các combo chọn tài sản cho từng bộ thiết bị trong đơn hàng (Flat list)
     const initialSelections = [];
@@ -314,6 +337,7 @@ export default function BookedOrders() {
 
         initialSelections.push({
           orderItemId: eq.id || `eq-${eqIdx}-${Date.now()}`,
+          productModelId: eq.productModelId,
           productName: eq.name,
           unitIndex: i + 1,
           bodyAssetId: '', // Máy chính bắt đầu bằng rỗng để hiển thị 0/4 thành phần ban đầu
@@ -334,10 +358,13 @@ export default function BookedOrders() {
     // 1. Kiểm tra đã chọn body chính chưa
     if (!block.bodyAssetId) return 'Chưa chọn đủ';
 
-    // Đánh giá xem body đó có khả dụng không
-    const matchedBody = MOCK_BODIES_IN_STOCK.find(b => b.assetCode === block.bodyAssetId);
-    if (!matchedBody || matchedBody.status !== 'Sẵn sàng') {
-      return 'Thiếu tài sản';
+    // Đánh giá xem body đó có khả dụng không (check DB trước, sau đó là Mock)
+    const isDbBody = availableAssets.some(a => a.id === block.bodyAssetId);
+    if (!isDbBody) {
+      const matchedBody = MOCK_BODIES_IN_STOCK.find(b => b.assetCode === block.bodyAssetId);
+      if (!matchedBody || (matchedBody.status !== 'Sẵn sàng' && matchedBody.status !== 'S?n sng')) {
+        return 'Thiếu tài sản';
+      }
     }
 
     // Kiểm tra trùng sê-ri body
@@ -352,9 +379,12 @@ export default function BookedOrders() {
         }
 
         if (comp.assetId) {
-          const matchedComp = MOCK_COMPONENTS_IN_STOCK.find(c => c.assetCode === comp.assetId);
-          if (!matchedComp || matchedComp.status !== 'Sẵn sàng') {
-            return 'Thiếu tài sản'; // Phụ kiện không còn sẵn sàng
+          const isDbComp = availableAssets.some(a => a.id === comp.assetId);
+          if (!isDbComp) {
+            const matchedComp = MOCK_COMPONENTS_IN_STOCK.find(c => c.assetCode === comp.assetId);
+            if (!matchedComp || (matchedComp.status !== 'Sẵn sàng' && matchedComp.status !== 'S?n sng')) {
+              return 'Thiếu tài sản'; // Phụ kiện không còn sẵn sàng
+            }
           }
 
           // Kiểm tra trùng serial phụ kiện giữa các bộ hoặc dòng khác
@@ -396,7 +426,8 @@ export default function BookedOrders() {
         errors.push(`Vui lòng chọn body chính cho ${blockLabel}`);
         if (firstErrorIdx === -1) firstErrorIdx = idx;
       } else {
-        const body = MOCK_BODIES_IN_STOCK.find(b => b.assetCode === block.bodyAssetId);
+        const isDb = availableAssets.some(a => a.id === block.bodyAssetId);
+        const body = isDb ? { assetCode: block.bodyAssetId } : MOCK_BODIES_IN_STOCK.find(b => b.assetCode === block.bodyAssetId);
         if (!body) {
           errors.push(`Vui lòng chọn body chính cho ${blockLabel}`);
           if (firstErrorIdx === -1) firstErrorIdx = idx;
@@ -467,126 +498,104 @@ export default function BookedOrders() {
     }
   };
 
-  // Giả lập upload file/ảnh hợp đồng giấy
-  const handleUploadContractSimulated = () => {
-    const randomId = Math.floor(Math.random() * 9000) + 1000;
-    setHoContractFile({
-      name: `hop_dong_giay_Signed_ORD${randomId}.pdf`,
-      type: 'application/pdf',
-      size: '2.4 MB'
-    });
-    triggerToast('Tải lên file hợp đồng giấy thành công');
+  // Upload file hợp đồng giấy qua API 11
+  const handleUploadContract = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingContract(true);
+      await orderApi.admin.uploadContractFile(selectedOrder.id, file);
+      setHoContractFile({ name: file.name, type: file.type, size: `${(file.size / 1024 / 1024).toFixed(1)} MB` });
+      triggerToast('Tải lên file hợp đồng giấy thành công');
+    } catch (err) {
+      triggerToast(err.response?.data?.message || 'Lỗi khi tải lên hợp đồng');
+    } finally {
+      setUploadingContract(false);
+    }
   };
 
-  // Giả lập upload ảnh bàn giao
-  const handleUploadHandoverSimulated = () => {
-    const randomId = Math.floor(Math.random() * 9000) + 1000;
-    setHoHandoverFile({
-      name: `anh_khi_ban_giao_truc_tiep_${randomId}.jpg`,
-      type: 'image/jpeg',
-      size: '3.8 MB'
-    });
-    triggerToast('Tải lên ảnh bàn giao thành công');
+  // Upload ảnh bàn giao qua API 12
+  const handleUploadHandoverImages = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    try {
+      setUploadingHandover(true);
+      const res = await orderApi.admin.uploadHandoverImages(selectedOrder.id, files);
+      const images = res.data?.data?.danh_sach_anh || res.data?.data?.images || [];
+      setUploadedHandoverImageUrls(images);
+      setHoHandoverFile({ name: `${files.length} ảnh bàn giao`, type: files[0].type, size: `${files.length} file(s)` });
+      triggerToast('Tải lên ảnh bàn giao thành công');
+    } catch (err) {
+      triggerToast(err.response?.data?.message || 'Lỗi khi tải lên ảnh bàn giao');
+    } finally {
+      setUploadingHandover(false);
+    }
   };
 
-  // Xác nhận lưu Lập phiếu bàn giao
-  const handleSubmitHandover = (e) => {
+  // Xác nhận lưu Lập phiếu bàn giao qua API 13
+  const handleSubmitHandover = async (e) => {
     e.preventDefault();
 
-    // Validate 1: Đơn hàng chưa đủ điều kiện lập phiếu bàn giao
-    if (selectedOrder.status !== 'Chờ bàn giao') {
+    // Validate 1: Đơn hàng chưa đủ điều kiện
+    if (!['RESERVED', 'DA_GIU_CHO'].includes(selectedOrder.rawStatus)) {
       alert('Đơn hàng chưa đủ điều kiện lập phiếu bàn giao');
       return;
     }
 
-    // Kiểm tra xem đã chọn đủ tài sản cụ thể hay chưa cho toàn bộ các combo
+    // Validate 2: Kiểm tra đã chọn đủ tài sản
     let hasEmptySelection = unitHandoverSelections.some(block => {
       if (!block.bodyAssetId) return true;
       return block.includedSelections.some(comp => comp.managementType === 'IDENTIFIED_ASSET' && comp.required && !comp.assetId);
     });
-
     if (hasEmptySelection) {
       alert('Vui lòng chọn đủ tài sản cụ thể');
       return;
     }
 
-    // Validate trùng lặp hay không còn sẵn
+    // Validate 3: Kiểm tra trùng lặp
     let checkOk = true;
     unitHandoverSelections.forEach((block) => {
       const stateLabel = validateUnitBlock(block, unitHandoverSelections);
-      if (stateLabel !== 'Đã chọn đủ') {
-        checkOk = false;
-      }
+      if (stateLabel !== 'Đã chọn đủ') checkOk = false;
     });
-
     if (!checkOk) {
-      alert('Thông tin tài sản cụ thể chưa hợp lệ, có lỗi trùng sê-ri hoặc tài sản không sẵn sàng hoặc vượt tồn kho. Vui lòng bấm "Kiểm tra tài sản đã chọn" để biết thêm chi tiết.');
+      alert('Thông tin tài sản cụ thể chưa hợp lệ. Vui lòng bấm "Kiểm tra tài sản đã chọn" để biết thêm chi tiết.');
       return;
     }
 
-    // Validate 3: Vui lòng upload ảnh hoặc file hợp đồng giấy (contract hoặc handover file)
+    // Validate 4: Phải upload hợp đồng và ảnh
     if (!hoContractFile || !hoHandoverFile) {
       alert('Vui lòng upload ảnh hoặc file hợp đồng giấy');
       return;
     }
 
-    const generatedSlipCode = `HOS-ORD-${selectedOrder.orderCode.split('-')[2]}`;
+    // Gom dữ liệu assets theo format Backend yêu cầu (dùng thuộc tính tiếng Việt)
+    const assetsPayload = unitHandoverSelections.map(block => {
+      const allAssetIds = [
+        block.bodyAssetId, 
+        ...block.includedSelections.filter(s => s.managementType === 'IDENTIFIED_ASSET' && s.assetId).map(s => s.assetId)
+      ].filter(Boolean);
+      return {
+        mau_thiet_bi_id: block.productModelId || block.orderItemId, // maps to model ID
+        danh_sach_tai_san_id: allAssetIds
+      };
+    });
 
-    // Gom dữ liệu chọn tài sản theo từng orderItem và bộ thiết bị
-    const handoverJson = unitHandoverSelections.map(block => ({
-      orderItemId: block.orderItemId,
-      productName: block.productName,
-      unitIndex: block.unitIndex,
-      bodyAssetId: block.bodyAssetId,
-      includedSelections: block.includedSelections.map(sel => {
-        if (sel.managementType === 'IDENTIFIED_ASSET') {
-          return {
-            includedItemName: sel.includedItemName,
-            managementType: 'IDENTIFIED_ASSET',
-            assetId: sel.assetId
-          };
-        } else {
-          return {
-            includedItemName: sel.includedItemName,
-            managementType: 'QUANTITY',
-            quantity: sel.quantity
-          };
-        }
-      })
-    }));
-
-    // Cập nhật trạng thái đơn thành 'Đang thuê'
-    const updatedOrder = {
-      ...selectedOrder,
-      status: 'Đang thuê',
-      handoverPhotos: [hoHandoverFile.name],
-      contractFile: hoContractFile.name,
-      handoverSlipCode: generatedSlipCode,
-      handoverSelections: handoverJson, // Gom lưu dữ liệu theo cấu trúc đề cập
-      equipments: selectedOrder.equipments.map(eq => {
-        const related = unitHandoverSelections.filter(u => u.productName === eq.name);
-        return {
-          ...eq,
-          allocatedSerial: related.map(r => {
-            const bodyObj = MOCK_BODIES_IN_STOCK.find(b => b.assetCode === r.bodyAssetId);
-            return bodyObj ? bodyObj.serial : r.bodyAssetId;
-          }).join(', '),
-          allocatedAccessories: related.flatMap(r => r.includedSelections.map(s => {
-            if (s.managementType === 'IDENTIFIED_ASSET') {
-              const compObj = MOCK_COMPONENTS_IN_STOCK.find(c => c.assetCode === s.assetId);
-              return compObj ? `${s.includedItemName} (${compObj.serial})` : `${s.includedItemName} (${s.assetId})`;
-            } else {
-              return `${s.includedItemName} (SL: ${s.quantity})`;
-            }
-          }))
-        };
-      })
-    };
-
-    setOrders(orders.map(o => o.orderCode === selectedOrder.orderCode ? updatedOrder : o));
-    setSelectedOrder(updatedOrder);
-    setActiveView('detail');
-    triggerToast('Lập phiếu bàn giao thành công');
+    try {
+      setSubmittingHandover(true);
+      await orderApi.admin.createHandover(selectedOrder.id, {
+        danh_sach_tai_san: assetsPayload,
+        danh_sach_anh_url: uploadedHandoverImageUrls,
+        ghi_chu: hoNotes
+      });
+      triggerToast('Lập phiếu bàn giao thành công!');
+      fetchOrders(); // Reload danh sách
+      setActiveView('list');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Lỗi khi lập phiếu bàn giao');
+    } finally {
+      setSubmittingHandover(false);
+    }
   };
 
   // Hủy đơn hàng nếu khách chưa nhận máy
@@ -739,13 +748,16 @@ export default function BookedOrders() {
                           <td className="px-6 py-4 text-right font-mono font-bold text-indigo-700 cell-money">{formatVND(o.deposit)}</td>
                           <td className="px-6 py-4 text-center">
                             <span className={`status-badge border leading-none ${
-                              o.status === 'Chờ bàn giao' || o.status === 'Đã đặt cọc' ? 'bg-amber-50 text-amber-805 border-amber-200' :
-                              o.status === 'Đang thuê' ? 'bg-indigo-50 text-indigo-805 border-indigo-200' :
-                              o.status === 'Đã trả máy' ? 'bg-emerald-50 text-emerald-800 border-emerald-250' :
-                              o.status === 'Hoàn thành' ? 'bg-green-50 text-green-708 border-green-200' :
+                              ['RESERVED', 'DA_GIU_CHO'].includes(o.rawStatus) ? 'bg-amber-50 text-amber-805 border-amber-200' :
+                              ['RENTING', 'DANG_THUE'].includes(o.rawStatus) ? 'bg-indigo-50 text-indigo-805 border-indigo-200' :
+                              ['COMPLETED', 'HOAN_THANH'].includes(o.rawStatus) ? 'bg-green-50 text-green-708 border-green-200' :
+                              ['CANCELLED', 'DA_HUY'].includes(o.rawStatus) ? 'bg-rose-50 text-rose-600 border-rose-200' :
                               'bg-slate-50 text-slate-500 border-slate-200'
                             }`}>
                               {o.status}
+                              {['CANCELLED', 'DA_HUY'].includes(o.rawStatus) && o.cancelReason && (
+                                <span className="ml-1 text-[9px] font-normal opacity-70">({o.cancelReason})</span>
+                              )}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -761,12 +773,12 @@ export default function BookedOrders() {
                                 type="button"
                                 onClick={() => handleStartHandoverDirect(o)}
                                 className={`table-action-button transition cursor-pointer font-semibold ${
-                                  o.status === 'Chờ bàn giao' || o.status === 'Đã đặt cọc'
+                                  ['RESERVED', 'DA_GIU_CHO'].includes(o.rawStatus)
                                     ? 'bg-[#00236f] text-white hover:bg-slate-800'
                                     : 'bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed'
                                 }`}
                               >
-                                {o.status === 'Chờ bàn giao' || o.status === 'Đã đặt cọc' ? 'Lập phiếu bàn giao' : 'Đã lập phiếu'}
+                                {['RESERVED', 'DA_GIU_CHO'].includes(o.rawStatus) ? 'Lập phiếu bàn giao' : 'Đã lập phiếu'}
                               </button>
                             </div>
                           </td>
@@ -885,7 +897,7 @@ export default function BookedOrders() {
               <div>
                 <span className="text-[9px] block text-slate-400 font-black uppercase mb-1">Nghiệp vụ quầy</span>
                 
-                {selectedOrder.status === 'Chờ bàn giao' ? (
+                {selectedOrder.rawStatus === 'RESERVED' ? (
                   <p className="text-[10.5px] text-slate-500 font-semibold leading-relaxed">
                     Khách đã ký quỹ đặt cọc thô trực tuyến. Vui lòng tiến hành <strong>Lập phiếu bàn giao</strong> từ màn hình danh sách đơn hàng.
                   </p>
@@ -1169,12 +1181,26 @@ export default function BookedOrders() {
                                 className="w-full bg-white border border-slate-350 rounded px-2.5 py-1.5 outline-none font-semibold text-slate-800 focus:border-indigo-600 text-xs"
                               >
                                 <option value="">-- Chọn BODY thiết bị sê-ri --</option>
-                                {MOCK_BODIES_IN_STOCK.filter(b => (b.modelName === block.productName || b.modelName.includes(block.productName) || block.productName.includes(b.modelName)) && b.status === "Sẵn sàng").map(b => {
+                                {loadingAssets ? (
+                                  <option disabled>Đang tải tài sản từ DB...</option>
+                                ) : (
+                                  availableAssets
+                                    .filter(a => a.mau_thiet_bi_id === block.productModelId)
+                                    .map(a => {
+                                      const isSelectedElsewhere = unitHandoverSelections.some((other, oIdx) => oIdx !== blockIdx && other.bodyAssetId === a.id);
+                                      return (
+                                        <option key={a.id} value={a.id} disabled={isSelectedElsewhere} className="whitespace-nowrap font-bold text-blue-900">
+                                          [DB] {a.ma_tai_san} - S/N: {a.so_serial} - {a.ghi_chu_tinh_trang || 'Tốt'} {isSelectedElsewhere ? '[Đã chọn]' : ''}
+                                        </option>
+                                      );
+                                    })
+                                )}
+                                {MOCK_BODIES_IN_STOCK.filter(b => (b.modelName === block.productName || b.modelName.includes(block.productName) || block.productName.includes(b.modelName)) && (b.status === "Sẵn sàng" || b.status === "S?n sng")).map(b => {
                                   // Kiểm tra xem serial này có được chọn ở bộ nào khác không
                                   const isSelectedElsewhere = unitHandoverSelections.some((other, oIdx) => oIdx !== blockIdx && other.bodyAssetId === b.assetCode);
                                   return (
-                                    <option key={b.assetCode} value={b.assetCode} disabled={isSelectedElsewhere} className="whitespace-nowrap">
-                                      {b.assetCode} - {b.serial} - {b.condition} {isSelectedElsewhere ? '[Đã chọn ở dòng khác]' : ''}
+                                    <option key={b.assetCode} value={b.assetCode} disabled={isSelectedElsewhere} className="whitespace-nowrap text-slate-500">
+                                      [Mock] {b.assetCode} - S/N: {b.serial} - {b.condition} {isSelectedElsewhere ? '[Đã chọn ở dòng khác]' : ''}
                                     </option>
                                   );
                                 })}
@@ -1237,7 +1263,30 @@ export default function BookedOrders() {
                                         className="w-full bg-white border border-slate-350 rounded px-2.5 py-1.5 outline-none font-semibold text-slate-800 focus:border-indigo-600 text-xs"
                                       >
                                         <option value="">-- Chọn phụ kiện sê-ri --</option>
-                                        {MOCK_COMPONENTS_IN_STOCK.filter(c => (c.componentName === comp.includedItemName || c.componentName.includes(comp.includedItemName) || comp.includedItemName.includes(c.componentName) || c.modelName === comp.includedItemName) && c.status === "Sẵn sàng").map(c => {
+                                        {loadingAssets ? (
+                                          <option disabled>Đang tải phụ kiện từ DB...</option>
+                                        ) : (
+                                          availableAssets
+                                            .filter(a => {
+                                              const name = (a.ten_tai_san || '').toLowerCase();
+                                              const target = (comp.includedItemName || '').toLowerCase();
+                                              return name.includes(target) || target.includes(name);
+                                            })
+                                            .map(a => {
+                                              const isSelectedElsewhere = unitHandoverSelections.some((otherBlock, obIdx) => {
+                                                return otherBlock.includedSelections.some((otherComp, ocIdx) => {
+                                                  if (obIdx === blockIdx && ocIdx === compIdx) return false;
+                                                  return otherComp.assetId === a.id && otherComp.assetId !== '';
+                                                });
+                                              });
+                                              return (
+                                                <option key={a.id} value={a.id} disabled={isSelectedElsewhere} className="whitespace-nowrap font-bold text-blue-900">
+                                                  [DB] {a.ma_tai_san} - S/N: {a.so_serial} - {a.ghi_chu_tinh_trang || 'Tốt'} {isSelectedElsewhere ? '[Đã chọn]' : ''}
+                                                </option>
+                                              );
+                                            })
+                                        )}
+                                        {MOCK_COMPONENTS_IN_STOCK.filter(c => (c.componentName === comp.includedItemName || c.componentName.includes(comp.includedItemName) || comp.includedItemName.includes(c.componentName) || c.modelName === comp.includedItemName) && (c.status === "Sẵn sàng" || c.status === "S?n sng")).map(c => {
                                           const isSelectedElsewhere = unitHandoverSelections.some((otherBlock, obIdx) => {
                                             return otherBlock.includedSelections.some((otherComp, ocIdx) => {
                                               if (obIdx === blockIdx && ocIdx === compIdx) return false;
@@ -1245,8 +1294,8 @@ export default function BookedOrders() {
                                             });
                                           });
                                           return (
-                                            <option key={c.assetCode} value={c.assetCode} disabled={isSelectedElsewhere} className="whitespace-nowrap">
-                                              {c.assetCode} - {c.serial} - {c.condition} {isSelectedElsewhere ? '[Đã chọn ở bộ khác]' : ''}
+                                            <option key={c.assetCode} value={c.assetCode} disabled={isSelectedElsewhere} className="whitespace-nowrap text-slate-500">
+                                              [Mock] {c.assetCode} - S/N: {c.serial} - {c.condition} {isSelectedElsewhere ? '[Đã chọn ở bộ khác]' : ''}
                                             </option>
                                           );
                                         })}
@@ -1355,13 +1404,21 @@ export default function BookedOrders() {
               </div>
 
               <div className="pt-2 text-center">
+                <input
+                  type="file"
+                  ref={contractFileInputRef}
+                  onChange={handleUploadContract}
+                  accept=".pdf,.jpg,.jpeg,.png,.webp"
+                  className="hidden"
+                />
                 <button
                   type="button"
-                  onClick={handleUploadContractSimulated}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold rounded-lg border border-slate-300 transition cursor-pointer flex items-center gap-1.5 mx-auto text-xs"
+                  onClick={() => contractFileInputRef.current?.click()}
+                  disabled={uploadingContract}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold rounded-lg border border-slate-300 transition cursor-pointer flex items-center gap-1.5 mx-auto text-xs disabled:opacity-50"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  Nạp file hợp đồng giấy
+                  {uploadingContract ? 'Đang tải lên...' : 'Nạp file hợp đồng giấy'}
                 </button>
               </div>
             </div>
@@ -1393,13 +1450,22 @@ export default function BookedOrders() {
               </div>
 
               <div className="pt-2 text-center">
+                <input
+                  type="file"
+                  ref={handoverFileInputRef}
+                  onChange={handleUploadHandoverImages}
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className="hidden"
+                />
                 <button
                   type="button"
-                  onClick={handleUploadHandoverSimulated}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold rounded-lg border border-slate-300 transition cursor-pointer flex items-center gap-1.5 mx-auto text-xs"
+                  onClick={() => handoverFileInputRef.current?.click()}
+                  disabled={uploadingHandover}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold rounded-lg border border-slate-300 transition cursor-pointer flex items-center gap-1.5 mx-auto text-xs disabled:opacity-50"
                 >
                   <UploadCloud className="w-3.5 h-3.5" />
-                  Nạp ảnh bàn giao thiết bị
+                  {uploadingHandover ? 'Đang tải lên...' : 'Nạp ảnh bàn giao thiết bị'}
                 </button>
               </div>
             </div>
@@ -1428,10 +1494,11 @@ export default function BookedOrders() {
             </button>
             <button 
               type="submit"
-              className="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl transition shadow-xs uppercase flex items-center gap-1.5 cursor-pointer"
+              disabled={submittingHandover}
+              className="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl transition shadow-xs uppercase flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <Check className="w-4 h-4" />
-              Xác nhận bàn giao
+              {submittingHandover ? 'Đang xử lý...' : 'Xác nhận bàn giao'}
             </button>
           </div>
         </form>

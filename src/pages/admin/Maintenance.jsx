@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import orderApi from '../../api/orderApi';
 import { 
   Wrench, 
   Search, 
@@ -135,9 +136,68 @@ const INITIAL_MAINTENANCE_RECORDS = [
   }
 ];
 
+const MAINTENANCE_STATUS_MAP = {
+  'IN_PROGRESS': 'Đang xử lý',
+  'COMPLETED': 'Hoàn tất',
+  'CANCELLED': 'Hủy',
+};
+
+const mapRecord = (r) => ({
+  maintenanceCode: r.id?.substring(0, 8) || '',
+  assetCode: r.identified_assets?.asset_code || '',
+  equipmentName: r.identified_assets?.asset_name || '',
+  modelName: r.identified_assets?.asset_name || '',
+  serial: r.identified_assets?.serial_number || '',
+  reason: r.reason || '',
+  status: MAINTENANCE_STATUS_MAP[r.status] || r.status,
+  createdAt: r.started_at ? new Date(r.started_at).toLocaleDateString('vi-VN') : '',
+  createdBy: r.users_maintenance_records_started_byTousers?.full_name || '',
+  notes: r.note || '',
+  // keep raw for filtering
+  _status: r.status,
+});
+
+const ASSET_OPTIONS = [
+  { assetId: '00000000-0000-0000-0000-000000000060', assetCode: 'TS-R5-001', equipmentName: 'Canon EOS R5 #001', modelName: 'Canon EOS R5', serial: 'CE0A240001' },
+  { assetId: '00000000-0000-0000-0000-000000000061', assetCode: 'TS-R5-002', equipmentName: 'Canon EOS R5 #002', modelName: 'Canon EOS R5', serial: 'CE0A240002' },
+  { assetId: '00000000-0000-0000-0000-000000000062', assetCode: 'TS-R5-003', equipmentName: 'Canon EOS R5 #003', modelName: 'Canon EOS R5', serial: 'CE0A240003' },
+  { assetId: '00000000-0000-0000-0000-000000000063', assetCode: 'TS-A7IV-001', equipmentName: 'Sony A7 IV #001', modelName: 'Sony A7 IV', serial: 'SA7V240001' },
+  { assetId: '00000000-0000-0000-0000-000000000064', assetCode: 'TS-A7IV-002', equipmentName: 'Sony A7 IV #002', modelName: 'Sony A7 IV', serial: 'SA7V240002' },
+  { assetId: '00000000-0000-0000-0000-000000000065', assetCode: 'TS-A7IV-003', equipmentName: 'Sony A7 IV #003', modelName: 'Sony A7 IV', serial: 'SA7V240003' },
+  { assetId: '00000000-0000-0000-0000-000000000066', assetCode: 'TS-RF2470-001', equipmentName: 'Canon RF 24-70mm #001', modelName: 'Canon RF 24-70mm f/2.8L IS USM', serial: 'RF247024001' },
+  { assetId: '00000000-0000-0000-0000-000000000067', assetCode: 'TS-RF2470-002', equipmentName: 'Canon RF 24-70mm #002', modelName: 'Canon RF 24-70mm f/2.8L IS USM', serial: 'RF247024002' },
+  { assetId: '00000000-0000-0000-0000-000000000068', assetCode: 'TS-RS4-001', equipmentName: 'DJI RS 4 Pro #001', modelName: 'DJI RS 4 Pro', serial: 'RS4P240001' },
+  { assetId: '00000000-0000-0000-0000-000000000069', assetCode: 'TS-RS4-002', equipmentName: 'DJI RS 4 Pro #002', modelName: 'DJI RS 4 Pro', serial: 'RS4P240002' },
+];
+
+const REASON_OPTIONS = [
+  'Hư hỏng khi khách hàng trả thiết bị',
+  'Đạt ngưỡng số lần thuê cần kiểm tra',
+  'Pin sạc yếu',
+  'Kiểm tra định kỳ',
+  'Lỗi kỹ thuật',
+  'Hư hỏng vật lý',
+  'Bảo dưỡng theo lịch',
+];
+
 export default function Maintenance() {
-  const [records, setRecords] = useState(INITIAL_MAINTENANCE_RECORDS);
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
+
+  const fetchRecords = async () => {
+    try {
+      setLoading(true);
+      const res = await orderApi.admin.getMaintenanceRecords();
+      setRecords((res.data?.data || []).map(mapRecord));
+    } catch {
+      setRecords([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchRecords(); }, []);
 
   // Filters state
   const [filterCode, setFilterCode] = useState('');
@@ -145,6 +205,13 @@ export default function Maintenance() {
   const [filterName, setFilterName] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCreatedDate, setFilterCreatedDate] = useState('');
+
+  // Add form state
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addForm, setAddForm] = useState({
+    assetCode: '', equipmentName: '', modelName: '', serial: '',
+    reason: '', notes: '', sourceType: 'INVENTORY_MANAGER',
+  });
 
   // Modals state
   const [selectedDetail, setSelectedDetail] = useState(null);
@@ -322,7 +389,7 @@ export default function Maintenance() {
     const matchesCode = filterCode === '' || r.maintenanceCode.toLowerCase().includes(filterCode.toLowerCase());
     const matchesAssetCode = filterAssetCode === '' || r.assetCode.toLowerCase().includes(filterAssetCode.toLowerCase());
     const matchesName = filterName === '' || r.equipmentName.toLowerCase().includes(filterName.toLowerCase());
-    const matchesStatus = filterStatus === '' || r.status === filterStatus;
+    const matchesStatus = filterStatus === '' || r._status === filterStatus || r.status === filterStatus;
     const matchesDate = filterCreatedDate === '' || r.createdAt.includes(filterCreatedDate);
 
     return matchesCode && matchesAssetCode && matchesName && matchesStatus && matchesDate;
@@ -357,7 +424,14 @@ export default function Maintenance() {
           </h2>
           <p className="text-xs text-slate-500 font-medium mt-0.5">Theo dõi lịch trình chẩn đoán lỗi, khắc phục hao mòn kỹ thuật và phục hồi các thiết bị quay chụp hư hại từ vận hành thực tế.</p>
         </div>
-        {/* Không được thêm nút "Thêm hồ sơ bảo trì" - Hãy đảm bảo an toàn tuyệt đối */}
+        <button
+          type="button"
+          onClick={() => setShowAddForm(true)}
+          className="px-5 py-2.5 bg-[#00236f] hover:bg-indigo-800 text-white text-xs font-black uppercase rounded-xl transition shadow-xs flex items-center gap-2 cursor-pointer"
+        >
+          <FileText className="w-4 h-4" />
+          Thêm hồ sơ bảo trì
+        </button>
       </div>
 
       {/* FILTER CONTROL CARD */}
@@ -413,9 +487,9 @@ export default function Maintenance() {
               className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 outline-none font-extrabold text-slate-700 cursor-pointer focus:bg-white focus:ring-1 focus:ring-indigo-500"
             >
               <option value="">Tất cả</option>
-              <option value="Đang xử lý">Đang xử lý</option>
-              <option value="Hoàn tất">Hoàn tất</option>
-              <option value="Hủy">Hủy</option>
+              <option value="IN_PROGRESS">Đang xử lý</option>
+              <option value="COMPLETED">Hoàn tất</option>
+              <option value="CANCELLED">Hủy</option>
             </select>
           </div>
 
@@ -433,6 +507,109 @@ export default function Maintenance() {
         </div>
       </div>
 
+      {/* ADD MAINTENANCE FORM */}
+      {showAddForm && (
+        <div className="bg-white border-2 border-indigo-200 rounded-2xl p-5 shadow-sm space-y-4 animate-fade-in">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+            <h3 className="text-xs font-black text-[#00236f] uppercase tracking-wider">Thêm hồ sơ bảo trì</h3>
+            <button onClick={() => setShowAddForm(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold uppercase">Mã tài sản *</label>
+              <select value={addForm.assetCode}
+                onChange={e => {
+                  const asset = ASSET_OPTIONS.find(a => a.assetCode === e.target.value);
+                  setAddForm({
+                    ...addForm,
+                    assetCode: e.target.value,
+                    equipmentName: asset?.equipmentName || '',
+                    modelName: asset?.modelName || '',
+                    serial: asset?.serial || '',
+                  });
+                }}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-800 focus:ring-1 focus:ring-indigo-500 cursor-pointer">
+                <option value="">-- Chọn mã tài sản --</option>
+                {ASSET_OPTIONS.map(a => (
+                  <option key={a.assetCode} value={a.assetCode}>{a.assetCode} — {a.equipmentName}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold uppercase">Tên thiết bị</label>
+              <select value={addForm.equipmentName} disabled
+                className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-500 cursor-not-allowed">
+                <option value="">{addForm.equipmentName || 'Chọn mã tài sản trước'}</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold uppercase">Mẫu thiết bị</label>
+              <select value={addForm.modelName} disabled
+                className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-500 cursor-not-allowed">
+                <option value="">{addForm.modelName || 'Chọn mã tài sản trước'}</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold uppercase">Số serial</label>
+              <select value={addForm.serial} disabled
+                className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-500 cursor-not-allowed">
+                <option value="">{addForm.serial || 'Chọn mã tài sản trước'}</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2 space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold uppercase">Lý do bảo trì *</label>
+              <select value={addForm.reason}
+                onChange={e => setAddForm({...addForm, reason: e.target.value})}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-800 focus:ring-1 focus:ring-indigo-500 cursor-pointer">
+                <option value="">-- Chọn lý do --</option>
+                {REASON_OPTIONS.map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+            <div className="sm:col-span-3 space-y-1">
+              <label className="text-[10px] text-slate-400 font-bold uppercase">Ghi chú</label>
+              <textarea rows={2} placeholder="Ghi chú thêm..." value={addForm.notes}
+                onChange={e => setAddForm({...addForm, notes: e.target.value})}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-indigo-500 resize-none" />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <button onClick={() => setShowAddForm(false)}
+              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black uppercase rounded-xl transition cursor-pointer">
+              Hủy
+            </button>
+            <button onClick={async () => {
+              if (!addForm.assetCode || !addForm.reason) {
+                alert('Vui lòng nhập đủ các trường bắt buộc (có dấu *)');
+                return;
+              }
+              try {
+                const asset = ASSET_OPTIONS.find(a => a.assetCode === addForm.assetCode);
+                await orderApi.admin.createMaintenanceRecord({
+                  assetId: asset?.assetId,
+                  reason: addForm.reason,
+                  note: addForm.notes,
+                });
+                setShowAddForm(false);
+                setAddForm({ assetCode: '', equipmentName: '', modelName: '', serial: '', reason: '', notes: '', sourceType: 'INVENTORY_MANAGER' });
+                triggerToast('Thêm hồ sơ bảo trì thành công');
+                fetchRecords();
+              } catch (err) {
+                alert(err.response?.data?.message || 'Lỗi khi tạo hồ sơ bảo trì');
+              }
+            }}
+              className="px-5 py-2.5 bg-[#00236f] hover:bg-indigo-800 text-white text-xs font-black uppercase rounded-xl transition shadow-xs cursor-pointer">
+              Thêm hồ sơ
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* DIAGNOSTIC API PAYLOAD SIMULATOR PREVIEW (ELEGANT DESIGN ELEMENT) */}
       {diagnosticLog && (
         <div className="bg-slate-900 text-slate-100 p-4.5 rounded-2xl border border-slate-800 font-mono text-xs">
@@ -449,7 +626,13 @@ export default function Maintenance() {
         </div>
       )}
 
+      {/* LOADING */}
+      {loading && (
+        <div className="text-center py-10 text-xs font-bold text-slate-400">Đang tải dữ liệu...</div>
+      )}
+
       {/* TABLE LISTING */}
+      {!loading && (
       <div className="table-wrapper border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="w-full">
           <table className="data-table">
@@ -565,6 +748,7 @@ export default function Maintenance() {
           </table>
         </div>
       </div>
+      )}
 
       {/* ========================================================= */}
       {/* 1. DRAWER / MODAL: XEM CHI TIẾT BẢO TRÌ (Chỉ xem, KHÔNG nút) */}

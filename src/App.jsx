@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import Home from './pages/customer/Home';
@@ -11,6 +11,7 @@ import Cart from './pages/customer/Cart';
 import Verification from './pages/customer/Verification';
 import Checkout from './pages/customer/Checkout';
 import OrderDetail from './pages/customer/OrderDetail';
+import PaymentResult from './pages/customer/PaymentResult';
 
 // Admin Pages Imports
 import Verifications from './pages/admin/Verifications';
@@ -23,7 +24,10 @@ import Maintenance from './pages/admin/Maintenance';
 import Reports from './pages/admin/Reports';
 import HandoverInventory from './pages/admin/HandoverInventory';
 
-import { EQUIPMENTS, MOCK_ORDERS } from './data';
+import deviceApi from './api/deviceApi';
+import orderApi from './api/orderApi';
+import authApi from './api/authApi';
+import cartApi from './api/cartApi';
 import { 
   Shield, 
   UserCheck, 
@@ -46,36 +50,15 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [user, setUser] = useState({
-    name: 'Nguyễn Văn A',
-    email: 'contact@t-rent.vn'
-  });
-  
-  // State to manage toggle between 'customer' and 'admin' mode
+  const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState('customer'); // Default is 'customer'
   const [userVerified, setUserVerified] = useState(true); // Seeded as verified initially to let users test checkout seamlessly
   const [activePage, setActivePage] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isInitializing, setIsInitializing] = useState(true);
   
-  // Seed cart with standard elements representing Mockup 4
-  const [cartItems, setCartItems] = useState([
-    {
-      equipment: EQUIPMENTS[0], // Sony A7 IV
-      startDate: '2026-06-12',
-      endDate: '2026-06-14',
-      days: 2,
-      quantity: 1
-    },
-    {
-      equipment: EQUIPMENTS[4], // Sony 24-70 GM II
-      startDate: '2026-06-12',
-      endDate: '2026-06-14',
-      days: 2,
-      quantity: 1
-    }
-  ]);
+  const [cartItems, setCartItems] = useState([]);
 
-  const [orders, setOrders] = useState(MOCK_ORDERS);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [checkoutData, setCheckoutData] = useState(null);
@@ -83,13 +66,80 @@ export default function App() {
   // Scroll ref for "Quy trình thuê" section smooth scrolling
   const processSectionRef = useRef(null);
 
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setIsInitializing(false);
+        return;
+      }
+
+      // Restore user from localStorage if exists (useful for admin/staff who don't have getAccount API yet)
+      const storedUser = localStorage.getItem("currentUser");
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setUserRole(parsedUser.role || 'customer');
+        } catch (e) {
+          console.error("Failed to parse stored user", e);
+        }
+      }
+
+      // If customer, fetch latest profile from backend
+      try {
+        const res = await authApi.getAccount();
+        if (res.data?.data) {
+          const acc = res.data.data;
+          const mappedRole = acc.vai_tro === 'QUAN_TRI' ? 'admin' 
+                          : acc.vai_tro === 'NHAN_VIEN' ? 'staff' 
+                          : 'customer';
+          const updatedUser = {
+            ...acc,
+            id: acc.id,
+            name: acc.ho_ten || acc.fullName || acc.name,
+            email: acc.email,
+            phone: acc.so_dien_thoai || acc.phone,
+            role: mappedRole
+          };
+          setUser(updatedUser);
+          setUserRole(mappedRole);
+          localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+          await fetchCartItems(); // Fetch cart immediately
+        }
+      } catch (err) {
+        console.error("Failed to fetch user profile", err);
+        // If 401, interceptor will clear token
+        if (err.response?.status === 401) {
+          setUser(null);
+          setUserRole('customer');
+        }
+      } finally {
+        setIsInitializing(false);
+        // Handle VNPAY redirect
+        if (window.location.pathname === '/payment-result') {
+          setActivePage('payment-result');
+          window.history.replaceState({}, document.title, "/");
+        }
+      }
+    };
+
+    initAuth();
+  }, []);
+
   const scrollToProcess = () => {
     if (processSectionRef.current) {
       processSectionRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
-  const handleLoginSuccess = (loggedInUser) => {
+  const handleLoginSuccess = async (loggedInUser) => {
+    // loggedInUser should contain: token, email, phone, name, role
+    if (loggedInUser.token) {
+      localStorage.setItem("accessToken", loggedInUser.token);
+    }
+    localStorage.setItem("currentUser", JSON.stringify(loggedInUser));
+
     setUser(loggedInUser);
     if (loggedInUser.role === 'admin') {
       setUserRole('admin');
@@ -99,6 +149,7 @@ export default function App() {
       setActivePage('admin-verifications');
     } else {
       setUserRole('customer');
+      await fetchCartItems();
       setActivePage('home');
     }
   };
@@ -107,7 +158,43 @@ export default function App() {
     setActivePage('login');
   };
 
+  const fetchCartItems = async () => {
+    try {
+      const res = await cartApi.getCart();
+      const dbItems = res.data?.data?.items || [];
+      const mappedItems = dbItems.map(item => {
+        const start = new Date(item.startDate);
+        const end = new Date(item.endDate);
+        const diffMs = end.getTime() - start.getTime();
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        
+        return {
+          cartItemId: item.id,
+          productModelId: item.productModel.id, // Needed for backend checkout
+          productModel: item.productModel.name,
+          brand: "Thiết bị", // Fallback
+          category: "Sản phẩm", // Fallback 
+          quantity: item.quantity,
+          startDate: item.startDate.split('T')[0], // format to yyyy-mm-dd
+          endDate: item.endDate.split('T')[0],
+          rentalDays: diffDays > 0 ? diffDays : 0,
+          dailyPriceSnapshot: item.dailyPriceSnapshot,
+          rentalAmount: item.dailyPriceSnapshot * (diffDays > 0 ? diffDays : 0) * item.quantity,
+          depositAmountSnapshot: item.depositAmountSnapshot * item.quantity,
+          availableSnapshot: "Còn thiết bị",
+          image: item.productModel.imageUrl || "https://placehold.co/600x400?text=No+Image",
+          bundleText: "Sản phẩm cơ bản"
+        };
+      });
+      setCartItems(mappedItems);
+    } catch (error) {
+      console.error("Failed to fetch cart", error);
+    }
+  };
+
   const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("currentUser");
     setUser(null);
     setCartItems([]);
     setUserRole('customer');
@@ -115,14 +202,38 @@ export default function App() {
     alert('Đăng xuất hoàn tất thành công!');
   };
 
-  const handleRemoveFromCart = (index) => {
-    setCartItems(cartItems.filter((_, idx) => idx !== index));
-    showSystemNotification('Đã xóa máy khỏi giỏ đồ');
+  const handleRemoveFromCart = async (indexOrId) => {
+    // Determine if it's an index or an ID string
+    const targetItem = typeof indexOrId === 'number' ? cartItems[indexOrId] : cartItems.find(i => i.cartItemId === indexOrId);
+    if (!targetItem) return;
+    try {
+      await cartApi.removeCartItem(targetItem.cartItemId);
+      await fetchCartItems();
+      showSystemNotification('Đã xóa máy khỏi giỏ đồ');
+    } catch (err) {
+      alert("Lỗi khi xóa khỏi giỏ hàng");
+    }
   };
 
-  const handleAddToCart = (payload) => {
-    setCartItems([payload, ...cartItems]);
-    setActivePage('cart');
+  const handleAddToCart = async (payload) => {
+    if (!user) {
+      alert('Vui lòng đăng nhập để thêm vào giỏ hàng');
+      setActivePage('login');
+      return;
+    }
+    // payload structure from Equipments.jsx needs to be converted
+    try {
+      await cartApi.addCartItem({
+        productModelId: payload.productModelId || payload.equipment?.id || payload.id, 
+        quantity: payload.quantity || 1,
+        startDate: payload.startDate,
+        endDate: payload.endDate
+      });
+      await fetchCartItems();
+      setActivePage('cart');
+    } catch (err) {
+      alert(err.response?.data?.message || "Lỗi khi thêm vào giỏ hàng");
+    }
   };
 
   const handleProceedToCheckout = (data) => {
@@ -136,7 +247,6 @@ export default function App() {
   };
 
   const handleSubmitOrder = (newOrdersList) => {
-    setOrders([...newOrdersList, ...orders]);
     setCartItems([]); // Clear cart
     setCheckoutData(null);
     
@@ -149,26 +259,12 @@ export default function App() {
   };
 
   const handlePaymentSuccess = (orderId) => {
-    setOrders(orders.map(o => 
-      o.id === orderId ? { ...o, status: 'active' } : o
-    ));
     if (selectedOrder && selectedOrder.id === orderId) {
       setSelectedOrder({ ...selectedOrder, status: 'active' });
     }
   };
 
   const handleCancelOrder = (orderId, reason = "Khách hàng hủy") => {
-    setOrders(orders.map(order => 
-      (order.id === orderId || order.orderCode === orderId)
-        ? { 
-            ...order, 
-            orderStatus: 'CANCELLED', 
-            depositPaymentStatus: 'REFUND_CANCELLED', 
-            cancelReason: reason,
-            cancelledAt: new Date().toLocaleDateString('vi-VN') + " " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-          } 
-        : order
-    ));
     if (selectedOrder && (selectedOrder.id === orderId || selectedOrder.orderCode === orderId)) {
       setSelectedOrder(prev => ({
         ...prev,
@@ -181,9 +277,6 @@ export default function App() {
   };
 
   const handleReturnEquipment = (orderId) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status: 'completed' } : order
-    ));
     if (selectedOrder && selectedOrder.id === orderId) {
       setSelectedOrder({ ...selectedOrder, status: 'completed' });
     }
@@ -213,6 +306,17 @@ export default function App() {
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa]">
+        <div className="flex flex-col items-center">
+          <RefreshCw className="w-8 h-8 text-[#00236f] animate-spin mb-4" />
+          <p className="text-[#00236f] font-bold">Đang tải dữ liệu phiên làm việc...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f8f9fa] text-[#191c1d]" id="app-root">
@@ -271,8 +375,6 @@ export default function App() {
                 setActivePage={setActivePage}
                 user={user}
                 userVerified={userVerified}
-                setOrders={setOrders}
-                orders={orders}
                 setCartItems={setCartItems}
               />
             )}
@@ -283,17 +385,13 @@ export default function App() {
                 userVerified={userVerified}
                 checkoutData={checkoutData}
                 onCancelCheckout={() => setActivePage('cart')}
-                onSubmitOrder={handleSubmitOrder}
+                setActivePage={setActivePage}
               />
             )}
 
             {activePage === 'orders' && (
               <Orders 
-                orders={orders}
-                onCancelOrder={handleCancelOrder}
-                onReturnEquipment={handleReturnEquipment}
                 setActivePage={setActivePage}
-                onSelectOrder={handleSelectOrder}
               />
             )}
 
@@ -332,6 +430,10 @@ export default function App() {
 
             {activePage === 'admin-reports' && (
               <Reports userRole={userRole} />
+            )}
+
+            {activePage === 'payment-result' && (
+              <PaymentResult setActivePage={setActivePage} />
             )}
 
           </main>

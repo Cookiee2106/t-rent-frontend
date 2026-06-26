@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import orderApi from '../../api/orderApi';
 import { 
   ClipboardList, 
   Calendar, 
@@ -25,12 +26,11 @@ import {
 } from 'lucide-react';
 
 export default function Orders({
-  orders = [],
-  onCancelOrder,
-  onReturnEquipment,
-  setActivePage,
-  onSelectOrder
+  setActivePage
 }) {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   // Local state for toast notification
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const showToast = (message, type = 'success') => {
@@ -39,6 +39,64 @@ export default function Orders({
       setToast({ show: false, message: '', type: 'success' });
     }, 4000);
   };
+
+  const mapOrder = (o) => ({
+    id: o.id,
+    orderCode: o.order_code || o.ma_don,
+    startDate: o.start_date?.split('T')[0] || o.ngay_nhan?.split('T')[0] || o.start_date || o.ngay_nhan,
+    endDate: o.end_date?.split('T')[0] || o.ngay_tra?.split('T')[0] || o.end_date || o.ngay_tra,
+    rentalDays: o.rental_days || o.so_ngay_thue,
+    totalRentalAmount: Number(o.total_rental_amount || o.tong_tien_thue) || 0,
+    totalDepositAmount: Number(o.total_deposit_amount || o.tong_tien_coc) || 0,
+    orderStatus: o.status || o.trang_thai,
+    depositPaymentStatus: ['RESERVED', 'DA_GIU_CHO', 'DANG_THUE', 'HOAN_THANH', 'COMPLETED'].includes(o.status || o.trang_thai) ? 'PAID' : 'PENDING',
+    items: (o.rental_order_items || o.chi_tiet_don_thue || []).map(item => ({
+      productModel: item.product_models?.name || item.mau_thiet_bi?.ten_mau || '',
+      quantity: item.quantity || item.so_luong || 1,
+      dailyPrice: Number(item.dailyPrice || item.gia_thue_ngay_snapshot) || 0,
+      rentalAmount: Number(item.rentalAmount || item.tien_thue) || 0,
+      depositAmount: Number(item.depositAmount || item.tien_coc) || 0,
+      brand: item.product_models?.brand || item.mau_thiet_bi?.hang_thiet_bi?.ten_hang || 'Premium',
+      category: item.product_models?.category || item.mau_thiet_bi?.danh_muc_thiet_bi?.ten_danh_muc || 'Thiết bị',
+      includedItems: (item.included_items || item.phu_kien_gan_voi_don || []).map(acc => ({
+        name: acc.name || acc.phu_kien?.ten_phu_kien || 'Phụ kiện',
+        quantity: acc.quantity || acc.so_luong_can_giao || 1
+      }))
+    })),
+    createdAt: o.created_at,
+    customer: {
+      fullName: o.customer?.fullName || o.ho_so_khach_hang?.nguoi_dung?.ho_ten || 'Khách hàng',
+      email: o.customer?.email || o.ho_so_khach_hang?.nguoi_dung?.email || '',
+      phone: o.customer?.phone || o.ho_so_khach_hang?.nguoi_dung?.so_dien_thoai || '',
+      verificationStatus: o.customer?.verificationStatus || o.ho_so_khach_hang?.trang_thai_xac_minh || 'CHUA_XAC_MINH'
+    },
+    depositPayment: o.depositPayment || (o.thanh_toan?.length > 0 ? {
+      paymentCode: o.thanh_toan[0]?.ma_giao_dich_provider || o.thanh_toan[0]?.id,
+      amount: Number(o.thanh_toan[0]?.so_tien) || 0,
+      paidAt: o.thanh_toan[0]?.da_thanh_toan_luc || o.thanh_toan[0]?.created_at
+    } : null)
+  });
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const res = await orderApi.customer.getOrders();
+      const rawData = res.data?.data;
+      const rawOrders = Array.isArray(rawData) ? rawData 
+                      : Array.isArray(rawData?.danh_sach) ? rawData.danh_sach
+                      : Array.isArray(res.data) ? res.data
+                      : [];
+      setOrders(rawOrders.map(mapOrder));
+    } catch (error) {
+      showToast('Lỗi khi tải danh sách đơn hàng', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
   // Filter state
   const [searchCode, setSearchCode] = useState('');
@@ -55,9 +113,9 @@ export default function Orders({
   // 1. STATS LOGIC
   const stats = {
     total: orders.length,
-    waitingHandover: orders.filter(o => o.orderStatus === 'DEPOSIT_PAID').length,
-    renting: orders.filter(o => o.orderStatus === 'RENTING').length,
-    completed: orders.filter(o => o.orderStatus === 'COMPLETED').length
+    waitingHandover: orders.filter(o => ['DEPOSIT_PAID', 'DA_GIU_CHO'].includes(o.orderStatus)).length,
+    renting: orders.filter(o => ['RENTING', 'DANG_THUE'].includes(o.orderStatus)).length,
+    completed: orders.filter(o => ['COMPLETED', 'HOAN_THANH'].includes(o.orderStatus)).length
   };
 
   // 2. FILTER LOGIC
@@ -107,24 +165,28 @@ export default function Orders({
   const getOrderStatusBadge = (status) => {
     switch (status) {
       case 'DEPOSIT_PAID':
+      case 'DA_GIU_CHO':
         return {
           label: 'Đã đặt cọc',
           style: 'bg-emerald-50 text-emerald-700 border-emerald-200',
           icon: <CheckCircle2 className="w-3.5 h-3.5" />
         };
       case 'RENTING':
+      case 'DANG_THUE':
         return {
           label: 'Đang thuê',
           style: 'bg-[#e0f2fe] text-[#0369a1] border-[#bae6fd]',
           icon: <Clock4 className="w-3.5 h-3.5" />
         };
       case 'COMPLETED':
+      case 'HOAN_THANH':
         return {
           label: 'Hoàn tất',
           style: 'bg-zinc-100 text-zinc-700 border-zinc-200',
           icon: <Check className="w-3.5 h-3.5" />
         };
       case 'CANCELLED':
+      case 'DA_HUY':
         return {
           label: 'Đã hủy',
           style: 'bg-rose-50 text-rose-700 border-rose-200',
@@ -183,7 +245,7 @@ export default function Orders({
   // CHECK ELIGIBILITY FOR CANCEL
   const isEligibleToCancel = (order) => {
     // Valid for deposit paid and pending hand over, but not renting, completed, already cancelled.
-    return order.orderStatus === 'DEPOSIT_PAID' || order.orderStatus === 'PENDING';
+    return ['DEPOSIT_PAID', 'DA_GIU_CHO', 'PENDING', 'CHO_XU_LY'].includes(order.orderStatus);
   };
 
   // HANDLERS
@@ -198,15 +260,20 @@ export default function Orders({
     setCancelFieldError('');
   };
 
-  const submitCancellation = () => {
+  const submitCancellation = async () => {
     if (!cancelReason.trim()) {
       setCancelFieldError('Vui lòng nhập lý do hủy đơn (bắt buộc).');
       return;
     }
-    // Trigger cancellation
-    onCancelOrder(cancelingOrder.orderCode, cancelReason);
-    setCancelingOrder(null);
-    showToast('Hủy đơn hàng thành công!', 'success');
+    try {
+      // Trigger cancellation via API
+      await orderApi.customer.cancelOrder(cancelingOrder.id, cancelReason);
+      setCancelingOrder(null);
+      showToast('Hủy đơn hàng thành công!', 'success');
+      fetchOrders(); // Tải lại danh sách đơn hàng
+    } catch (error) {
+      showToast(error.response?.data?.message || 'Hủy đơn hàng thất bại!', 'error');
+    }
   };
 
   const handleOpenDetailModal = (order, e) => {
@@ -331,10 +398,10 @@ export default function Orders({
                 className="w-full px-3 py-2 text-xs font-bold bg-slate-50 border border-slate-250 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#00236f]/30 transition appearance-none cursor-pointer"
               >
                 <option value="all">Tất cả trạng thái</option>
-                <option value="DEPOSIT_PAID">Đã đặt cọc</option>
-                <option value="RENTING">Đang thuê</option>
-                <option value="COMPLETED">Hoàn tất</option>
-                <option value="CANCELLED">Đã hủy</option>
+                <option value="DA_GIU_CHO">Đã đặt cọc</option>
+                <option value="DANG_THUE">Đang thuê</option>
+                <option value="HOAN_THANH">Hoàn tất</option>
+                <option value="DA_HUY">Đã hủy</option>
               </select>
             </div>
 
@@ -560,33 +627,33 @@ export default function Orders({
                   </div>
 
                   <div className={`h-0.5 flex-1 ${
-                    viewingOrder.orderStatus === 'RENTING' || viewingOrder.orderStatus === 'COMPLETED' ? 'bg-[#0284c7]' : 'bg-slate-200'
+                    ['RENTING', 'DANG_THUE', 'COMPLETED', 'HOAN_THANH'].includes(viewingOrder.orderStatus) ? 'bg-[#0284c7]' : 'bg-slate-200'
                   }`} />
 
                   {/* Step 3 */}
                   <div className="flex flex-col items-center flex-1">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border ${
-                      viewingOrder.orderStatus === 'RENTING' || viewingOrder.orderStatus === 'COMPLETED'
+                      ['RENTING', 'DANG_THUE', 'COMPLETED', 'HOAN_THANH'].includes(viewingOrder.orderStatus)
                         ? 'bg-[#0284c7] text-white border-[#bae6fd] shadow-md'
                         : 'bg-slate-100 text-slate-350 border-slate-200'
                     }`}>
-                      {viewingOrder.orderStatus === 'COMPLETED' ? <Check className="w-4 h-4" /> : '3'}
+                      {['COMPLETED', 'HOAN_THANH'].includes(viewingOrder.orderStatus) ? <Check className="w-4 h-4" /> : '3'}
                     </div>
                     <span className="text-[9px] text-slate-750 font-bold mt-1">Đang thuê</span>
                   </div>
 
                   <div className={`h-0.5 flex-1 ${
-                    viewingOrder.orderStatus === 'COMPLETED' ? 'bg-zinc-700' : 'bg-slate-200'
+                    ['COMPLETED', 'HOAN_THANH'].includes(viewingOrder.orderStatus) ? 'bg-zinc-700' : 'bg-slate-200'
                   }`} />
 
                   {/* Step 4 */}
                   <div className="flex flex-col items-center flex-1">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border ${
-                      viewingOrder.orderStatus === 'COMPLETED'
+                      ['COMPLETED', 'HOAN_THANH'].includes(viewingOrder.orderStatus)
                         ? 'bg-zinc-700 text-white border-zinc-200 shadow-md'
                         : 'bg-slate-100 text-slate-350 border-slate-200'
                     }`}>
-                      {viewingOrder.orderStatus === 'COMPLETED' ? <Check className="w-4 h-4" /> : '4'}
+                      {['COMPLETED', 'HOAN_THANH'].includes(viewingOrder.orderStatus) ? <Check className="w-4 h-4" /> : '4'}
                     </div>
                     <span className="text-[9px] text-slate-700 font-bold mt-1">Hoàn tất</span>
                   </div>

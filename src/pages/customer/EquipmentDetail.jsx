@@ -6,170 +6,11 @@ import {
   ShoppingBag, 
   AlertTriangle, 
   Sparkles, 
-  Check 
+  Check,
+  RefreshCw 
 } from 'lucide-react';
+import deviceApi from '../../api/deviceApi';
 
-const EQUIPMENTS_DATA = [
-  {
-    id: 'sony-a7iv',
-    name: 'Sony A7 IV',
-    brand: 'Sony',
-    category: 'camera',
-    pricePerDay: 800000,
-    deposit: 3000000,
-    descriptionShort: 'Body full-frame phù hợp chụp ảnh và quay video chuyên nghiệp.',
-    descriptionLong: 'Máy ảnh Mirrorless Full-frame Sony Alpha A7 IV sở hữu cảm biến BSI CMOS 33MP thế hệ mới, bộ xử lý hình ảnh BIONZ XR cực đỉnh, hỗ trợ chụp liên tục 15fps và quay video lấy nét theo mắt thời gian thực.',
-    image: 'https://images.unsplash.com/photo-1616440347437-b1c73416efc2?w=600',
-    availableQuantity: 2
-  },
-  {
-    id: 'fuji-xt5',
-    name: 'Fuji X-T5',
-    brand: 'Fujifilm',
-    category: 'camera',
-    pricePerDay: 600000,
-    deposit: 2500000,
-    descriptionShort: 'Body mang phong cách cổ điển, chất màu Fujifilm độc bản.',
-    descriptionLong: 'Fujifilm X-T5 trang bị cảm biến X-Trans CMOS 5 HR độ phân giải tới 40.2 MP, bộ xử lý hình ảnh X-Processor 5, chống rung 5 trục tích hợp ibis cực cao tới 7.0 stops.',
-    image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600',
-    availableQuantity: 2
-  },
-  {
-    id: 'lens-2470gm',
-    name: 'Lens 24-70 GM',
-    brand: 'Sony',
-    category: 'lens',
-    pricePerDay: 500000,
-    deposit: 2000000,
-    descriptionShort: 'Lens zoom đa dụng phù hợp chụp sự kiện, chân dung và quay video.',
-    descriptionLong: 'Ống kính ngàm E Sony FE 24-70mm f/2.8 GM mang hiệu năng quang học xuất sắc trên toàn dải zoom, thuộc dòng G Master cao cấp nhất của Sony.',
-    image: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=600',
-    availableQuantity: 3
-  },
-  {
-    id: 'lens-xf35',
-    name: 'Lens XF 35mm',
-    brand: 'Fujifilm',
-    category: 'lens',
-    pricePerDay: 300000,
-    deposit: 1500000,
-    descriptionShort: 'Lens tiêu cự cố định nhỏ gọn, phù hợp chụp chân dung và đời thường.',
-    descriptionLong: 'Ống kính một tiêu cự khẩu lớn Fujifilm XF 35mm f/1.4 R sở hữu khẩu độ mở tới f/1.4 cho khả năng xóa phông mượt mà và làm việc trong môi trường tối tuyệt vời.',
-    image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600',
-    availableQuantity: 3
-  },
-  {
-    id: 'canon-r6',
-    name: 'Canon EOS R6',
-    brand: 'Canon',
-    category: 'camera',
-    pricePerDay: 750000,
-    deposit: 3000000,
-    descriptionShort: 'Body full-frame cân bằng giữa chụp ảnh và quay video.',
-    descriptionLong: 'Máy ảnh Canon EOS R6 sở hữu cảm biến CMOS Fullframe 20 MP, hệ thống lấy nét siêu tốc Dual Pixel CMOS AF II lý tưởng hàng đầu.',
-    image: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=600',
-    isAlwaysUnavailable: true,
-    availableQuantity: 0
-  },
-  {
-    id: 'pin-npfz100',
-    name: 'Pin NP-FZ100',
-    brand: 'Sony',
-    category: 'accessory',
-    pricePerDay: 80000,
-    deposit: 500000,
-    descriptionShort: 'Pin rời dùng cho các body Sony tương thích.',
-    descriptionLong: 'Pin sạc Lithium-ion dung lượng cao, hoạt động ổn định và lâu dài cho các dòng máy ảnh Sony Alpha thế hệ mới.',
-    image: 'https://images.unsplash.com/photo-1624456930905-513665559132?w=600',
-    availableQuantity: 5
-  },
-  {
-    id: 'pin-fuji-npw235',
-    name: 'Pin Fuji NP-W235',
-    brand: 'Fujifilm',
-    category: 'accessory',
-    pricePerDay: 80000,
-    deposit: 500000,
-    descriptionShort: 'Pin rời dùng cho các body Fujifilm tương thích.',
-    descriptionLong: 'Pin rời dung lượng cao thế hệ mới, hoạt động bền bỉ, hỗ trợ kén sạc nhanh và chống tụt nhiệt độ.',
-    image: 'https://images.unsplash.com/photo-1624456930905-513665559132?w=600',
-    availableQuantity: 5
-  }
-];
-
-const SPECIFIC_BUNDLES = {
-  'Sony A7 IV': [
-    { name: 'Pin NP-FZ100', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Pin rời đi kèm body Sony' },
-    { name: 'Lens 24-70 GM', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Lens đi kèm combo Sony' },
-    { name: 'Túi Sony', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Túi đựng bộ Sony' }
-  ],
-  'Sony Alpha A7 IV': [
-    { name: 'Pin NP-FZ100', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Pin rời đi kèm body Sony' },
-    { name: 'Lens 24-70 GM', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Lens đi kèm combo Sony' },
-    { name: 'Túi Sony', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Túi đựng bộ Sony' }
-  ],
-  'Fuji X-T5': [
-    { name: 'Pin Fuji NP-W235', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Pin rời đi kèm body Fuji' },
-    { name: 'Lens XF 35mm', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Lens đi kèm combo Fuji' },
-    { name: 'Túi Fuji', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Túi đựng bộ Fuji' }
-  ],
-  'Lens 24-70 GM': [
-    { name: 'Nắp đậy Lens trước', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Nắp bảo trì' },
-    { name: 'Nắp đậy Lens sau', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Nắp bảo trì' },
-    { name: 'Hộp đựng chống sốc', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Hộp bảo quản' }
-  ],
-  'Lens XF 35mm': [
-    { name: 'Nắp trước', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Bảo quản thấu kính' },
-    { name: 'Nắp sau', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Bảo quản thấu kính' }
-  ],
-  'Canon EOS R6': [
-    { name: 'Pin Canon LP-E6NH', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Pin zin theo máy' },
-    { name: 'Túi Canon đựng máy', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Túi đeo bảo quản' },
-    { name: 'Sạc rời Canon', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Sạc theo máy' }
-  ],
-  'Canon EOS R6 Mark II': [
-    { name: 'Pin Canon LP-E6NH', type: 'Thiết bị vật lý định danh', qty: 1, required: 'Có', note: 'Pin zin theo máy' },
-    { name: 'Túi Canon đựng máy', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Túi đeo bảo quản' },
-    { name: 'Sạc rời Canon', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Sạc theo máy' }
-  ],
-  'Pin NP-FZ100': [
-    { name: 'Kén sạc pin', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Kén sạc bảo hộ pin' }
-  ],
-  'Pin Fuji NP-W235': [
-    { name: 'Kén sạc pin Fuji', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Kén bảo quản rời' }
-  ]
-};
-
-// Fallback bundle inside detail
-const DEFAULT_BUNDLE = [
-  { name: 'Cáp kết nối đa năng', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Cáp đồng bộ hóa' },
-  { name: 'Túi đựng chống ẩm', type: 'Phụ kiện số lượng', qty: 1, required: 'Có', note: 'Bảo vệ thiết bị' }
-];
-
-const getRelatedModelsFor = (eq, searchStartDate, searchEndDate, allEquipmentsList) => {
-  const cleanName = (eq?.name || '').trim().toLowerCase();
-
-  // If Sony A7 IV or Sony Alpha A7 IV is selected:
-  if (cleanName === 'sony a7 iv' || cleanName === 'sony alpha a7 iv') {
-    return allEquipmentsList.filter(item => {
-      const nameLower = item.name.toLowerCase();
-      return nameLower.includes('24-70 gm') || nameLower.includes('pin np-fz100') || nameLower.includes('canon eos r6');
-    });
-  }
-
-  // If Fuji X-T5 is selected:
-  if (cleanName === 'fuji x-t5') {
-    return allEquipmentsList.filter(item => {
-      const nameLower = item.name.toLowerCase();
-      return nameLower.includes('xf 35mm') || nameLower.includes('pin fuji np-w235') || nameLower.includes('sony a7 iv') || nameLower.includes('sony alpha a7 iv');
-    });
-  }
-
-  // Otherwise, fallback: same brand or same category, excluding itself
-  return allEquipmentsList
-    .filter(item => item.id !== eq.id && item.name !== eq.name)
-    .slice(0, 3);
-};
 
 export default function EquipmentDetail({
   equipment,
@@ -178,7 +19,9 @@ export default function EquipmentDetail({
   user,
   onOpenEquipmentDetail
 }) {
+  const [loading, setLoading] = useState(true);
   const [activeEquipment, setActiveEquipment] = useState(equipment);
+  const [relatedEquipments, setRelatedEquipments] = useState([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -189,17 +32,50 @@ export default function EquipmentDetail({
 
   // Keep active equipment synchronized with incoming prop
   useEffect(() => {
-    setActiveEquipment(equipment);
     setStartDate('');
     setEndDate('');
     setQuantity(1);
     setCheckResult(null);
     setFeedback({ success: '', error: '' });
+
+    const fetchDetail = async () => {
+      try {
+        setLoading(true);
+        const res = await deviceApi.getDeviceModelDetail(equipment.id);
+        setActiveEquipment(res.data?.data || equipment);
+      } catch (err) {
+        console.error('Lỗi khi tải chi tiết', err);
+        setActiveEquipment(equipment); // Fallback
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchRelated = async () => {
+      try {
+        const res = await deviceApi.getDeviceModels({ limit: 4 });
+        let items = res.data?.data?.items || res.data?.data || [];
+        if (Array.isArray(items)) {
+          items = items.filter(item => item.id !== equipment?.id).slice(0, 3);
+          setRelatedEquipments(items);
+        }
+      } catch (err) {
+        console.error('Lỗi khi tải thiết bị liên quan', err);
+      }
+    };
+
+    if (equipment && equipment.id) {
+      fetchDetail();
+      fetchRelated();
+    } else {
+      setActiveEquipment(equipment);
+      setLoading(false);
+    }
   }, [equipment]);
 
   // Get matching bundle list for table
   const modelNameCleaned = activeEquipment?.name || '';
-  const bundleList = SPECIFIC_BUNDLES[modelNameCleaned] || DEFAULT_BUNDLE;
+  const bundleList = activeEquipment?.includedItems || [];
 
   const isCanon = modelNameCleaned.toLowerCase().includes('canon');
 
@@ -309,11 +185,11 @@ export default function EquipmentDetail({
       equipment: {
         id: activeEquipment.id,
         name: activeEquipment.name,
-        brand: activeEquipment.brand,
-        category: activeEquipment.category,
-        pricePerDay: activeEquipment.pricePerDay || activeEquipment.daily_price,
-        deposit: activeEquipment.deposit || activeEquipment.deposit_amount,
-        image: activeEquipment.image || activeEquipment.image_url,
+        brand: activeEquipment.brand?.name || activeEquipment.brand,
+        category: activeEquipment.category?.name || activeEquipment.category,
+        pricePerDay: activeEquipment.dailyPrice || activeEquipment.daily_price || activeEquipment.pricePerDay,
+        deposit: activeEquipment.depositAmount || activeEquipment.deposit_amount || activeEquipment.deposit,
+        image: activeEquipment.imageUrl || activeEquipment.image || activeEquipment.image_url,
         description: activeEquipment.description
       },
       days: daysCalc,
@@ -322,8 +198,8 @@ export default function EquipmentDetail({
       startDate: startDate,
       endDate: endDate,
       quantity: quantity,
-      dailyPrice: activeEquipment.pricePerDay || activeEquipment.daily_price,
-      depositAmount: activeEquipment.deposit || activeEquipment.deposit_amount
+      dailyPrice: activeEquipment.dailyPrice || activeEquipment.daily_price || activeEquipment.pricePerDay,
+      depositAmount: activeEquipment.depositAmount || activeEquipment.deposit_amount || activeEquipment.deposit
     };
 
     if (onAddToCart) {
@@ -345,8 +221,15 @@ export default function EquipmentDetail({
         Quay lại Danh sách
       </button>
 
-      {/* Main card box details */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <RefreshCw className="w-8 h-8 text-[#00236f] animate-spin" />
+          <span className="text-sm font-bold text-slate-500">Đang tải chi tiết thiết bị...</span>
+        </div>
+      ) : (
+        <>
+          {/* Main card box details */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
         
         {/* Error & Success Feedback displays */}
         {feedback.error && (
@@ -367,32 +250,32 @@ export default function EquipmentDetail({
           
           <div className="md:col-span-5 bg-slate-50 border border-slate-100 p-3 rounded-2xl">
             <img 
-              src={activeEquipment.image || activeEquipment.image_url} 
+              src={activeEquipment.imageUrl || activeEquipment.image || activeEquipment.image_url} 
               alt={activeEquipment.name} 
               className="w-full aspect-square object-cover rounded-xl"
             />
           </div>
 
           <div className="md:col-span-7 space-y-3.5">
-            <span className="text-[10px] font-black uppercase text-[#fea619] tracking-widest">{activeEquipment.brand}</span>
+            <span className="text-[10px] font-black uppercase text-[#fea619] tracking-widest">{activeEquipment.brand?.name || activeEquipment.brand}</span>
             <h1 className="text-xl md:text-2xl font-black text-[#00236f] tracking-tight leading-tight">
               {activeEquipment.name}
             </h1>
             <p className="text-xs text-slate-600 leading-relaxed font-semibold">
-              {activeEquipment.descriptionLong || activeEquipment.description || 'Sản phẩm cao cấp hàng đầu được bảo dưỡng nghiêm ngặt, đảm bảo độ tin cậy tuyệt đối cho toàn bộ hoạt động tạc tác nghiệp.'}
+              {activeEquipment.descriptionLong || activeEquipment.description || 'Sản phẩm cao cấp hàng đầu được bảo dưỡng nghiêm ngặt, đảm bảo độ tin cậy tuyệt đối cho toàn bộ hoạt động tác nghiệp.'}
             </p>
 
             <div className="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-100 rounded-2xl p-4">
               <div>
                 <span className="text-[9.5px] uppercase font-bold text-slate-400 block mb-0.5">Giá một ngày</span>
                 <strong className="text-sm font-black text-[#00236f] font-mono block">
-                  {(activeEquipment.pricePerDay || activeEquipment.daily_price || 0).toLocaleString('vi-VN')}đ / ngày
+                  {(activeEquipment.dailyPrice || activeEquipment.daily_price || activeEquipment.pricePerDay || 0).toLocaleString('vi-VN')}đ / ngày
                 </strong>
               </div>
               <div>
                 <span className="text-[9.5px] uppercase font-bold text-slate-400 block mb-0.5">Tiền đặt cọc</span>
                 <strong className="text-sm font-black text-rose-800 font-mono block">
-                  {(activeEquipment.deposit || activeEquipment.deposit_amount || 0).toLocaleString('vi-VN')}đ
+                  {(activeEquipment.depositAmount || activeEquipment.deposit_amount || activeEquipment.deposit || 0).toLocaleString('vi-VN')}đ
                 </strong>
               </div>
             </div>
@@ -423,15 +306,15 @@ export default function EquipmentDetail({
               <tbody className="divide-y divide-slate-150">
                 {bundleList.map((item, idx) => (
                   <tr key={idx} className="hover:bg-slate-50/50">
-                    <td className="px-3.5 py-2.5 font-bold text-slate-900">{item.name}</td>
-                    <td className="px-3.5 py-2.5 text-slate-600 font-semibold">{item.type}</td>
-                    <td className="px-3.5 py-2.5 text-center font-bold text-slate-800">{item.qty}</td>
+                    <td className="px-3.5 py-2.5 font-bold text-slate-900">{item.itemName || item.name}</td>
+                    <td className="px-3.5 py-2.5 text-slate-600 font-semibold">{item.type || 'Phụ kiện'}</td>
+                    <td className="px-3.5 py-2.5 text-center font-bold text-slate-800">{item.quantity || item.qty || 1}</td>
                     <td className="px-3.5 py-2.5 text-center">
                       <span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 text-[9.5px] border border-emerald-200 font-extrabold rounded-md">
-                        {item.required}
+                        {item.isRequired || item.required === 'Có' ? 'Có' : 'Không'}
                       </span>
                     </td>
-                    <td className="px-3.5 py-2.5 text-slate-450 font-medium">{item.note}</td>
+                    <td className="px-3.5 py-2.5 text-slate-450 font-medium">{item.notes || item.note}</td>
                   </tr>
                 ))}
               </tbody>
@@ -598,7 +481,7 @@ export default function EquipmentDetail({
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {getRelatedModelsFor(activeEquipment, startDate, endDate, EQUIPMENTS_DATA).map((item) => {
+          {relatedEquipments.map((item) => {
             // Get status
             let itemStatus = 'Chưa chọn ngày thuê';
             if (startDate && endDate && new Date(endDate) > new Date(startDate)) {
@@ -613,7 +496,7 @@ export default function EquipmentDetail({
               <div key={item.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs flex flex-col hover:border-indigo-150 hover:shadow-md transition-all duration-300">
                 <div className="relative aspect-video bg-slate-50 flex items-center justify-center overflow-hidden border-b border-slate-100">
                   <img 
-                    src={item.image} 
+                    src={item.imageUrl || item.image || item.image_url} 
                     alt={item.name} 
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
@@ -639,19 +522,19 @@ export default function EquipmentDetail({
 
                 <div className="p-4 flex flex-col flex-grow text-left space-y-3">
                   <div>
-                    <span className="text-[9px] font-black uppercase text-[#fea619] tracking-widest leading-none block">{item.brand}</span>
+                    <span className="text-[9px] font-black uppercase text-[#fea619] tracking-widest leading-none block">{item.brand?.name || item.brand}</span>
                     <h4 className="text-sm font-extrabold text-slate-800 hover:text-[#00236f] transition truncate mt-0.5">{item.name}</h4>
-                    <p className="text-xs text-slate-450 line-clamp-1 font-semibold leading-relaxed">{item.descriptionShort}</p>
+                    <p className="text-xs text-slate-450 line-clamp-1 font-semibold leading-relaxed">{item.descriptionShort || item.description}</p>
                   </div>
 
                   <div className="space-y-1 text-xs border-t border-slate-100 pt-2.5">
                     <div className="flex justify-between items-center text-slate-550 font-bold">
                       <span>Phí / ngày:</span>
-                      <strong className="text-slate-800 font-mono font-black">{item.pricePerDay.toLocaleString('vi-VN')} VNĐ</strong>
+                      <strong className="text-slate-800 font-mono font-black">{(item.dailyPrice || item.daily_price || item.pricePerDay || 0).toLocaleString('vi-VN')} VNĐ</strong>
                     </div>
                     <div className="flex justify-between items-center text-slate-550 font-bold">
                       <span>Tiền cọc:</span>
-                      <strong className="text-rose-900 font-mono font-black">{item.deposit.toLocaleString('vi-VN')} VNĐ</strong>
+                      <strong className="text-rose-900 font-mono font-black">{(item.depositAmount || item.deposit_amount || item.deposit || 0).toLocaleString('vi-VN')} VNĐ</strong>
                     </div>
                   </div>
 
@@ -679,6 +562,8 @@ export default function EquipmentDetail({
           })}
         </div>
       </div>
+        </>
+      )}
 
     </div>
   );

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import orderApi from '../../api/orderApi';
 import { 
   History, 
   Calendar, 
@@ -19,6 +20,7 @@ import {
   Compass
 } from 'lucide-react';
 
+// Mock fallback used if API response is empty during development
 const SONY_LENS_INVENTORY = [
   {
     code: 'LNS-2470-004',
@@ -26,22 +28,36 @@ const SONY_LENS_INVENTORY = [
     condition: 'Mới 98%, thấu kính trong suốt không bám bụi',
     location: 'Kho phụ kiện - Khu C - Kệ 01 - Tầng 02 - Khay 02',
     image: 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=200' 
-  },
-  {
-    code: 'LNS-2470-009',
-    serial: '44109291',
-    condition: 'Mới 95%, có vết trầy xước rất nhỏ ở vỏ ngoài',
-    location: 'Kho phụ kiện - Khu C - Kệ 01 - Tầng 01 - Khay 03',
-    image: 'https://images.unsplash.com/photo-1620510629702-92149b10003e?w=200'
   }
 ];
 
 export default function PrepareEquipment({ orderCode = '#ORD-5001', onGoBack }) {
-  // State for lens selection
   const [selectedLens, setSelectedLens] = useState(null); // Initially null
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tripodQty, setTripodQty] = useState(1);
   const [showToast, setShowToast] = useState(false);
+  
+  const [availableAssets, setAvailableAssets] = useState([]);
+  const [loadingAssets, setLoadingAssets] = useState(false);
+
+  useEffect(() => {
+    const fetchAssets = async () => {
+      try {
+        setLoadingAssets(true);
+        const id = orderCode.replace('#', '');
+        const res = await orderApi.admin.getAvailableAssets(id);
+        const rawData = res.data?.data || res.data;
+        const assetsList = rawData?.tai_san_san_sang || [];
+        setAvailableAssets(assetsList.length > 0 ? assetsList : SONY_LENS_INVENTORY); // Fallback to mock
+      } catch (err) {
+        console.error("Lỗi khi tải tài sản sẵn sàng", err);
+        setAvailableAssets(SONY_LENS_INVENTORY);
+      } finally {
+        setLoadingAssets(false);
+      }
+    };
+    fetchAssets();
+  }, [orderCode]);
 
   // Sony Body item state
   const [bodyAsset, setBodyAsset] = useState({
@@ -415,49 +431,57 @@ export default function PrepareEquipment({ orderCode = '#ORD-5001', onGoBack }) 
 
             {/* Modal List Body */}
             <div className="p-6 overflow-y-auto space-y-4 bg-slate-100/40">
-              {SONY_LENS_INVENTORY.map((asset) => (
-                <div 
-                  key={asset.code}
-                  className="bg-white border border-slate-200 rounded-xl p-4 flex gap-5 hover:border-[#00236f]/40 hover:shadow-sm transition-all"
-                >
-                  <div className="w-20 h-20 rounded-lg overflow-hidden border bg-slate-50 shrink-0">
-                    <img 
-                      src={asset.image} 
-                      alt={asset.code} 
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-                  
-                  <div className="flex-grow space-y-2">
-                    <div className="flex justify-between items-start">
-                      <h4 className="text-sm font-bold text-slate-900">Sony Zoom Lens G-Master II</h4>
-                      <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-full">
-                        Sẵn sàng
-                      </span>
+              {loadingAssets ? (
+                <div className="text-center py-4 font-bold text-slate-500">Đang tải danh sách tài sản...</div>
+              ) : (
+                availableAssets.map((asset, index) => (
+                  <div 
+                    key={asset.code || asset.id || index}
+                    className="bg-white border border-slate-200 rounded-xl p-4 flex gap-5 hover:border-[#00236f]/40 hover:shadow-sm transition-all"
+                  >
+                    <div className="w-20 h-20 rounded-lg overflow-hidden border bg-slate-50 shrink-0">
+                      <img 
+                        src={asset.image || 'https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=200'} 
+                        alt={asset.code || 'Asset'} 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
                     </div>
-
-                    <div className="grid grid-cols-2 gap-y-1 gap-x-4 text-xs text-slate-500">
-                      <p><span className="font-semibold text-slate-400 mr-1.5">Mã tài sản:</span> <span className="font-bold text-[#00236f]">{asset.code}</span></p>
-                      <p><span className="font-semibold text-slate-400 mr-1.5">Mã sê-ri:</span> <span className="font-mono">{asset.serial}</span></p>
-                      <p className="col-span-2"><span className="font-semibold text-slate-400 mr-1.5">Tình trạng:</span>{asset.condition}</p>
-                      <p className="col-span-2 flex items-center gap-1 text-[11px] text-slate-450 mt-1">
-                        <MapPin className="w-3.5 h-3.5" />
-                        {asset.location}
-                      </p>
+                    
+                    <div className="flex-grow space-y-2">
+                      <div className="flex justify-between items-start">
+                        <h4 className="text-sm font-bold text-slate-900">{asset.ten_tai_san || asset.name || 'Thiết bị'}</h4>
+                        <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-bold rounded-full">
+                          Sẵn sàng
+                        </span>
+                      </div>
+  
+                      <div className="grid grid-cols-2 gap-y-1 gap-x-4 text-xs text-slate-500">
+                        <p><span className="font-semibold text-slate-400 mr-1.5">Mã tài sản:</span> <span className="font-bold text-[#00236f]">{asset.ma_tai_san || asset.code || asset.assetCode}</span></p>
+                        <p><span className="font-semibold text-slate-400 mr-1.5">Mã sê-ri:</span> <span className="font-mono">{asset.so_serial || asset.serial || asset.serialNumber}</span></p>
+                        <p className="col-span-2"><span className="font-semibold text-slate-400 mr-1.5">Tình trạng:</span>{asset.ghi_chu_tinh_trang || asset.condition || 'Tốt'}</p>
+                        <p className="col-span-2 flex items-center gap-1 text-[11px] text-slate-450 mt-1">
+                          <MapPin className="w-3.5 h-3.5" />
+                          {asset.location || 'Kho tiêu chuẩn'}
+                        </p>
+                      </div>
+                    </div>
+  
+                    <div className="flex items-center shrink-0 pl-4">
+                      <button 
+                        onClick={() => handleSelectLensAsset({
+                          code: asset.ma_tai_san || asset.code || asset.assetCode,
+                          serial: asset.so_serial || asset.serial || asset.serialNumber,
+                          location: asset.location || 'Kho tiêu chuẩn'
+                        })}
+                        className="px-5 py-2 bg-[#00236f] hover:bg-blue-900 text-white rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95"
+                      >
+                        Chọn
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex items-center shrink-0 pl-4">
-                    <button 
-                      onClick={() => handleSelectLensAsset(asset)}
-                      className="px-5 py-2 bg-[#00236f] hover:bg-blue-900 text-white rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95"
-                    >
-                      Chọn
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             {/* Modal Footer */}

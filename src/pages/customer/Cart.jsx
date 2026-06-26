@@ -21,6 +21,8 @@ import {
   AlertTriangle,
   XCircle
 } from 'lucide-react';
+import checkoutApi from '../../api/checkoutApi';
+import axiosClient from '../../api/axiosClient';
 
 export default function Cart({
   cartItems: externalCartItems,
@@ -45,52 +47,27 @@ export default function Cart({
   // Hỗ trợ cập nhật thông tin người dùng nếu nhận từ App.jsx
   useEffect(() => {
     if (externalUser) {
-      setCurrentUser(prev => ({
-        ...prev,
-        name: externalUser.name || prev.name,
-        email: externalUser.email || prev.email
-      }));
+      setCurrentUser({
+        id: externalUser.id,
+        name: externalUser.name,
+        email: externalUser.email,
+        phone: externalUser.phone || '0901234567',
+        verified: externalUserVerified
+      });
     }
   }, [externalUser]);
 
   // Xác định trạng thái xác minh từ prop được truyền từ App.jsx
   const isVerified = externalUserVerified !== undefined ? externalUserVerified : true;
 
-  // 2. DANH SÁCH SẢN PHẨM GIỎ HÀNG (MOCK KHỞI TẠO BẮT BUỘC 2 DÒNG COMBO SONY & FUJI)
-  const [items, setItems] = useState([
-    {
-      cartItemId: "CI001",
-      productModel: "Sony A7 IV",
-      brand: "Sony",
-      category: "Body máy ảnh",
-      quantity: 1,
-      startDate: "2026-06-20",
-      endDate: "2026-06-23",
-      rentalDays: 3,
-      dailyPriceSnapshot: 800000,
-      rentalAmount: 2400000,
-      depositAmountSnapshot: 3000000,
-      availableSnapshot: "Còn thiết bị", // Badge trạng thái khả dụng chỉ dùng: "Còn thiết bị" | "Không đủ số lượng khả dụng" | "Thông tin thuê không hợp lệ"
-      image: "https://images.unsplash.com/photo-1616440347437-b1c73416efc2?w=600",
-      bundleText: "Pin NP-FZ100 x1 • Lens 24-70 GM x1 • Túi Sony x1"
-    },
-    {
-      cartItemId: "CI002",
-      productModel: "Fuji X-T5",
-      brand: "Fujifilm",
-      category: "Body máy ảnh",
-      quantity: 1,
-      startDate: "2026-06-20",
-      endDate: "2026-06-23",
-      rentalDays: 3,
-      dailyPriceSnapshot: 700000,
-      rentalAmount: 2100000,
-      depositAmountSnapshot: 3000000,
-      availableSnapshot: "Còn thiết bị",
-      image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600",
-      bundleText: "Pin Fuji NP-W235 x1 • Lens XF 35mm x1 • Túi Fuji x1"
+  // 2. DANH SÁCH SẢN PHẨM GIỎ HÀNG (SỬ DỤNG DỮ LIỆU TỪ DB)
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    if (externalCartItems) {
+      setItems(externalCartItems);
     }
-  ]);
+  }, [externalCartItems]);
 
   // 3. CÁC STATE PHỤC VỤ THAO TÁC & HOẠT ĐỘNG
   const [feedback, setFeedback] = useState({ success: '', error: '' });
@@ -102,10 +79,18 @@ export default function Cart({
 
   // Form states của Stepper
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [currentTermVersion, setCurrentTermVersion] = useState(null);
+  const [currentTermId, setCurrentTermId] = useState(null);
+  const [currentTermContent, setCurrentTermContent] = useState('');
+  const [xacNhanDieuKhoanId, setXacNhanDieuKhoanId] = useState(null);
+
   const [otpValue, setOtpValue] = useState('');
   const [otpError, setOtpError] = useState('');
   const [otpTimer, setOtpTimer] = useState(115); // s
   const [otpAttempts, setOtpAttempts] = useState(0);
+  const [otpId, setOtpId] = useState(null);
+  const [demoOtpCode, setDemoOtpCode] = useState(''); // FOR TESTING PURPOSE
+  const [maXacThuc, setMaXacThuc] = useState(null);
 
   // Phương thức thanh toán cọc giữ chỗ (chỉ dùng VNPAY Sandbox trực tuyến)
   const [paymentMethod, setPaymentMethod] = useState('online'); 
@@ -136,68 +121,12 @@ export default function Cart({
   };
 
   // 4. BIỂU THỨC RECOMPUTE CÁC CHỈ SỐ TIỀN BẠC & SỐ LƯỢNG
-  // Tính toán lại dải ngày, tiền thuê sườn và trạng thái khi có sự thay đổi
   const handleDateChange = (cartItemId, field, val) => {
-    setFeedback({ success: '', error: '' });
-    setItems(prevItems => prevItems.map(item => {
-      if (item.cartItemId === cartItemId) {
-        const updated = { ...item, [field]: val };
-        
-        if (updated.startDate && updated.endDate) {
-          const start = new Date(updated.startDate);
-          const end = new Date(updated.endDate);
-          const diffMs = end.getTime() - start.getTime();
-          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-          
-          if (diffDays > 0) {
-            updated.rentalDays = diffDays;
-            updated.rentalAmount = updated.dailyPriceSnapshot * diffDays * updated.quantity;
-            // Áp dụng luật số lượng khả dụng
-            if (updated.quantity > 3) {
-              updated.availableSnapshot = "Không đủ số lượng khả dụng";
-            } else {
-              updated.availableSnapshot = "Còn thiết bị";
-            }
-          } else {
-            updated.rentalDays = 0;
-            updated.rentalAmount = 0;
-            updated.availableSnapshot = "Thông tin thuê không hợp lệ";
-          }
-        } else {
-          updated.rentalDays = 0;
-          updated.rentalAmount = 0;
-          updated.availableSnapshot = "Thông tin thuê không hợp lệ";
-        }
-        return updated;
-      }
-      return item;
-    }));
+    alert("Không thể sửa ngày trực tiếp trong giỏ hàng. Vui lòng xóa sản phẩm và chọn lại từ trang thiết bị.");
   };
 
   const handleQtyChange = (cartItemId, newQty) => {
-    setFeedback({ success: '', error: '' });
-    if (newQty < 1) return;
-    
-    setItems(prevItems => prevItems.map(item => {
-      if (item.cartItemId === cartItemId) {
-        const updated = { ...item, quantity: Number(newQty) };
-        updated.depositAmountSnapshot = 3000000 * updated.quantity; // Scale deposit with quantity
-        
-        if (updated.rentalDays > 0) {
-          updated.rentalAmount = updated.dailyPriceSnapshot * updated.rentalDays * updated.quantity;
-          if (updated.quantity > 3) {
-            updated.availableSnapshot = "Không đủ số lượng khả dụng";
-          } else {
-            updated.availableSnapshot = "Còn thiết bị";
-          }
-        } else {
-          updated.rentalAmount = 0;
-          updated.availableSnapshot = "Thông tin thuê không hợp lệ";
-        }
-        return updated;
-      }
-      return item;
-    }));
+    alert("Không thể sửa số lượng trực tiếp. Vui lòng xóa sản phẩm và chọn lại.");
   };
 
   // Tính tổng
@@ -233,11 +162,7 @@ export default function Cart({
     
     // Nếu có hỗ trợ App.js synced
     if (externalOnRemoveItem) {
-      // Find index
-      const idx = items.findIndex(i => i.cartItemId === targetId);
-      if (idx !== -1) {
-        externalOnRemoveItem(idx);
-      }
+      externalOnRemoveItem(targetId);
     }
   };
 
@@ -279,52 +204,99 @@ export default function Cart({
   };
 
   // Tiến sang bước 2: Điều khoản đặt thuê
-  const handleStep1ToStep2 = () => {
+  const handleStep1ToStep2 = async () => {
     // Re-verify
     if (!isVerified) {
       setFeedback({ success: '', error: "Vui lòng xác minh tài khoản trước khi đặt thuê" });
       setCheckoutStep(0);
       return;
     }
-    setCheckoutStep(2);
+    
+    try {
+      const res = await checkoutApi.getCurrentTerms();
+      if (res.data?.data) {
+        setCurrentTermVersion(res.data.data.version);
+        setCurrentTermId(res.data.data.id);
+        setCurrentTermContent(res.data.data.content);
+      }
+      setCheckoutStep(2);
+    } catch (err) {
+      // Ignore if not found, we fallback to 1.0
+      setCheckoutStep(2);
+    }
   };
 
   // Tiến sang bước 3: OTP đặt thuê
-  const handleStep2ToStep3 = () => {
+  const handleStep2ToStep3 = async () => {
     if (!acceptedTerms) {
       setFeedback({ success: '', error: "Vui lòng đồng ý điều khoản thuê trước khi tiếp tục" });
       return;
     }
-    // Gửi OTP giả lập
-    setOtpValue('');
-    setOtpError('');
-    setOtpTimer(115);
-    setOtpAttempts(0);
-    setCheckoutStep(3);
+    
+    try {
+      if (!currentTermId) {
+        throw new Error("Không lấy được mã điều khoản hiện tại. Vui lòng thử lại.");
+      }
+
+      // 1. Gửi chấp nhận điều khoản
+      const termsRes = await checkoutApi.acceptTerms({
+        termsId: currentTermId,
+        termsVersion: currentTermVersion || "1.0",
+      });
+      
+      let xacNhanDieuKhoanIdMoi = xacNhanDieuKhoanId;
+      if (termsRes.data?.data?.xac_nhan_dieu_khoan_id) {
+        xacNhanDieuKhoanIdMoi = termsRes.data.data.xac_nhan_dieu_khoan_id;
+        setXacNhanDieuKhoanId(xacNhanDieuKhoanIdMoi);
+      }
+
+      // 2. Yêu cầu OTP
+      const otpRes = await checkoutApi.sendOtp({ 
+        nguoi_dung_id: currentUser.id, 
+        xac_nhan_dieu_khoan_id: xacNhanDieuKhoanIdMoi 
+      });
+      
+      if (otpRes.data?.data?.otp_id) {
+        setOtpId(otpRes.data.data.otp_id);
+        setDemoOtpCode(otpRes.data.data.ma_otp);
+      }
+      
+      setOtpValue('');
+      setOtpError('');
+      setOtpTimer(120);
+      setOtpAttempts(0);
+      setCheckoutStep(3);
+    } catch (err) {
+      setFeedback({ success: '', error: err.response?.data?.message || err.message || "Có lỗi xảy ra khi yêu cầu OTP" });
+    }
   };
 
   // Tiến sang bước 4: Thanh toán cọc giữ chỗ
-  const handleStep3ToStep4 = () => {
+  const handleStep3ToStep4 = async () => {
     if (!otpValue.trim()) {
       setOtpError("Vui lòng nhập mã OTP");
       return;
     }
     
-    // Check sai số lần quá quy định
-    if (otpAttempts >= 2) {
-      setOtpError("Bạn đã nhập sai OTP quá số lần cho phép");
-      return;
-    }
-
-    // Mã OTP bắt buộc là 123456
-    if (otpValue.trim() !== '123456') {
-      setOtpError("Mã OTP không hợp lệ hoặc đã hết hạn");
+    try {
+      const otpRes = await checkoutApi.verifyOtp({ 
+        otp_id: otpId,
+        ma_otp: otpValue.trim(),
+        nguoi_dung_id: currentUser.id,
+        xac_nhan_dieu_khoan_id: xacNhanDieuKhoanId
+      });
+      if (otpRes.data?.data?.ma_xac_thuc) {
+        setMaXacThuc(otpRes.data.data.ma_xac_thuc);
+        setOtpError('');
+        setCheckoutStep(4);
+      } else {
+        setOtpError("Mã OTP không hợp lệ");
+        setOtpAttempts(prev => prev + 1);
+      }
+    } catch (err) {
+      setOtpError(err.response?.data?.message || "Mã OTP không hợp lệ hoặc đã hết hạn");
       setOtpAttempts(prev => prev + 1);
-      return;
     }
-
-    setOtpError('');
-    setCheckoutStep(4);
   };
 
   // Bấm nút đóng kịch bản checkout quay lại giỏ chính
@@ -338,45 +310,57 @@ export default function Cart({
   };
 
   // Gửi lại mã OTP
-  const resendOtpCode = () => {
-    setOtpTimer(120);
-    setOtpError('');
-    setOtpAttempts(0);
+  const resendOtpCode = async () => {
+    try {
+      const otpRes = await checkoutApi.sendOtp({ 
+        nguoi_dung_id: currentUser.id, 
+        xac_nhan_dieu_khoan_id: xacNhanDieuKhoanId 
+      });
+      
+      if (otpRes.data?.data?.otp_id) {
+        setOtpId(otpRes.data.data.otp_id);
+        setDemoOtpCode(otpRes.data.data.ma_otp);
+      }
+      
+      setOtpTimer(120);
+      setOtpError('');
+      setOtpAttempts(0);
+    } catch (err) {
+      setOtpError(err.response?.data?.message || "Không thể gửi lại OTP");
+    }
   };
 
-  // Khởi phát luồng thanh toán VNPAY Sandbox (kiểm tra điều kiện trước khi chuyển hướng)
-  const startVNPAYPayment = () => {
-    // 1. Kiểm tra giỏ hàng còn hợp lệ
-    if (items.length === 0) {
-      setFeedback({ success: '', error: "Giỏ hàng rỗng hoặc không hợp lệ." });
-      return;
-    }
-    // 2. Kiểm tra khách hàng đã xác minh
-    if (!isVerified) {
-      setFeedback({ success: '', error: "Vui lòng xác minh tài khoản trước khi đặt thuê." });
-      return;
-    }
-    // 3. Kiểm tra khách hàng đã đồng ý điều khoản
-    if (!acceptedTerms) {
-      setFeedback({ success: '', error: "Vui lòng đọc và chấp nhận điều khoản dịch vụ trước." });
-      return;
-    }
-    // 4. Kiểm tra OTP đã xác thực
-    if (otpValue.trim() !== '123456') {
-      setFeedback({ success: '', error: "Mã OTP chưa được xác thực hoặc không hợp lệ." });
+  // Khởi phát luồng thanh toán — simulate IPN qua API, sau đó chuyển về orders
+  const startVNPAYPayment = async () => {
+    if (!xacNhanDieuKhoanId || !maXacThuc) {
+      setFeedback({ success: '', error: "Vui lòng xác thực OTP trước" });
       return;
     }
 
-    setFeedback({ success: '', error: '' });
-    setPaymentError('');
     setIsProcessingPayment(true);
-    setVnpayState('redirecting');
+    try {
+      const sessionRes = await checkoutApi.createSession({
+        xac_nhan_dieu_khoan_id: xacNhanDieuKhoanId,
+        xac_thuc_otp_id: otpId
+      });
+      const sessionId = sessionRes.data?.data?.phien_thanh_toan_id;
+      if (!sessionId) throw new Error("Không lấy được phiên thanh toán ID");
 
-    // Chuyển sang VNPAY Sandbox sau 2s giả lập
-    setTimeout(() => {
+      const payRes = await checkoutApi.createPaymentUrl({
+        phien_thanh_toan_id: sessionId
+      });
+      const paymentId = payRes.data?.data?.thanh_toan_id;
+      if (!paymentId) throw new Error("Không tạo được thanh toán");
+
+      await axiosClient.get(`/api/payments/vnpay/test-simulate-ipn?thanh_toan_id=${paymentId}`);
+
+      cancelCheckoutSuite();
+      setActivePage('home');
+    } catch (err) {
+      setFeedback({ success: '', error: err.response?.data?.message || err.message || "Lỗi thanh toán" });
+    } finally {
       setIsProcessingPayment(false);
-      setVnpayState('simulating');
-    }, 2000);
+    }
   };
 
   // Xác nhận thanh toán cọc giữ chỗ THÀNH CÔNG (sau khi VNPAY trả kết quả thành công)
@@ -392,8 +376,8 @@ export default function Cart({
       // Tạo đơn hàng thành công, xóa giỏ hàng
       const orderData = {
         orderCode: newOrderCode,
-        customerEmail: "nguyenvana@example.com",
-        customerName: "Nguyễn Văn A",
+        customerEmail: currentUser.email,
+        customerName: currentUser.name,
         startDate: "20/06/2026",
         endDate: "23/06/2026",
         rentalDays: items[0]?.rentalDays || 3,
@@ -956,32 +940,20 @@ export default function Cart({
 
                   {/* Scrollable Terms Box */}
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 h-64 overflow-y-auto text-xs text-slate-600 font-medium leading-relaxed space-y-3.5 shadow-inner">
-                    <h5 className="font-extrabold text-slate-800 uppercase tracking-tight text-[11px]">ĐỒ ÁN PHÁP LÝ HỢP ĐỒNG THUÊ THIẾT BỊ CAMERA T-RENT</h5>
+                    <h5 className="font-extrabold text-slate-800 uppercase tracking-tight text-[11px]">ĐIỀU KHOẢN THUÊ THIẾT BỊ T-RENT (Phiên bản {currentTermVersion || '1.0'})</h5>
                     
-                    <p className="flex items-start gap-2">
-                      <span className="w-4 h-4 bg-[#00236f] text-white font-black text-[9px] rounded-full flex items-center justify-center shrink-0 mt-0.5">1</span>
-                      <span><strong>Khách hàng có trách nhiệm kiểm tra thiết bị khi nhận:</strong> Trước khi mang máy ra khỏi showroom, khách thuê phải cùng nhân viên đồng đối chứng, đối kiểm tất cả các linh kiện kèm theo, bao gồm cả tem bảo an.</span>
-                    </p>
-
-                    <p className="flex items-start gap-2">
-                      <span className="w-4 h-4 bg-[#00236f] text-white font-black text-[9px] rounded-full flex items-center justify-center shrink-0 mt-0.5">2</span>
-                      <span><strong>Khách hàng phải hoàn trả thiết bị đúng thời gian đã đăng ký:</strong> Nếu xảy ra tình trạng gia hạn đột xuất hoặc phát sinh sự cố, khách hàng có trách nhiệm liên hệ Hotline trong vòng ít nhất 6 tiếng trước giờ bàn giao dự kiến. Các phát sinh muộn không báo trước sẽ bị áp dụng mức phí phụ phụ vượt giờ quy chuẩn.</span>
-                    </p>
-
-                    <p className="flex items-start gap-2">
-                      <span className="w-4 h-4 bg-[#00236f] text-white font-black text-[9px] rounded-full flex items-center justify-center shrink-0 mt-0.5">3</span>
-                      <span><strong>Khách hàng chịu trách nhiệm nếu thiết bị, phụ kiện bị hư hỏng, mất hoặc thiếu khi trả:</strong> Trường hợp rơi vỡ, nứt kính quang học, hoặc hỏng mốc do tác động môi trường không bảo vệ, khách thuê đồng ý khấu hao trực tiếp từ tiền đặt cọc showroom hoặc lập hóa đơn bồi hoàn linh kiện theo khung giá hãng phân phối.</span>
-                    </p>
-
-                    <p className="flex items-start gap-2">
-                      <span className="w-4 h-4 bg-[#00236f] text-white font-black text-[9px] rounded-full flex items-center justify-center shrink-0 mt-0.5">4</span>
-                      <span><strong>Tiền cọc có thể được hoàn lại hoặc khấu trừ tùy theo kết quả kiểm kê khi trả thiết bị:</strong> Số tiền này sẽ đảm bảo giữ đúng giá trị cho đến khi sản xuất chu kỳ trả tặc tác hoàn tất kỹ thuật.</span>
-                    </p>
-
-                    <p className="flex items-start gap-2">
-                      <span className="w-4 h-4 bg-[#00236f] text-white font-black text-[9px] rounded-full flex items-center justify-center shrink-0 mt-0.5">5</span>
-                      <span><strong>Việc bàn giao thiết bị sẽ được nhân viên xác nhận bằng phiếu bàn giao và hợp đồng giấy:</strong> Hệ thống online chỉ phục vụ xử lý giữ phòng bảo cọc trực tuyến. Thủ tục bàn kỹ thuật sẽ diễn ra thực địa tại Showroom T-Rent.</span>
-                    </p>
+                    {currentTermContent ? (
+                      currentTermContent.split('\n').map((paragraph, idx) => (
+                        <p key={idx} className="flex items-start gap-2">
+                          <span className="w-4 h-4 bg-[#00236f] text-white font-black text-[9px] rounded-full flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
+                          <span>{paragraph}</span>
+                        </p>
+                      ))
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-slate-400">
+                        Đang tải điều khoản...
+                      </div>
+                    )}
                   </div>
 
                   {/* Terms Checkbox */}
@@ -1056,7 +1028,7 @@ export default function Cart({
                         Mã OTP được gửi đến hòm thư liên kết của tài khoản:
                       </p>
                       <strong className="text-sm text-slate-850 font-black font-mono block">
-                        nguyenvana@example.com <span className="text-slate-400 font-medium text-xs">hoặc</span> 0901234567
+                        {currentUser.email} <span className="text-slate-400 font-medium text-xs">hoặc</span> {currentUser.phone}
                       </strong>
                     </div>
 
@@ -1083,7 +1055,7 @@ export default function Cart({
                       )}
 
                       <span className="text-[10px] text-blue-800 bg-blue-50 border border-blue-100 rounded-lg px-2 py-1 font-bold block text-left leading-normal mt-1">
-                        👉 <strong>Mã kiểm thử:</strong> Vui lòng nhập mã thực nghiệm <strong className="font-mono text-indigo-900 bg-white border px-1 rounded">123456</strong> để được tiếp tục bước thanh toán cọc.
+                        👉 <strong>Mã kiểm thử:</strong> Vui lòng nhập mã thực nghiệm <strong className="font-mono text-indigo-900 bg-white border px-1 rounded">{demoOtpCode || '123456'}</strong> để được tiếp tục bước thanh toán cọc.
                       </span>
                     </div>
 
@@ -1176,12 +1148,12 @@ export default function Cart({
 
                           <div className="flex justify-between py-2.5">
                             <span>Email:</span>
-                            <strong className="text-slate-800">nguyenvana@example.com</strong>
+                            <strong className="text-slate-800">{currentUser.email}</strong>
                           </div>
 
                           <div className="flex justify-between py-2.5">
                             <span>Số điện thoại:</span>
-                            <strong className="text-slate-800 font-mono">0901234567</strong>
+                            <strong className="text-slate-800 font-mono">{currentUser.phone}</strong>
                           </div>
 
                           <div className="flex justify-between py-2.5">

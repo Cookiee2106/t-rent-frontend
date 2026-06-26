@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ChevronLeft, 
@@ -9,8 +9,10 @@ import {
   QrCode, 
   Wallet, 
   ShieldCheck, 
-  AlertTriangle 
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
+import orderApi from '../../api/orderApi';
 
 export default function OrderDetail({
   order,
@@ -23,6 +25,13 @@ export default function OrderDetail({
   const [showOTP, setShowOTP] = useState(false);
   const [showPaymentQR, setShowPaymentQR] = useState(false);
   
+  // Cancel state
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
+  const [cancelSuccess, setCancelSuccess] = useState(false);
+
   // Terms & OTP state
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [otpValue, setOtpValue] = useState('');
@@ -45,6 +54,7 @@ export default function OrderDetail({
     switch (status) {
       case 'pending':
       case 'PENDING':
+      case 'CHO_XU_LY':
         return (
           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-300 text-amber-800 text-xs font-black rounded-full select-none animate-pulse">
             <Clock className="w-4 h-4 shrink-0" />
@@ -54,6 +64,7 @@ export default function OrderDetail({
       case 'paid':
       case 'active':
       case 'DEPOSIT_PAID':
+      case 'DA_GIU_CHO':
         return (
           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-black rounded-full select-none">
             <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -62,6 +73,7 @@ export default function OrderDetail({
         );
       case 'renting':
       case 'RENTING':
+      case 'DANG_THUE':
         return (
           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e0f2fe] border border-sky-305 text-[#0369a1] text-xs font-black rounded-full select-none">
             <Clock className="w-4 h-4 text-[#0284c7] shrink-0" />
@@ -70,6 +82,7 @@ export default function OrderDetail({
         );
       case 'completed':
       case 'COMPLETED':
+      case 'HOAN_THANH':
         return (
           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 border border-sky-300 text-sky-800 text-xs font-black rounded-full select-none">
             <CheckCircle2 className="w-4 h-4 text-sky-600 shrink-0" />
@@ -78,6 +91,7 @@ export default function OrderDetail({
         );
       case 'cancelled':
       case 'CANCELLED':
+      case 'DA_HUY':
         return (
           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 border border-rose-300 text-rose-800 text-xs font-black rounded-full select-none">
             <X className="w-4 h-4 text-rose-600 shrink-0" />
@@ -94,7 +108,7 @@ export default function OrderDetail({
   };
 
   const handleStartPaymentFlow = () => {
-    if (order.status !== 'pending') {
+    if (!['pending', 'PENDING', 'CHO_XU_LY'].includes(order.status || order.orderStatus)) {
       alert('Đơn hàng đã được thanh toán cọc bảo lãnh từ trước!');
       return;
     }
@@ -130,10 +144,31 @@ export default function OrderDetail({
     }, 1000);
   };
 
-  const handleCancelClick = () => {
-    if (window.confirm('Quý khách muốn Hủy đơn hàng này? Thao tác này sẽ tự động hoàn trả số lượng thiết bị khả dụng lắp rạp về kho.')) {
-      onCancelOrder(order.id);
-      alert('Đã hủy đơn hàng và hoàn thiết bị về kho thành công.');
+  const handleOpenCancelModal = () => {
+    setCancelReason('');
+    setCancelError(null);
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelReason.trim()) {
+      setCancelError('Vui lòng nhập lý do hủy đơn hàng');
+      return;
+    }
+    try {
+      setIsCancelling(true);
+      setCancelError(null);
+      await orderApi.customer.cancelOrder(order.id, cancelReason.trim());
+      setCancelSuccess(true);
+      setTimeout(() => {
+        setShowCancelModal(false);
+        setCancelSuccess(false);
+        onCancelOrder(order.id, cancelReason.trim());
+      }, 1500);
+    } catch (err) {
+      setCancelError(err.response?.data?.message || 'Không thể hủy đơn hàng. Vui lòng thử lại sau.');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -176,10 +211,10 @@ export default function OrderDetail({
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5 text-center text-[10px] font-bold">
               {[
                 { name: 'Khởi tạo đơn', active: true, desc: 'Đã hoàn tất' },
-                { name: 'Đóng tiền cọc', active: order.status !== 'pending' && order.status !== 'cancelled', desc: order.status === 'pending' ? 'Chờ thanh toán' : order.status === 'cancelled' ? 'Bị hủy bỏ' : 'Đã bảo lãnh' },
-                { name: 'Xếp dán tem', active: order.status === 'completed', desc: 'Kho chuẩn bị' },
-                { name: 'Ký nhận giấy', active: order.status === 'completed', desc: 'Tại showroom' },
-                { name: 'Bàn giao máy', active: order.status === 'completed', desc: 'Nhả thiết bị' }
+                { name: 'Đóng tiền cọc', active: !['pending', 'PENDING', 'CHO_XU_LY', 'cancelled', 'CANCELLED', 'DA_HUY'].includes(currentStatus), desc: ['pending', 'PENDING', 'CHO_XU_LY'].includes(currentStatus) ? 'Chờ thanh toán' : ['cancelled', 'CANCELLED', 'DA_HUY'].includes(currentStatus) ? 'Bị hủy bỏ' : 'Đã bảo lãnh' },
+                { name: 'Xếp dán tem', active: ['completed', 'COMPLETED', 'HOAN_THANH'].includes(currentStatus), desc: 'Kho chuẩn bị' },
+                { name: 'Ký nhận giấy', active: ['completed', 'COMPLETED', 'HOAN_THANH'].includes(currentStatus), desc: 'Tại showroom' },
+                { name: 'Bàn giao máy', active: ['completed', 'COMPLETED', 'HOAN_THANH'].includes(currentStatus), desc: 'Nhả thiết bị' }
               ].map((step, idx) => (
                 <div key={idx} className="space-y-2 relative flex flex-col items-center">
                   <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-black ${
@@ -292,12 +327,12 @@ export default function OrderDetail({
             </div>
 
             {/* Lưu ý KYC */}
-            {order.status === 'pending' ? (
+            {['pending', 'PENDING', 'CHO_XU_LY'].includes(currentStatus) ? (
               <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 flex gap-2 text-[9px] text-rose-800 leading-normal font-semibold text-left">
                 <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                 <span>Kho chưa dán tem giữ chỗ. Quý khách vui lòng đặt cọc trực tuyến để kịch hoạt dán tem bảo lãnh ngay lập tức.</span>
               </div>
-            ) : order.status === 'cancelled' ? (
+            ) : ['cancelled', 'CANCELLED', 'DA_HUY'].includes(currentStatus) ? (
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex gap-2 text-[9px] text-slate-500 leading-normal font-semibold text-left">
                 <AlertTriangle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                 <span>Đơn hàng đã hủy bỏ. Số lượng thiết bị kén chọn đã được cập nhật trả về kho khả dụng của showroom.</span>
@@ -311,7 +346,7 @@ export default function OrderDetail({
 
             {/* Nút hành vụ tùy trạng thái */}
             <div className="space-y-2.5 pt-2">
-              {order.status === 'pending' && (
+              {['pending', 'PENDING', 'CHO_XU_LY'].includes(currentStatus) && (
                 <>
                   <button
                     type="button"
@@ -322,7 +357,7 @@ export default function OrderDetail({
                   </button>
                   <button
                     type="button"
-                    onClick={handleCancelClick}
+                    onClick={handleOpenCancelModal}
                     className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-[#ba1a1a] border border-rose-200 text-xs font-bold rounded-xl transition-colors shadow-sm"
                   >
                     Hủy đơn hàng
@@ -330,11 +365,11 @@ export default function OrderDetail({
                 </>
               )}
 
-              {(order.status === 'paid' || order.status === 'active') && (
+              {['paid', 'active', 'DEPOSIT_PAID', 'DA_GIU_CHO'].includes(currentStatus) && (
                 <>
                   <button
                     type="button"
-                    onClick={handleCancelClick}
+                    onClick={handleOpenCancelModal}
                     className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-[#ba1a1a] border border-rose-200 text-xs font-bold rounded-xl transition-colors shadow-sm"
                   >
                     Hủy đơn hàng (Hoàn cọc)
@@ -345,7 +380,7 @@ export default function OrderDetail({
                 </>
               )}
 
-              {order.status === 'completed' && (
+              {['completed', 'COMPLETED', 'HOAN_THANH'].includes(currentStatus) && (
                 <button
                   type="button"
                   disabled
@@ -355,7 +390,7 @@ export default function OrderDetail({
                 </button>
               )}
 
-              {order.status === 'cancelled' && (
+              {['cancelled', 'CANCELLED', 'DA_HUY'].includes(currentStatus) && (
                 <button
                   type="button"
                   disabled
@@ -520,6 +555,85 @@ export default function OrderDetail({
                   {isSubmitting ? 'Đang duyệt chuyển...' : 'Tôi đã chuyển đặt cọc'}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* CANCEL ORDER MODAL */}
+      <AnimatePresence>
+        {showCancelModal && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#00113a]/50 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 text-left border border-slate-200 space-y-4"
+            >
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <h3 className="text-sm font-black text-[#00236f] uppercase flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-rose-500" />
+                  Xác nhận hủy đơn hàng
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowCancelModal(false)}
+                  className="p-1 hover:bg-slate-100 rounded text-slate-400"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="text-xs text-slate-600 leading-relaxed font-semibold">
+                Bạn có chắc chắn muốn hủy đơn hàng <strong className="text-[#00236f]">#{order.orderCode || order.id}</strong>? Hành động này không thể hoàn tác.
+              </div>
+
+              {cancelSuccess ? (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded-xl flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  Đã hủy đơn hàng thành công
+                </div>
+              ) : (
+                <>
+                  {cancelError && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 font-bold rounded-xl flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                      <span>{cancelError}</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase block">
+                      Lý do hủy <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={cancelReason}
+                      onChange={(e) => { setCancelReason(e.target.value); setCancelError(null); }}
+                      placeholder="Nhập lý do hủy đơn hàng..."
+                      className="w-full p-3 bg-slate-50 border border-slate-200 focus:border-[#00236f] focus:outline-none rounded-xl text-xs font-semibold resize-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowCancelModal(false)}
+                      className="px-4 py-2.5 border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 rounded-xl text-xs transition"
+                    >
+                      Không, giữ đơn
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmCancel}
+                      disabled={isCancelling}
+                      className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs transition flex items-center gap-1.5"
+                    >
+                      {isCancelling ? 'Đang hủy...' : 'Xác nhận hủy'}
+                    </button>
+                  </div>
+                </>
+              )}
             </motion.div>
           </div>
         )}

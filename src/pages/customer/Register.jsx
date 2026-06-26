@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Eye, EyeOff, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import authApi from '../../api/authApi';
 
 export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
   const [fullname, setFullname] = useState('');
@@ -15,12 +16,9 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
   
   // Custom error state
   const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Email/SĐT giả định đã tồn tại để test báo lỗi
-  const EXISTING_EMAILS = ['test@gmail.com', 'client@t-rent.vn', 'admin@t-rent.vn', 'staff@t-rent.vn'];
-  const EXISTING_PHONES = ['0901234567', '0912345678', '0987654321'];
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -30,24 +28,29 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
       return;
     }
 
-    // 2. Kiểm tra email hoặc sđt đã tồn tại
-    if (EXISTING_EMAILS.includes(email.trim().toLowerCase())) {
-      setErrorMessage('Địa chỉ email này đã được đăng ký trên hệ thống.');
-      return;
-    }
-    if (EXISTING_PHONES.includes(phone.trim())) {
-      setErrorMessage('Số điện thoại này đã được đăng ký trên hệ thống.');
-      return;
-    }
-
-    // 3. Kiểm tra mật khẩu không khớp
+    // 2. Kiểm tra mật khẩu không khớp
     if (password !== confirmPassword) {
       setErrorMessage('Mật khẩu xác nhận không trùng khớp.');
       return;
     }
 
-    // Đạt điều kiện hợp lệ
-    setShowSuccessModal(true);
+    try {
+      setLoading(true);
+      await authApi.register({
+        fullName: fullname.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        password: password
+      });
+
+      // Đạt điều kiện hợp lệ
+      setShowSuccessModal(true);
+    } catch (err) {
+      console.error(err);
+      setErrorMessage(err.response?.data?.message || 'Có lỗi xảy ra khi đăng ký tài khoản');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleModalProceed = () => {
@@ -239,9 +242,10 @@ export default function Register({ onRegisterSuccess, onNavigateToLogin }) {
           {/* Submit action */}
           <button 
             type="submit"
-            className="w-full bg-[#fea619] text-[#2a1700] hover:bg-[#fea619]/90 font-extrabold h-12 rounded-lg transition-all active:scale-[0.98] shadow-sm text-sm uppercase tracking-wide mt-4"
+            disabled={loading}
+            className="w-full bg-[#fea619] text-[#2a1700] hover:bg-[#fea619]/90 font-extrabold h-12 rounded-lg transition-all active:scale-[0.98] shadow-sm text-sm uppercase tracking-wide mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Đăng ký tài khoản
+            {loading ? 'Đang xử lý...' : 'Đăng ký tài khoản'}
           </button>
         </form>
 

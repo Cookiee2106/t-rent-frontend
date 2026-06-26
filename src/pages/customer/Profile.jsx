@@ -1,18 +1,56 @@
-import React, { useState } from 'react';
-import { User, ShieldCheck, Mail, Phone, Lock, Calendar, ClipboardList, CreditCard, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, ShieldCheck, Mail, Phone, Lock, Calendar, ClipboardList, CreditCard, FileText, RefreshCw, AlertTriangle } from 'lucide-react';
+import customerApi from '../../api/customerApi';
 
 export default function Profile({ user, userVerified, onSave, setActivePage }) {
-  const [name, setName] = useState(user?.name || 'Khách hàng Demo');
-  const [phone, setPhone] = useState('0987321654');
-  const [email] = useState(user?.email || 'contact@t-rent.vn');
+  const [name, setName] = useState(user?.fullName || user?.name || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [address, setAddress] = useState('');
+  const [identityNumber, setIdentityNumber] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
-  const handleUpdate = (e) => {
+  useEffect(() => {
+    const fetchAccount = async () => {
+      try {
+        setLoading(true);
+        setFetchError(null);
+        const res = await customerApi.getAccount();
+        const data = res.data?.data;
+        if (data) {
+          setName(data.ho_ten || data.fullName || '');
+          setPhone(data.so_dien_thoai || data.phone || '');
+          setEmail(data.email || '');
+          setAddress(data.ho_so_khach_hang?.dia_chi || data.profile?.address || '');
+          setIdentityNumber(data.ho_so_khach_hang?.so_cccd || data.profile?.identityNumber || '');
+        }
+      } catch (err) {
+        setFetchError('Không thể tải thông tin tài khoản');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAccount();
+  }, []);
+
+  const handleUpdate = async (e) => {
     e.preventDefault();
-    onSave({ name, phone });
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2500);
-    alert('Hồ sơ tài khoản cá nhân của bạn đã được cập nhật thành công trực tuyến!');
+    try {
+      setSaving(true);
+      setSaveError(null);
+      await customerApi.updateProfile({ address, identityNumber });
+      if (onSave) onSave({ name, phone });
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2500);
+    } catch (err) {
+      setSaveError(err.response?.data?.message || 'Cập nhật hồ sơ thất bại');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -91,77 +129,114 @@ export default function Profile({ user, userVerified, onSave, setActivePage }) {
             <p className="text-xs text-gray-500 mt-1">Cập nhật hồ sơ thông số cá nhân để showroom lập hợp đồng dịch vụ chính chủ nhanh chóng.</p>
           </div>
 
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <RefreshCw className="w-8 h-8 text-[#00236f] animate-spin mb-4" />
+              <p className="text-sm text-slate-500 font-semibold">Đang tải thông tin tài khoản...</p>
+            </div>
+          ) : (
           <form onSubmit={handleUpdate} className="space-y-6">
-            {/* Avatar Upload mockup */}
+            {/* Avatar display */}
             <div className="flex items-center gap-5">
-              <div className="w-16 h-16 bg-[#00236f] text-white rounded-full flex items-center justify-center font-black text-xl shadow-inner cursor-pointer" onClick={() => alert('Chọn tệp ảnh từ ổ cứng để đổi avatar đại diện...')}>
-                {name.charAt(0)}
-              </div>
-              <div>
-                <button type="button" onClick={() => alert('Tính năng Thay đổi ảnh hiển thị đang kết nối...')} className="px-3.5 py-1.5 border border-gray-300 rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 transition">
-                  Thay đổi avatar
-                </button>
-                <span className="text-[10px] text-gray-400 block mt-1">Hỗ trợ JPG, PNG dung lượng dưới 2MB</span>
+              <div className="w-16 h-16 bg-[#00236f] text-white rounded-full flex items-center justify-center font-black text-xl shadow-inner">
+                {(name || 'K').charAt(0)}
               </div>
             </div>
+
+            {/* Success/Error messages */}
+            {isSaved && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold rounded-xl flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                Cập nhật hồ sơ thành công
+              </div>
+            )}
+            {saveError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 font-bold rounded-xl flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>{saveError}</span>
+              </div>
+            )}
+            {fetchError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 font-bold rounded-xl flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>{fetchError}</span>
+              </div>
+            )}
 
             {/* Inputs wrap */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
               
               <div className="space-y-1.5">
-                <label className="text-[10.5px] font-bold text-gray-500 uppercase flex items-center gap-1.5">
-                  <User className="w-4 text-[#00236f] h-4" />
-                  Họ và tên của bạn:
+                <label className="text-[10.5px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
+                  <User className="w-4 text-gray-400 h-4" />
+                  Họ và tên (Readonly):
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full h-11 px-3 bg-gray-50 border border-gray-300 focus:border-[#00236f] focus:outline-none rounded-lg text-xs font-semibold"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    disabled
+                    value={name}
+                    className="w-full h-11 px-3 bg-gray-100 border border-gray-200 text-gray-500 rounded-lg text-xs font-semibold cursor-not-allowed"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10.5px] font-bold text-gray-500 uppercase flex items-center gap-1.5">
-                  <Phone className="w-4 text-[#fea619] h-4" />
-                  Số điện thoại di động:
+                <label className="text-[10.5px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
+                  <Phone className="w-4 text-gray-400 h-4" />
+                  Số điện thoại (Readonly):
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full h-11 px-3 bg-gray-50 border border-gray-300 focus:border-[#00236f] focus:outline-none rounded-lg text-xs font-semibold"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    disabled
+                    value={phone}
+                    className="w-full h-11 px-3 bg-gray-100 border border-gray-200 text-gray-500 rounded-lg text-xs font-semibold cursor-not-allowed"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-[10.5px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
                   <Mail className="w-4 text-gray-400 h-4" />
-                  Địa chỉ Email đăng nhập (Readonly):
+                  Địa chỉ Email (Readonly):
                 </label>
                 <div className="relative">
                   <input
                     type="email"
                     disabled
                     value={email}
-                    className="w-full h-11 px-3 bg-gray-100 border border-gray-200 text-gray-400 rounded-lg text-xs font-semibold focus:outline-none cursor-not-allowed"
+                    className="w-full h-11 px-3 bg-gray-100 border border-gray-200 text-gray-400 rounded-lg text-xs font-semibold cursor-not-allowed"
                   />
                   <Lock className="w-3.5 h-3.5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 shrink-0" />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10.5px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
-                  <Lock className="w-4 text-gray-400 h-4" />
-                  Mật khẩu tài khoản (Mã hóa):
+                <label className="text-[10.5px] font-bold text-gray-500 uppercase flex items-center gap-1.5">
+                  <User className="w-4 text-[#00236f] h-4" />
+                  Địa chỉ liên hệ:
                 </label>
                 <input
-                  type="password"
-                  disabled
-                  value="xxxxxxxxxxxxxxxx"
-                  className="w-full h-11 px-3 bg-gray-100 border border-gray-200 text-gray-450 rounded-lg text-xs font-semibold focus:outline-none cursor-not-allowed"
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Nhập địa chỉ liên hệ"
+                  className="w-full h-11 px-3 bg-gray-50 border border-gray-300 focus:border-[#00236f] focus:outline-none rounded-lg text-xs font-semibold"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10.5px] font-bold text-gray-500 uppercase flex items-center gap-1.5">
+                  <CreditCard className="w-4 text-[#fea619] h-4" />
+                  Số giấy tờ định danh (CCCD):
+                </label>
+                <input
+                  type="text"
+                  value={identityNumber}
+                  onChange={(e) => setIdentityNumber(e.target.value)}
+                  placeholder="Nhập số CCCD/CMND"
+                  className="w-full h-11 px-3 bg-gray-50 border border-gray-300 focus:border-[#00236f] focus:outline-none rounded-lg text-xs font-semibold"
                 />
               </div>
 
@@ -184,13 +259,15 @@ export default function Profile({ user, userVerified, onSave, setActivePage }) {
             <div className="flex justify-end pt-4 border-t border-gray-100">
               <button
                 type="submit"
-                className="px-6 py-3 bg-[#00236f] text-white hover:bg-[#fea619] hover:text-[#2a1700] text-xs font-black rounded-lg transition-all shadow"
+                disabled={saving || loading}
+                className="px-6 py-3 bg-[#00236f] text-white hover:bg-[#fea619] hover:text-[#2a1700] text-xs font-black rounded-lg transition-all shadow disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                LƯU THAY ĐỔI CẬP NHẬT
+                {saving ? 'Đang lưu...' : 'LƯU THAY ĐỔI CẬP NHẬT'}
               </button>
             </div>
 
           </form>
+          )}
         </div>
 
       </div>
