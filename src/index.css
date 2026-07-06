@@ -1,114 +1,232 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-@import "tailwindcss";
+* {
+  box-sizing: border-box;
+}
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Times New Roman", Times, Baskerville, Georgia, serif;
+html,
+body,
+#root {
+  min-height: 100%;
 }
 
 body {
-  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
-  scroll-behavior: smooth;
-  background-color: #f6f8fc;
-  color: #0f172a;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  color: #222;
+  background: #f2f4f7;
 }
 
-/* Custom scrollbar to match the high-end dark slate vibe */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Link */
+a {
+  text-decoration: none;
+  color: white;
+  margin-right: 18px;
 }
-::-webkit-scrollbar-track {
-  background: #f1f3f5;
+
+a:hover {
+  text-decoration: underline;
 }
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+
+/* Button */
+button {
+  padding: 8px 14px;
+  cursor: pointer;
+  border: 1px solid #999;
+  background: white;
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #0f2f6e;
-}
 
-button {
-  white-space: nowrap !important;
-}
-
-select, option {
-  color: #111827 !important;
-  background-color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-/* --- Standardized Professional CSS rules --- */
-
-table th,
-.table th,
-.data-table th {
-  text-transform: none !important;
-  letter-spacing: 0 !important;
-  white-space: nowrap !important;
-  word-break: keep-all !important;
-  overflow-wrap: normal !important;
-  line-height: 1.4 !important;
-}
-
-.cell-code,
-.cell-serial,
-.cell-location,
-.cell-status,
-.cell-money,
-.cell-date {
-  white-space: nowrap !important;
-  word-break: keep-all !important;
-}
-
-.table-wrapper {
+/* Input */
+input {
   width: 100%;
-  overflow-x: auto !important;
-  overflow-y: visible;
+  padding: 9px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
 }
 
-.data-table {
-  width: 100%;
-  min-width: 1200px;
-  table-layout: auto !important;
-  border-collapse: separate;
-  border-spacing: 0;
+/* Bố cục chính để footer luôn ở cuối màn hình */
+.bo-cuc {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap !important;
-  min-width: fit-content;
-  max-width: max-content;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.2;
-  text-transform: none !important;
-  letter-spacing: 0 !important;
+.noi-dung {
+  flex: 1;
+  padding: 30px 40px;
 }
 
-.table-action-group {
+/* Header */
+.dau-trang {
+  background: #1f2937;
+  color: white;
+  padding: 14px 40px;
+}
+
+.header-noi-dung {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;
-  white-space: nowrap;
+  justify-content: space-between;
 }
 
-.table-action-button {
-  height: 32px;
-  padding: 0 12px;
+.logo {
+  margin: 0;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.menu button {
+  margin-left: 8px;
+}
+
+.thong-tin-user {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+  text-align: right;
+}
+
+/* Footer */
+.chan-trang {
+  background: #1f2937;
+  color: white;
+  padding: 14px 40px;
+  text-align: center;
+}
+
+/* Trang chủ */
+.tieu-de-trang-chu {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.tieu-de-trang-chu h2 {
+  margin-bottom: 8px;
+}
+
+.tieu-de-trang-chu p {
+  margin-top: 0;
+}
+
+.luoi-san-pham {
+  display: grid;
+  gap: 20px;
+}
+
+.the-san-pham {
+  background: white;
+  border: 1px solid #ccc;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  display: inline-flex;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.anh-san-pham {
+  height: 180px;
+  margin-bottom: 10px;
+}
+
+.anh-san-pham img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.khung-khong-anh {
+  height: 100%;
+  border: 1px solid #ccc;
+  display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.noi-dung-san-pham {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ten-san-pham {
+  min-height: 44px;
+  margin: 8px 0;
+}
+
+.nut-rong {
+  width: 100%;
+  margin-top: auto;
+}
+
+/* Form đăng ký / đăng nhập */
+.trang-form {
+  display: flex;
+  justify-content: center;
+}
+
+.form-don-gian {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 24px;
+  width: 360px;
+  border-radius: 8px;
+}
+
+.form-don-gian h2 {
+  text-align: center;
+  margin-top: 0;
+}
+
+.o-form {
+  margin-bottom: 14px;
+}
+
+.o-form label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.thong-bao {
+  text-align: center;
+}
+
+/* Table đơn giản dùng cho Profile và các danh sách sau này */
+.khung-giua {
+  display: flex;
+  justify-content: center;
+}
+
+.bang-don-gian {
+  border-collapse: collapse;
+  background: white;
+  min-width: 500px;
+}
+
+.bang-don-gian td,
+.bang-don-gian th {
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+.hang-nut-form {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.hang-nut-form button {
+  min-width: 110px;
+}
+
+.goi-y-form {
+  text-align: center;
+  margin-top: 14px;
+}
+
+.goi-y-form a {
+  color: #1f2937;
+  margin-right: 0;
+  font-weight: bold;
+}
