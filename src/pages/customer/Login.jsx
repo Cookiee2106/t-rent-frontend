@@ -19,9 +19,8 @@ function Login() {
     });
   }
 
-  async function guiDangNhap(e) {
+  async function dangNhap(e) {
     e.preventDefault();
-
     const phanHoi = await fetch(`${DUONG_DAN_API}/api/auth/login`, {
       method: "POST",
       headers: {
@@ -32,23 +31,53 @@ function Login() {
 
     const duLieu = await phanHoi.json();
 
-    setThongBao(duLieu.message);
+    if (!duLieu.success) {
+      return setThongBao(duLieu.message);
+    }
 
-    if (duLieu.success) {
-      localStorage.setItem("token", duLieu.token);
-      localStorage.setItem("user", JSON.stringify(duLieu.data));
+    const data = duLieu.data || {};
+    const token = data.token;
 
+    if (!token) {
+      return setThongBao("Không lấy được token sau khi đăng nhập");
+    }
+
+    localStorage.setItem("token", token);
+
+    const phanHoiMe = await fetch(`${DUONG_DAN_API}/api/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const duLieuMe = await phanHoiMe.json();
+
+    if (!duLieuMe.success) {
+      localStorage.removeItem("token");
+      return setThongBao(
+        duLieuMe.message || "Không lấy được thông tin tài khoản"
+      );
+    }
+
+    const nguoiDung = duLieuMe.data;
+
+    localStorage.setItem("user", JSON.stringify(nguoiDung));
+
+    setThongBao("Đăng nhập thành công");
+
+    if (
+      nguoiDung.vai_tro === "NHAN_VIEN" ||
+      nguoiDung.vai_tro === "QUAN_TRI_VIEN"
+    ) {
+      dieuHuong("/admin/customers");
+    } else {
       dieuHuong("/");
     }
   }
 
-  function chuyenSangDangKy() {
-    dieuHuong("/register");
-  }
-
   return (
     <div className="trang-form">
-      <form className="form-don-gian" onSubmit={guiDangNhap}>
+      <form className="form-don-gian" onSubmit={dangNhap}>
         <h2>Đăng nhập</h2>
 
         <div className="o-form">
@@ -72,8 +101,7 @@ function Login() {
 
         <div className="hang-nut-form">
           <button type="submit">Đăng nhập</button>
-
-          <button type="button" onClick={chuyenSangDangKy}>
+          <button type="button" onClick={() => dieuHuong("/register")}>
             Đăng ký
           </button>
         </div>
