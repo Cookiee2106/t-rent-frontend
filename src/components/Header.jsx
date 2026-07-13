@@ -36,11 +36,11 @@ function Header() {
           </Link>
         </div>
 
-        {/* Khu vực giữa header.
-            Sau này mục nào cần nằm giữa header thì thêm vào đây. */}
         <div className="menu-giua">
           <Link to="/">Trang chủ</Link>
           <Link to="/equipments">Mẫu thiết bị</Link>
+          {token && <Link to="/orders">Đơn thuê của tôi</Link>}
+          <Link to="/cart">Giỏ hàng</Link>
         </div>
 
         <div className="menu-phai">

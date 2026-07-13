@@ -21,6 +21,7 @@ function Login() {
 
   async function dangNhap(e) {
     e.preventDefault();
+
     const phanHoi = await fetch(`${DUONG_DAN_API}/api/auth/login`, {
       method: "POST",
       headers: {
@@ -65,14 +66,14 @@ function Login() {
 
     setThongBao("Đăng nhập thành công");
 
-    if (
-      nguoiDung.vai_tro === "NHAN_VIEN" ||
-      nguoiDung.vai_tro === "QUAN_TRI_VIEN"
-    ) {
+    const vaiTroNoiBo = ["NHAN_VIEN", "QUAN_TRI", "QUAN_TRI_VIEN"];
+
+    if (vaiTroNoiBo.includes(nguoiDung.vai_tro)) {
       dieuHuong("/admin/customers");
-    } else {
-      dieuHuong("/");
+      return;
     }
+
+    dieuHuong("/");
   }
 
   return (
@@ -101,6 +102,7 @@ function Login() {
 
         <div className="hang-nut-form">
           <button type="submit">Đăng nhập</button>
+
           <button type="button" onClick={() => dieuHuong("/register")}>
             Đăng ký
           </button>

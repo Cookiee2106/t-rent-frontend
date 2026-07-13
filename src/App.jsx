@@ -9,8 +9,12 @@ import Profile from "./pages/customer/Profile";
 import PaymentResult from "./pages/customer/PaymentResult";
 import EquipmentList from "./pages/customer/EquipmentList";
 import EquipmentDetail from "./pages/customer/EquipmentDetail";
+import MyOrders from "./pages/customer/MyOrders";
+import Cart from "./pages/customer/Cart";
 
 import CustomerAccountList from "./pages/admin/CustomerAccountList";
+import SettlementList from "./pages/admin/SettlementList";
+import AdminOrderList from "./pages/admin/AdminOrderList";
 
 function App() {
   return (
@@ -80,12 +84,49 @@ function App() {
         />
 
         <Route
+          path="/orders"
+          element={
+            <Layout>
+              <MyOrders />
+            </Layout>
+          }
+        />
+
+        <Route 
+          path="/cart" 
+          element={
+            <Layout>
+              <Cart />
+            </Layout>
+          } 
+        />
+
+
+        <Route
           path="/admin/customers"
           element={
             <AdminLayout>
               <CustomerAccountList />
             </AdminLayout>
           }
+        />
+
+        <Route 
+          path="/admin/settlements" 
+          element={
+            <AdminLayout>
+              <SettlementList />
+            </AdminLayout>
+          } 
+        />
+
+        <Route 
+          path="/admin/orders" 
+          element={
+            <AdminLayout>
+              <AdminOrderList />
+            </AdminLayout>
+          } 
         />
       </Routes>
     </BrowserRouter>

@@ -4,9 +4,6 @@ import { DUONG_DAN_API } from "../../api/api";
 
 function EquipmentList() {
   const SO_SAN_PHAM_MOI_DONG = 4;
-
-  // Mặc định lấy tất cả.
-  // Nếu thầy yêu cầu chỉ hiện 8 mẫu thì sửa 0 thành 8.
   const SO_SAN_PHAM_MUON_LAY = 0;
 
   const [danhSachMau, setDanhSachMau] = useState([]);
@@ -15,16 +12,30 @@ function EquipmentList() {
   const [ngayNhan, setNgayNhan] = useState("");
   const [ngayTra, setNgayTra] = useState("");
 
-  function layNgayHomNay() {
-    const homNay = new Date();
-    const nam = homNay.getFullYear();
-    const thang = String(homNay.getMonth() + 1).padStart(2, "0");
-    const ngay = String(homNay.getDate()).padStart(2, "0");
+  // Lấy ngày hôm nay
+  // function layNgayHomNay() {
+  //   const homNay = new Date();
+  //   const nam = homNay.getFullYear();
+  //   const thang = String(homNay.getMonth() + 1).padStart(2, "0");
+  //   const ngay = String(homNay.getDate()).padStart(2, "0");
+
+  //   return `${nam}-${thang}-${ngay}`;
+  // }
+
+  // const NGAY_HOM_NAY = layNgayHomNay();
+
+  function layNgayMai() {
+    const ngayMai = new Date();
+    ngayMai.setDate(ngayMai.getDate() + 1);
+
+    const nam = ngayMai.getFullYear();
+    const thang = String(ngayMai.getMonth() + 1).padStart(2, "0");
+    const ngay = String(ngayMai.getDate()).padStart(2, "0");
 
     return `${nam}-${thang}-${ngay}`;
   }
 
-  const NGAY_HOM_NAY = layNgayHomNay();
+  const NGAY_BAT_DAU_DUOC_DAT = layNgayMai();
 
   function dinhDangTien(giaTri) {
     return Number(giaTri || 0).toLocaleString("vi-VN") + " đ";
@@ -41,9 +52,17 @@ function EquipmentList() {
           setThongBao("Vui lòng chọn đủ ngày nhận và ngày trả");
           return;
         }
+        // Lấy ngày hôm nay
+        // if (ngayNhan < NGAY_HOM_NAY || ngayTra < NGAY_HOM_NAY) {
+        //   setThongBao("Ngày nhận và ngày trả không được là ngày trong quá khứ");
+        //   return;
+        // }
 
-        if (ngayNhan < NGAY_HOM_NAY || ngayTra < NGAY_HOM_NAY) {
-          setThongBao("Ngày nhận và ngày trả không được là ngày trong quá khứ");
+        if (
+          ngayNhan < NGAY_BAT_DAU_DUOC_DAT ||
+          ngayTra < NGAY_BAT_DAU_DUOC_DAT
+        ) {
+          setThongBao("Ngày nhận và ngày trả phải từ ngày mai trở đi");
           return;
         }
 
@@ -117,7 +136,8 @@ function EquipmentList() {
           <label>Ngày nhận</label>
           <input
             type="date"
-            min={NGAY_HOM_NAY}
+            //min={NGAY_HOM_NAY}
+            min={NGAY_BAT_DAU_DUOC_DAT}
             value={ngayNhan}
             onChange={(e) => setNgayNhan(e.target.value)}
           />
@@ -127,7 +147,8 @@ function EquipmentList() {
           <label>Ngày trả</label>
           <input
             type="date"
-            min={NGAY_HOM_NAY}
+            //min={NGAY_HOM_NAY}
+            min={NGAY_BAT_DAU_DUOC_DAT}
             value={ngayTra}
             onChange={(e) => setNgayTra(e.target.value)}
           />
@@ -158,7 +179,6 @@ function EquipmentList() {
             </div>
 
             <div className="noi-dung-san-pham">
-              {/* Tên chỉ hiện tên mẫu */}
               <div className="ten-san-pham">{mau.ten_mau}</div>
 
               <p>Hãng: {mau.ten_hang || "Chưa có"}</p>
@@ -169,7 +189,11 @@ function EquipmentList() {
 
               <p>Tiền cọc: {dinhDangTien(mau.tien_coc)}</p>
 
-              <p>Sẵn sàng: {mau.so_luong_san_sang || 0}</p>
+              {ngayNhan && ngayTra ? (
+                <p>Bộ sẵn sàng: {mau.so_luong_san_sang || 0}</p>
+              ) : (
+                <p className="chu-mo">Chọn ngày để kiểm tra bộ sẵn sàng</p>
+              )}
 
               <Link to={`/equipments/${mau.id}`}>
                 <button className="nut-rong">Xem chi tiết</button>

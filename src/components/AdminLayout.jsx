@@ -35,6 +35,8 @@ function AdminLayout({ children }) {
         )}
         <div className="admin-menu">
           <Link to="/admin/customers">Quản lý tài khoản khách hàng</Link>
+          <Link to="/admin/orders">Quản lý đơn hàng</Link>
+          <Link to="/admin/settlements">Thanh lý hợp đồng</Link>
           <button onClick={dangXuat}>Đăng xuất</button>
         </div>
       </div>

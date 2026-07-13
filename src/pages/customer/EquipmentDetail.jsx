@@ -10,20 +10,42 @@ function EquipmentDetail() {
 
   const [chiTiet, setChiTiet] = useState(null);
   const [thongBaoThemGio, setThongBaoThemGio] = useState("");
+  const [thongBaoKhaDung, setThongBaoKhaDung] = useState("");
   const [ngayNhan, setNgayNhan] = useState("");
   const [ngayTra, setNgayTra] = useState("");
   const [soLuong, setSoLuong] = useState(1);
+  const [boSanSang, setBoSanSang] = useState(null);
+  const [ketQuaKhaDung, setKetQuaKhaDung] = useState(null);
+  const [dangKiemTra, setDangKiemTra] = useState(false);
 
-  function layNgayHomNay() {
-    const homNay = new Date();
-    const nam = homNay.getFullYear();
-    const thang = String(homNay.getMonth() + 1).padStart(2, "0");
-    const ngay = String(homNay.getDate()).padStart(2, "0");
+  // Hàm lấy ngày hôm nay.
+  // function layNgayHomNay() {
+  //   const homNay = new Date();
+  //   const nam = homNay.getFullYear();
+  //   const thang = String(homNay.getMonth() + 1).padStart(2, "0");
+  //   const ngay = String(homNay.getDate()).padStart(2, "0");
+
+  //   return `${nam}-${thang}-${ngay}`;
+  // }
+  /*
+    const NGAY_HOM_NAY = layNgayHomNay();
+  */
+
+  // Hàm lấy ngày mai.
+  function layNgayMai() {
+    const ngayMai = new Date();
+
+    ngayMai.setDate(ngayMai.getDate() + 1);
+
+    const nam = ngayMai.getFullYear();
+    const thang = String(ngayMai.getMonth() + 1).padStart(2, "0");
+    const ngay = String(ngayMai.getDate()).padStart(2, "0");
 
     return `${nam}-${thang}-${ngay}`;
   }
 
-  const NGAY_HOM_NAY = layNgayHomNay();
+  // Ngày bắt đầu được đặt là ngày mai.
+  const NGAY_BAT_DAU_DUOC_DAT = layNgayMai();
 
   function dinhDangTien(giaTri) {
     return Number(giaTri || 0).toLocaleString("vi-VN") + " đ";
@@ -41,6 +63,35 @@ function EquipmentDetail() {
     };
   }
 
+  function kiemTraNgayVaSoLuong() {
+    if (!ngayNhan || !ngayTra) {
+      return "Vui lòng chọn ngày nhận và ngày trả";
+    }
+
+    /*
+      if (ngayNhan < NGAY_HOM_NAY || ngayTra < NGAY_HOM_NAY) {
+        return "Ngày nhận và ngày trả không được là ngày trong quá khứ";
+      }
+    */
+
+    if (
+      ngayNhan < NGAY_BAT_DAU_DUOC_DAT ||
+      ngayTra < NGAY_BAT_DAU_DUOC_DAT
+    ) {
+      return "Ngày nhận và ngày trả phải từ ngày mai trở đi";
+    }
+
+    if (new Date(ngayTra) <= new Date(ngayNhan)) {
+      return "Ngày trả phải sau ngày nhận";
+    }
+
+    if (Number(soLuong) < 1) {
+      return "Số lượng phải lớn hơn 0";
+    }
+
+    return "";
+  }
+
   async function layChiTietMauThietBi() {
     try {
       const phanHoi = await fetch(`${DUONG_DAN_API}/api/equipment-models/${id}`);
@@ -56,32 +107,66 @@ function EquipmentDetail() {
     }
   }
 
+  async function kiemTraBoSanSang() {
+    try {
+      setThongBaoKhaDung("");
+      setBoSanSang(null);
+      setKetQuaKhaDung(null);
+
+      if (!ngayNhan || !ngayTra) {
+        return;
+      }
+
+      const loi = kiemTraNgayVaSoLuong();
+
+      if (loi) {
+        setThongBaoKhaDung(loi);
+        return;
+      }
+
+      setDangKiemTra(true);
+
+      const urlKiemTra = `${DUONG_DAN_API}/api/equipment-models/${id}?ngay_nhan=${ngayNhan}&ngay_tra=${ngayTra}&so_luong=${soLuong}`;
+
+      const phanHoi = await fetch(urlKiemTra);
+      const duLieu = await phanHoi.json();
+
+      if (!duLieu.success) {
+        setThongBaoKhaDung(duLieu.message);
+        return;
+      }
+
+      setKetQuaKhaDung(duLieu.data);
+      setBoSanSang(duLieu.data.so_luong_san_sang || 0);
+
+      if (!duLieu.data.co_the_thue) {
+        setThongBaoKhaDung(duLieu.data.ly_do_khong_the_thue);
+      }
+    } catch {
+      setThongBaoKhaDung("Không kết nối được server");
+    } finally {
+      setDangKiemTra(false);
+    }
+  }
+
   async function themVaoGioHang() {
     try {
       setThongBaoThemGio("");
 
-      if (!ngayNhan || !ngayTra) {
-        setThongBaoThemGio("Vui lòng chọn ngày nhận và ngày trả");
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        setThongBaoThemGio("Vui lòng đăng nhập trước khi thêm vào giỏ hàng");
         return;
       }
 
-      if (ngayNhan < NGAY_HOM_NAY || ngayTra < NGAY_HOM_NAY) {
-        setThongBaoThemGio("Ngày nhận và ngày trả không được là ngày trong quá khứ");
+      const loi = kiemTraNgayVaSoLuong();
+
+      if (loi) {
+        setThongBaoThemGio(loi);
         return;
       }
 
-      if (new Date(ngayTra) <= new Date(ngayNhan)) {
-        setThongBaoThemGio("Ngày trả phải sau ngày nhận");
-        return;
-      }
-
-      if (Number(soLuong) < 1) {
-        setThongBaoThemGio("Số lượng phải lớn hơn 0");
-        return;
-      }
-
-      // Bấm thêm giỏ mới kiểm tra khả dụng.
-      // Nếu không đủ mẫu chính/bộ đi kèm/phụ kiện thì BE trả lý do.
       const urlKiemTra = `${DUONG_DAN_API}/api/equipment-models/${id}?ngay_nhan=${ngayNhan}&ngay_tra=${ngayTra}&so_luong=${soLuong}`;
 
       const phanHoiKiemTra = await fetch(urlKiemTra);
@@ -98,7 +183,6 @@ function EquipmentDetail() {
       }
 
       // Gọi API thêm giỏ hàng.
-      // Nếu hiện tại bạn chưa làm trang giỏ hàng thì vẫn để nút này.
       const phanHoi = await fetch(`${DUONG_DAN_API}/api/cart/items`, {
         method: "POST",
         headers: {
@@ -128,6 +212,10 @@ function EquipmentDetail() {
   useEffect(() => {
     layChiTietMauThietBi();
   }, [id]);
+
+  useEffect(() => {
+    kiemTraBoSanSang();
+  }, [ngayNhan, ngayTra, soLuong, id]);
 
   if (!chiTiet) {
     return <p className="thong-bao">Đang tải chi tiết mẫu thiết bị...</p>;
@@ -220,9 +308,14 @@ function EquipmentDetail() {
         <div className="khung-form-thue">
           <div className="o-form">
             <label>Ngày nhận</label>
+
+            {/*
+              min={NGAY_HOM_NAY}
+            */}
+
             <input
               type="date"
-              min={NGAY_HOM_NAY}
+              min={NGAY_BAT_DAU_DUOC_DAT}
               value={ngayNhan}
               onChange={(e) => setNgayNhan(e.target.value)}
             />
@@ -230,9 +323,14 @@ function EquipmentDetail() {
 
           <div className="o-form">
             <label>Ngày trả</label>
+
+            {/*
+              min={NGAY_HOM_NAY}
+            */}
+
             <input
               type="date"
-              min={NGAY_HOM_NAY}
+              min={NGAY_BAT_DAU_DUOC_DAT}
               value={ngayTra}
               onChange={(e) => setNgayTra(e.target.value)}
             />
@@ -249,6 +347,31 @@ function EquipmentDetail() {
           </div>
         </div>
 
+        <div className="khung-tam-tinh">
+          {!ngayNhan || !ngayTra ? (
+            <p className="chu-mo">Chọn ngày nhận và ngày trả để kiểm tra bộ sẵn sàng.</p>
+          ) : dangKiemTra ? (
+            <p>Đang kiểm tra bộ sẵn sàng...</p>
+          ) : (
+            <>
+              <p>
+                <b>Bộ sẵn sàng:</b>{" "}
+                {boSanSang === null ? "Chưa kiểm tra" : boSanSang}
+              </p>
+
+              {ketQuaKhaDung && ketQuaKhaDung.co_the_thue && (
+                <p className="chu-mo">
+                  Có thể thêm {soLuong} bộ vào giỏ hàng trong khoảng ngày đã chọn.
+                </p>
+              )}
+
+              {thongBaoKhaDung && (
+                <p className="thong-bao-duoi-nut">{thongBaoKhaDung}</p>
+              )}
+            </>
+          )}
+        </div>
+
         <div className="nhom-nut nhom-nut-chi-tiet">
           <button onClick={themVaoGioHang}>Thêm vào giỏ hàng</button>
 
@@ -257,7 +380,6 @@ function EquipmentDetail() {
           </Link>
         </div>
 
-        {/* Lỗi hoặc thông báo thêm giỏ hiện ngay dưới nút thêm giỏ */}
         {thongBaoThemGio && (
           <p className="thong-bao-duoi-nut">{thongBaoThemGio}</p>
         )}
@@ -265,11 +387,6 @@ function EquipmentDetail() {
 
       {/*
         ================= SẢN PHẨM TƯƠNG TỰ =================
-        Phần này đang comment lại.
-        Khi thầy yêu cầu hiển thị sản phẩm tương tự:
-        1. Bỏ comment khối JSX bên dưới.
-        2. Muốn đổi số mẫu hiển thị thì sửa SO_MAU_TUONG_TU_MUON_LAY.
-        3. Muốn đổi số mẫu trên 1 dòng thì sửa SO_MAU_TUONG_TU_MOI_DONG.
       */}
 
       {/*

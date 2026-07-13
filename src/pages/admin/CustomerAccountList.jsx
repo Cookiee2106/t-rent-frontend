@@ -14,17 +14,55 @@ function CustomerAccountList() {
   const [hienTuChoi, setHienTuChoi] = useState(false);
   const [lyDoTuChoi, setLyDoTuChoi] = useState("");
 
+  /*
+    Lọc theo khoảng ngày gửi.
+  */
+  // const [tuNgayGui, setTuNgayGui] = useState("");
+  // const [denNgayGui, setDenNgayGui] = useState("");
+
+  /*
+     Sắp xếp ngày gửi.
+  */
+  // const [sapXepNgayGui, setSapXepNgayGui] = useState("moi_nhat");
+
+  /*
+     Xem lịch sử hồ sơ xác minh.
+  */
+  // const [lichSuHoSo, setLichSuHoSo] = useState([]);
+  // const [hienLichSuHoSo, setHienLichSuHoSo] = useState(false);
+
+  // Hiện giờ
+  // function dinhDangNgay(ngay) {
+  //   if (!ngay) return "Chưa có";
+  //   return new Date(ngay).toLocaleString("vi-VN");
+  // }
+
   function dinhDangNgay(ngay) {
     if (!ngay) return "Chưa có";
-    return new Date(ngay).toLocaleString("vi-VN");
+    return new Date(ngay).toLocaleDateString("vi-VN");
   }
+
   async function layDanhSachTaiKhoan() {
-    const phanHoi = await fetch(
-      `${DUONG_DAN_API}/api/admin/customers?tu_khoa=${tuKhoa}&trang_thai=${trangThai}`,
-      {
-        headers: taoHeaderCoToken(),
-      }
-    );
+    let url = `${DUONG_DAN_API}/api/admin/customers?tu_khoa=${encodeURIComponent(
+      tuKhoa
+    )}&trang_thai=${trangThai}`;
+
+    /*
+      Lọc theo khoảng ngày gửi.
+
+      url += `&tu_ngay_gui=${tuNgayGui}`;
+      url += `&den_ngay_gui=${denNgayGui}`;
+    */
+
+    /*
+      Sắp xếp ngày gửi.
+
+      url += `&sap_xep_ngay_gui=${sapXepNgayGui}`;
+    */
+
+    const phanHoi = await fetch(url, {
+      headers: taoHeaderCoToken(),
+    });
 
     const duLieu = await phanHoi.json();
 
@@ -56,6 +94,7 @@ function CustomerAccountList() {
     if (!chiTiet.ho_so_xac_minh_id) {
       return setThongBao("Khách hàng chưa có hồ sơ xác minh");
     }
+
     const phanHoi = await fetch(
       `${DUONG_DAN_API}/api/admin/verifications/${chiTiet.ho_so_xac_minh_id}/approve`,
       {
@@ -110,11 +149,81 @@ function CustomerAccountList() {
     }
   }
 
+  /*
+    Khóa / mở khóa tài khoản khách hàng.
+    route: PUT /api/admin/customers/:id/status
+
+    Lưu ý:
+    101 và 102 là ví dụ. Nếu DB của bạn dùng mã khác thì sửa lại 2 hằng số này.
+  */
+  /*
+  async function doiTrangThaiTaiKhoan(taiKhoan) {
+    const TRANG_THAI_HOAT_DONG = 101;
+    const TRANG_THAI_BI_KHOA = 102;
+
+    const trangThaiMoi =
+      Number(taiKhoan.trang_thai) === TRANG_THAI_HOAT_DONG
+        ? TRANG_THAI_BI_KHOA
+        : TRANG_THAI_HOAT_DONG;
+
+    const xacNhan = window.confirm(
+      "Bạn có chắc muốn đổi trạng thái tài khoản này không?"
+    );
+
+    if (!xacNhan) return;
+
+    const phanHoi = await fetch(
+      `${DUONG_DAN_API}/api/admin/customers/${taiKhoan.id}/status`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...taoHeaderCoToken(),
+        },
+        body: JSON.stringify({
+          trang_thai: trangThaiMoi,
+        }),
+      }
+    );
+
+    const duLieu = await phanHoi.json();
+
+    setThongBao(duLieu.message);
+
+    if (duLieu.success) {
+      layDanhSachTaiKhoan();
+    }
+  }
+  */
+
+  /*
+    route: GET /api/admin/customers/:id/verification-history
+  */
+  /*
+  async function xemLichSuHoSo(id) {
+    const phanHoi = await fetch(
+      `${DUONG_DAN_API}/api/admin/customers/${id}/verification-history`,
+      {
+        headers: taoHeaderCoToken(),
+      }
+    );
+
+    const duLieu = await phanHoi.json();
+
+    if (duLieu.success) {
+      setLichSuHoSo(duLieu.data);
+      setHienLichSuHoSo(true);
+      setThongBao("");
+    } else {
+      setThongBao(duLieu.message);
+    }
+  }
+  */
+
   useEffect(() => {
     layDanhSachTaiKhoan();
   }, []);
 
-  
   const tongTrang = Math.ceil(danhSachTaiKhoan.length / SO_DONG_MOI_TRANG);
   const viTriBatDau = (trangHienTai - 1) * SO_DONG_MOI_TRANG;
   const danhSachHienThi = danhSachTaiKhoan.slice(
@@ -128,7 +237,7 @@ function CustomerAccountList() {
 
       <div className="khung-loc-admin">
         <input
-          placeholder="Tìm tên, email, số điện thoại"
+          placeholder="Tìm tên, email, số điện thoại, CCCD"
           value={tuKhoa}
           onChange={(e) => setTuKhoa(e.target.value)}
         />
@@ -140,6 +249,34 @@ function CustomerAccountList() {
           <option value="203">Đã duyệt</option>
           <option value="204">Từ chối</option>
         </select>
+
+        {/*
+          Lọc theo khoảng ngày gửi.
+
+          <input
+            type="date"
+            value={tuNgayGui}
+            onChange={(e) => setTuNgayGui(e.target.value)}
+          />
+
+          <input
+            type="date"
+            value={denNgayGui}
+            onChange={(e) => setDenNgayGui(e.target.value)}
+          />
+        */}
+
+        {/*
+          Sắp xếp ngày gửi.
+
+          <select
+            value={sapXepNgayGui}
+            onChange={(e) => setSapXepNgayGui(e.target.value)}
+          >
+            <option value="moi_nhat">Ngày gửi mới nhất</option>
+            <option value="cu_nhat">Ngày gửi cũ nhất</option>
+          </select>
+        */}
 
         <button onClick={layDanhSachTaiKhoan}>Tìm kiếm</button>
       </div>
@@ -157,6 +294,7 @@ function CustomerAccountList() {
               <th>Số CCCD</th>
               <th>Trạng thái xác minh</th>
               <th>Ngày gửi</th>
+              <th>Ngày duyệt</th>
               <th>Thao tác</th>
             </tr>
           </thead>
@@ -175,16 +313,36 @@ function CustomerAccountList() {
                     "Chưa xác minh"}
                 </td>
                 <td>{dinhDangNgay(taiKhoan.ngay_gui)}</td>
+                <td>{dinhDangNgay(taiKhoan.duyet_luc)}</td>
                 <td>
+                <div className="cot-thao-tac">
                   <button onClick={() => xemChiTiet(taiKhoan.id)}>
                     Xem chi tiết
                   </button>
+
+                  {/*
+                    Khóa / mở khóa tài khoản.
+
+                    <button onClick={() => doiTrangThaiTaiKhoan(taiKhoan)}>
+                      {Number(taiKhoan.trang_thai) === 101 ? "Khóa" : "Mở khóa"}
+                    </button>
+                  */}
+
+                  {/*
+                    Xem lịch sử hồ sơ xác minh.
+
+                    <button onClick={() => xemLichSuHoSo(taiKhoan.id)}>
+                      Lịch sử hồ sơ
+                    </button>
+                  */}
+                  </div>
                 </td>
               </tr>
             ))}
+
             {danhSachHienThi.length === 0 && (
               <tr>
-                <td colSpan="8" style={{ textAlign: "center" }}>
+                <td colSpan="9" style={{ textAlign: "center" }}>
                   Không có dữ liệu
                 </td>
               </tr>
@@ -192,6 +350,7 @@ function CustomerAccountList() {
           </tbody>
         </table>
       </div>
+
       <div className="phan-trang">
         <button
           disabled={trangHienTai === 1}
@@ -363,6 +522,58 @@ function CustomerAccountList() {
           </div>
         </div>
       )}
+
+      {/*
+        Xem lịch sử hồ sơ xác minh.
+
+        {hienLichSuHoSo && (
+          <div className="popup-nen">
+            <div className="popup-hop popup-lon">
+              <div className="popup-tieu-de">
+                <h3>Lịch sử hồ sơ xác minh</h3>
+
+                <button onClick={() => setHienLichSuHoSo(false)}>Đóng</button>
+              </div>
+
+              <div className="popup-noi-dung">
+                <table className="bang-popup">
+                  <thead>
+                    <tr>
+                      <th>STT</th>
+                      <th>Số CCCD</th>
+                      <th>Trạng thái</th>
+                      <th>Ngày gửi</th>
+                      <th>Ngày duyệt</th>
+                      <th>Lý do từ chối</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {lichSuHoSo.map((hs, index) => (
+                      <tr key={hs.id}>
+                        <td>{index + 1}</td>
+                        <td>{hs.so_cccd}</td>
+                        <td>{hs.ten_trang_thai_ho_so}</td>
+                        <td>{dinhDangNgay(hs.ngay_gui)}</td>
+                        <td>{dinhDangNgay(hs.duyet_luc)}</td>
+                        <td>{hs.ly_do_tu_choi || "Không có"}</td>
+                      </tr>
+                    ))}
+
+                    {lichSuHoSo.length === 0 && (
+                      <tr>
+                        <td colSpan="6" style={{ textAlign: "center" }}>
+                          Không có lịch sử hồ sơ
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      */}
 
       {anhDangXem && (
         <div className="popup-nen" onClick={() => setAnhDangXem("")}>

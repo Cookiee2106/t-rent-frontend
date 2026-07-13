@@ -43,7 +43,6 @@ function Home() {
 
       {thongBao && <p className="thong-bao">{thongBao}</p>}
 
-      {/* Chữ Sản phẩm nổi bật nằm bên trái, ngay trên các card sản phẩm */}
       <div className="hang-tieu-de-muc">
         <h2>Sản phẩm nổi bật</h2>
       </div>
@@ -65,7 +64,6 @@ function Home() {
             </div>
 
             <div className="noi-dung-san-pham">
-              {/* Tên chỉ hiện tên mẫu, không ghép hãng để tránh bị lặp */}
               <div className="ten-san-pham">{mau.ten_mau}</div>
 
               <p>Hãng: {mau.ten_hang || "Chưa có"}</p>
