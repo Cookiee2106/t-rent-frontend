@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { DUONG_DAN_API } from "../../api/api";
 
 function Register() {
@@ -22,9 +22,8 @@ function Register() {
     });
   }
 
-  async function guiDangKy(e) {
+  async function dangKy(e) {
     e.preventDefault();
-
     const phanHoi = await fetch(`${DUONG_DAN_API}/api/auth/register`, {
       method: "POST",
       headers: {
@@ -44,7 +43,7 @@ function Register() {
 
   return (
     <div className="trang-form">
-      <form className="form-don-gian" onSubmit={guiDangKy}>
+      <form className="form-don-gian" onSubmit={dangKy}>
         <h2>Đăng ký</h2>
 
         <div className="o-form">
@@ -96,11 +95,10 @@ function Register() {
 
         <div className="hang-nut-form">
           <button type="submit">Đăng ký</button>
+          <button type="button" onClick={() => dieuHuong("/login")}>
+            Đăng nhập
+          </button>
         </div>
-
-        <p className="goi-y-form">
-          Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
-        </p>
 
         <p className="thong-bao">{thongBao}</p>
       </form>

@@ -1,82 +1,91 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { DUONG_DAN_API } from "../../api/api";
 
 function Home() {
-  const SO_SAN_PHAM_LAY = 4;
-  const SO_SAN_PHAM_MOT_DONG = 4;
+  const SO_SAN_PHAM_MOI_DONG = 4;
+  const SO_SAN_PHAM_MUON_LAY = 4;
 
-  const [danhSachSanPham, setDanhSachSanPham] = useState([]);
+  const [danhSachMau, setDanhSachMau] = useState([]);
   const [thongBao, setThongBao] = useState("");
 
-  function dinhDangTien(soTien) {
-    return Number(soTien || 0).toLocaleString("vi-VN") + "đ";
+  function dinhDangTien(giaTri) {
+    return Number(giaTri || 0).toLocaleString("vi-VN") + " đ";
   }
 
-  async function laySanPhamNoiBat() {
-    const phanHoi = await fetch(
-      `${DUONG_DAN_API}/api/equipment-models?limit=${SO_SAN_PHAM_LAY}`
-    );
+  async function layDanhSachMauThietBi() {
+    try {
+      const phanHoi = await fetch(`${DUONG_DAN_API}/api/equipment-models`);
+      const duLieu = await phanHoi.json();
 
-    const duLieu = await phanHoi.json();
-
-    if (duLieu.success) {
-      setDanhSachSanPham(duLieu.data);
-    } else {
-      setThongBao(duLieu.message);
+      if (duLieu.success) {
+        setDanhSachMau(duLieu.data || []);
+      } else {
+        setThongBao(duLieu.message);
+      }
+    } catch {
+      setThongBao("Không kết nối được server");
     }
   }
 
-  function xemChiTiet() {
-    alert("Chức năng xem chi tiết sẽ làm sau");
-  }
-
   useEffect(() => {
-    laySanPhamNoiBat();
+    layDanhSachMauThietBi();
   }, []);
+
+  const danhSachHienThi = danhSachMau.slice(0, SO_SAN_PHAM_MUON_LAY);
 
   return (
     <div>
       <div className="tieu-de-trang-chu">
-        <h2>Trang chủ T-Rent</h2>
-        <p>Website cho thuê máy ảnh và thiết bị quay chụp.</p>
+        <h1>Trang chủ T-Rent</h1>
+        <p>Thuê máy ảnh và thiết bị quay chụp nhanh chóng, rõ ràng.</p>
       </div>
 
-      <h3>Sản phẩm nổi bật</h3>
+      {thongBao && <p className="thong-bao">{thongBao}</p>}
 
-      {thongBao && <p>{thongBao}</p>}
+      <div className="hang-tieu-de-muc">
+        <h2>Sản phẩm nổi bật</h2>
+      </div>
 
       <div
         className="luoi-san-pham"
         style={{
-          gridTemplateColumns: `repeat(${SO_SAN_PHAM_MOT_DONG}, 1fr)`,
+          gridTemplateColumns: `repeat(${SO_SAN_PHAM_MOI_DONG}, 1fr)`,
         }}
       >
-        {danhSachSanPham.map((sanPham) => (
-          <div className="the-san-pham" key={sanPham.id}>
+        {danhSachHienThi.map((mau) => (
+          <div className="the-san-pham" key={mau.id}>
             <div className="anh-san-pham">
-              {sanPham.anh_url ? (
-                <img src={sanPham.anh_url} alt={sanPham.ten_mau} />
+              {mau.anh_url ? (
+                <img src={mau.anh_url} alt={mau.ten_mau} />
               ) : (
                 <div className="khung-khong-anh">Không có ảnh</div>
               )}
             </div>
 
             <div className="noi-dung-san-pham">
-              <p>
-                <b>{sanPham.ten_hang}</b>
-              </p>
+              <div className="ten-san-pham">{mau.ten_mau}</div>
 
-              <h3 className="ten-san-pham">{sanPham.ten_mau}</h3>
+              <p>Hãng: {mau.ten_hang || "Chưa có"}</p>
 
-              <p>Giá thuê/ngày: {dinhDangTien(sanPham.gia_thue_ngay)}</p>
-              <p>Tiền cọc: {dinhDangTien(sanPham.tien_coc)}</p>
+              <p>Danh mục: {mau.ten_danh_muc || "Chưa phân loại"}</p>
 
-              <button className="nut-rong" onClick={xemChiTiet}>
-                Xem chi tiết
-              </button>
+              <p>Giá thuê/ngày: {dinhDangTien(mau.gia_thue_ngay)}</p>
+
+              <p>Tiền cọc: {dinhDangTien(mau.tien_coc)}</p>
+
+              <Link to={`/equipments/${mau.id}`}>
+                <button className="nut-rong">Xem chi tiết</button>
+              </Link>
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="nhom-nut">
+        <Link to="/equipments">
+          <button>Xem tất cả mẫu thiết bị</button>
+        </Link>
       </div>
     </div>
   );

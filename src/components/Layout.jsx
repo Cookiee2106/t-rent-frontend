@@ -5,9 +5,7 @@ function Layout({ children }) {
   return (
     <div className="bo-cuc">
       <Header />
-
-      <div className="noi-dung">{children}</div>
-
+      <main className="noi-dung">{children}</main>
       <Footer />
     </div>
   );

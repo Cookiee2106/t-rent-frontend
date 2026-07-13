@@ -5,7 +5,13 @@ export function layToken() {
 }
 
 export function taoHeaderCoToken() {
+  const token = layToken();
+
+  if (!token || token === "undefined" || token === "null") {
+    return {};
+  }
+
   return {
-    Authorization: `Bearer ${layToken()}`,
+    Authorization: `Bearer ${token}`,
   };
 }
