@@ -9,7 +9,7 @@ function EquipmentDetail() {
   const SO_MAU_TUONG_TU_MUON_LAY = 4;
 
   const [chiTiet, setChiTiet] = useState(null);
-  const [thongBaoThemGio, setThongBaoThemGio] = useState("");
+  const [popupThongBao, setPopupThongBao] = useState("");
   const [thongBaoKhaDung, setThongBaoKhaDung] = useState("");
   const [ngayNhan, setNgayNhan] = useState("");
   const [ngayTra, setNgayTra] = useState("");
@@ -31,7 +31,6 @@ function EquipmentDetail() {
     const NGAY_HOM_NAY = layNgayHomNay();
   */
 
-  // Hàm lấy ngày mai.
   function layNgayMai() {
     const ngayMai = new Date();
 
@@ -44,7 +43,6 @@ function EquipmentDetail() {
     return `${nam}-${thang}-${ngay}`;
   }
 
-  // Ngày bắt đầu được đặt là ngày mai.
   const NGAY_BAT_DAU_DUOC_DAT = layNgayMai();
 
   function dinhDangTien(giaTri) {
@@ -61,6 +59,10 @@ function EquipmentDetail() {
     return {
       Authorization: `Bearer ${token}`,
     };
+  }
+
+  function moPopup(noiDung) {
+    setPopupThongBao(noiDung);
   }
 
   function kiemTraNgayVaSoLuong() {
@@ -100,10 +102,10 @@ function EquipmentDetail() {
       if (duLieu.success) {
         setChiTiet(duLieu.data);
       } else {
-        setThongBaoThemGio(duLieu.message);
+        moPopup(duLieu.message);
       }
     } catch {
-      setThongBaoThemGio("Không kết nối được server");
+      moPopup("Không kết nối được server");
     }
   }
 
@@ -120,7 +122,7 @@ function EquipmentDetail() {
       const loi = kiemTraNgayVaSoLuong();
 
       if (loi) {
-        setThongBaoKhaDung(loi);
+        moPopup(loi);
         return;
       }
 
@@ -132,7 +134,7 @@ function EquipmentDetail() {
       const duLieu = await phanHoi.json();
 
       if (!duLieu.success) {
-        setThongBaoKhaDung(duLieu.message);
+        moPopup(duLieu.message);
         return;
       }
 
@@ -140,10 +142,10 @@ function EquipmentDetail() {
       setBoSanSang(duLieu.data.so_luong_san_sang || 0);
 
       if (!duLieu.data.co_the_thue) {
-        setThongBaoKhaDung(duLieu.data.ly_do_khong_the_thue);
+        moPopup(duLieu.data.ly_do_khong_the_thue);
       }
     } catch {
-      setThongBaoKhaDung("Không kết nối được server");
+      moPopup("Không kết nối được server");
     } finally {
       setDangKiemTra(false);
     }
@@ -151,19 +153,17 @@ function EquipmentDetail() {
 
   async function themVaoGioHang() {
     try {
-      setThongBaoThemGio("");
-
       const token = localStorage.getItem("token");
 
       if (!token) {
-        setThongBaoThemGio("Vui lòng đăng nhập trước khi thêm vào giỏ hàng");
+        moPopup("Vui lòng đăng nhập trước khi thêm vào giỏ hàng");
         return;
       }
 
       const loi = kiemTraNgayVaSoLuong();
 
       if (loi) {
-        setThongBaoThemGio(loi);
+        moPopup(loi);
         return;
       }
 
@@ -173,16 +173,15 @@ function EquipmentDetail() {
       const duLieuKiemTra = await phanHoiKiemTra.json();
 
       if (!duLieuKiemTra.success) {
-        setThongBaoThemGio(duLieuKiemTra.message);
+        moPopup(duLieuKiemTra.message);
         return;
       }
 
       if (!duLieuKiemTra.data.co_the_thue) {
-        setThongBaoThemGio(duLieuKiemTra.data.ly_do_khong_the_thue);
+        moPopup(duLieuKiemTra.data.ly_do_khong_the_thue);
         return;
       }
 
-      // Gọi API thêm giỏ hàng.
       const phanHoi = await fetch(`${DUONG_DAN_API}/api/cart/items`, {
         method: "POST",
         headers: {
@@ -200,12 +199,17 @@ function EquipmentDetail() {
       const duLieu = await phanHoi.json();
 
       if (duLieu.success) {
-        setThongBaoThemGio("Thêm vào giỏ hàng thành công");
+        /*
+          Cập nhật lại số mẫu trong giỏ hàng ở Header.
+        */
+        window.dispatchEvent(new Event("cap-nhat-gio-hang"));
+
+        moPopup("Thêm vào giỏ hàng thành công");
       } else {
-        setThongBaoThemGio(duLieu.message);
+        moPopup(duLieu.message);
       }
     } catch {
-      setThongBaoThemGio("Không kết nối được server");
+      moPopup("Không kết nối được server");
     }
   }
 
@@ -248,20 +252,14 @@ function EquipmentDetail() {
               <td>Tên mẫu</td>
               <td>{chiTiet.ten_mau}</td>
             </tr>
-
-            <tr>
-              <td>Danh mục</td>
-              <td>{chiTiet.ten_danh_muc || "Chưa phân loại"}</td>
-            </tr>
-
             <tr>
               <td>Giá thuê/ngày</td>
-              <td>{dinhDangTien(chiTiet.gia_thue_ngay)}</td>
+              <td className="gia-chi-tiet">{dinhDangTien(chiTiet.gia_thue_ngay)}</td>
             </tr>
 
             <tr>
               <td>Tiền cọc</td>
-              <td>{dinhDangTien(chiTiet.tien_coc)}</td>
+              <td className="coc-chi-tiet">{dinhDangTien(chiTiet.tien_coc)}</td>
             </tr>
 
             <tr>
@@ -300,7 +298,7 @@ function EquipmentDetail() {
             </tbody>
           </table>
         ) : (
-          <p>Chưa có bộ đi kèm.</p>
+          <p className="khong-co-bo-di-kem-chi-tiet">Không có bộ đi kèm.</p>
         )}
 
         <h3>Chọn thời gian thuê</h3>
@@ -349,7 +347,9 @@ function EquipmentDetail() {
 
         <div className="khung-tam-tinh">
           {!ngayNhan || !ngayTra ? (
-            <p className="chu-mo">Chọn ngày nhận và ngày trả để kiểm tra bộ sẵn sàng.</p>
+            <p className="chu-mo">
+              Chọn ngày nhận và ngày trả để kiểm tra bộ sẵn sàng.
+            </p>
           ) : dangKiemTra ? (
             <p>Đang kiểm tra bộ sẵn sàng...</p>
           ) : (
@@ -364,10 +364,6 @@ function EquipmentDetail() {
                   Có thể thêm {soLuong} bộ vào giỏ hàng trong khoảng ngày đã chọn.
                 </p>
               )}
-
-              {thongBaoKhaDung && (
-                <p className="thong-bao-duoi-nut">{thongBaoKhaDung}</p>
-              )}
             </>
           )}
         </div>
@@ -379,11 +375,23 @@ function EquipmentDetail() {
             <button>Quay lại danh sách</button>
           </Link>
         </div>
-
-        {thongBaoThemGio && (
-          <p className="thong-bao-duoi-nut">{thongBaoThemGio}</p>
-        )}
       </div>
+
+      {popupThongBao && (
+        <div className="popup-thong-bao-overlay">
+          <div className="popup-thong-bao">
+            <p>{popupThongBao}</p>
+
+            <button
+              className="nut-dong-y"
+              type="button"
+              onClick={() => setPopupThongBao("")}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
 
       {/*
         ================= SẢN PHẨM TƯƠNG TỰ =================

@@ -14,6 +14,8 @@ function Register() {
   });
 
   const [thongBao, setThongBao] = useState("");
+  const [popupThanhCong, setPopupThanhCong] = useState("");
+  
 
   function thayDoiDuLieu(e) {
     setBieuMau({
@@ -24,6 +26,7 @@ function Register() {
 
   async function dangKy(e) {
     e.preventDefault();
+
     const phanHoi = await fetch(`${DUONG_DAN_API}/api/auth/register`, {
       method: "POST",
       headers: {
@@ -34,11 +37,17 @@ function Register() {
 
     const duLieu = await phanHoi.json();
 
-    setThongBao(duLieu.message);
-
-    if (duLieu.success) {
-      dieuHuong("/login");
+    if (!duLieu.success) {
+      return setThongBao(duLieu.message);
     }
+
+    setThongBao("");
+    setPopupThanhCong("Đăng ký thành công");
+  }
+
+  function dongPopupThanhCong() {
+    setPopupThanhCong("");
+    dieuHuong("/login");
   }
 
   return (
@@ -102,6 +111,18 @@ function Register() {
 
         <p className="thong-bao">{thongBao}</p>
       </form>
+      
+      {popupThanhCong && (
+        <div className="popup-loi-overlay">
+          <div className="popup-loi">
+            <p>{popupThanhCong}</p>
+
+            <button type="button" onClick={dongPopupThanhCong}>
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
