@@ -142,11 +142,11 @@ function AdminLayout({ children }) {
                 Quản lý bảo trì
               </Link>
 
-              {laQuanTriVien() && (
+              {/* {laQuanTriVien() && (
                 <Link to="/admin/reports-logs">
                   Báo cáo nhật kí và thao tác
                 </Link>
-              )}
+              )} */}
 
               <button onClick={dangXuat}>
                 Đăng xuất

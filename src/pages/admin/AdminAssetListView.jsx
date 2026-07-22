@@ -71,8 +71,16 @@ function AssetList() {
     return thietBi.ten_mau || "";
   }
 
+  // Chỉ trả về tên mẫu để ô input không bị lặp tên hãng khi thêm/cập nhật.
   function layTenMauOption(mau) {
-    return `${mau.ten_hang || ""} ${mau.ten_mau || ""}`.trim();
+    return `${mau.ten_mau || ""}`.trim();
+  }
+
+  // Dùng riêng cho tìm kiếm để người dùng có thể tìm theo tên mẫu hoặc tên hãng.
+  function layNoiDungTimMau(mau) {
+    return `${mau.ten_mau || ""} ${mau.ten_hang || ""}`
+      .trim()
+      .toLowerCase();
   }
 
   function layTenViTriOption(viTri) {
@@ -242,13 +250,11 @@ function AssetList() {
     setTenMauDangChon(tenMau);
     setHienDanhSachMau(true);
 
-    const mauTimDuoc = danhSachMau.find(
-      (mau) => layTenMauOption(mau) === tenMau
-    );
-
+    // Khi người dùng gõ lại nội dung thì xóa mẫu đã chọn.
+    // Người dùng phải bấm chọn một dòng trong danh sách để lấy đúng id.
     setForm({
       ...form,
-      mau_thiet_bi_id: mauTimDuoc ? mauTimDuoc.id : "",
+      mau_thiet_bi_id: "",
     });
   }
 
@@ -476,9 +482,9 @@ function AssetList() {
   );
 
   const danhSachMauSauLoc = danhSachMau.filter((mau) => {
-    const noiDung = layTenMauOption(mau).toLowerCase();
+    const noiDung = layNoiDungTimMau(mau);
 
-    return noiDung.includes(tenMauDangChon.toLowerCase());
+    return noiDung.includes(tenMauDangChon.trim().toLowerCase());
   });
 
   const danhSachViTriSauLoc = danhSachViTriKho.filter((viTri) => {
@@ -829,7 +835,19 @@ function AssetList() {
                           className="combo-dong"
                           onMouseDown={() => chonMauThietBi(mau)}
                         >
-                          {layTenMauOption(mau)}
+                          <div style={{ fontWeight: "bold" }}>
+                            {hienThi(mau.ten_mau)}
+                          </div>
+
+                          <div
+                            style={{
+                              color: "#666",
+                              fontSize: "14px",
+                              marginTop: "3px",
+                            }}
+                          >
+                            {hienThi(mau.ten_hang)} - {hienThi(mau.ten_danh_muc)}
+                          </div>
                         </div>
                       ))}
 
