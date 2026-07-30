@@ -1,15 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { DUONG_DAN_API } from "../api/api";
 
 function Header() {
   const dieuHuong = useNavigate();
   const token = localStorage.getItem("token");
-  const menuTaiKhoanRef = useRef(null);
 
-  // Đếm số mẫu khác nhau trong giỏ hàng
+  const menuTaiKhoanRef = useRef(null);
+  const khungTimKiemRef = useRef(null);
+
   const [tongSoMauTrongGio, setTongSoMauTrongGio] = useState(0);
   const [hienMenuTaiKhoan, setHienMenuTaiKhoan] = useState(false);
+
+  const [tuKhoaTimKiem, setTuKhoaTimKiem] = useState("");
+  const [danhSachMau, setDanhSachMau] = useState([]);
+  const [hienGoiYTimKiem, setHienGoiYTimKiem] = useState(false);
 
   function layNguoiDungLocal() {
     try {
@@ -42,6 +47,19 @@ function Header() {
     return nguoiDung?.ho_ten || nguoiDung?.email || "Tài khoản";
   }
 
+  function dinhDangTien(giaTri) {
+    return Number(giaTri || 0).toLocaleString("vi-VN") + " đ";
+  }
+
+  function chuanHoaChuoi(giaTri) {
+    return String(giaTri || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d");
+  }
+
   async function layTongSoMauTrongGio() {
     try {
       if (!token) {
@@ -58,24 +76,52 @@ function Header() {
       const duLieu = await phanHoi.json();
 
       if (duLieu.success) {
-        const danhSachItem = duLieu.data?.items || [];
-
-        /*
-          Đếm số mẫu khác nhau trong giỏ.
-          Mỗi item là 1 mẫu thiết bị trong giỏ.
-
-          Ví dụ:
-          Sony A7 IV số lượng 3 => vẫn tính là 1 mẫu.
-          Sony FX3 số lượng 2 => tính thêm 1 mẫu.
-          Tổng hiển thị trên icon = 2.
-        */
-        setTongSoMauTrongGio(danhSachItem.length);
+        setTongSoMauTrongGio((duLieu.data?.items || []).length);
       } else {
         setTongSoMauTrongGio(0);
       }
     } catch {
       setTongSoMauTrongGio(0);
     }
+  }
+
+  async function layDanhSachMauTimKiem() {
+    try {
+      const phanHoi = await fetch(`${DUONG_DAN_API}/api/equipment-models`);
+      const duLieu = await phanHoi.json();
+
+      if (duLieu.success) {
+        setDanhSachMau(duLieu.data || []);
+      } else {
+        setDanhSachMau([]);
+      }
+    } catch {
+      setDanhSachMau([]);
+    }
+  }
+
+  const danhSachGoiY = useMemo(() => {
+    const tuKhoa = chuanHoaChuoi(tuKhoaTimKiem);
+
+    if (!tuKhoa) {
+      return [];
+    }
+
+    return danhSachMau
+      .filter((mau) => {
+        const noiDung = chuanHoaChuoi(
+          `${mau.ten_mau || ""} ${mau.ten_hang || ""} ${mau.ten_danh_muc || ""}`
+        );
+
+        return noiDung.includes(tuKhoa);
+      })
+      .slice(0, 6);
+  }, [tuKhoaTimKiem, danhSachMau]);
+
+  function chonSanPham(mau) {
+    setTuKhoaTimKiem("");
+    setHienGoiYTimKiem(false);
+    dieuHuong(`/equipments/${mau.id}`);
   }
 
   function dangXuat() {
@@ -88,6 +134,7 @@ function Header() {
 
   useEffect(() => {
     layTongSoMauTrongGio();
+    layDanhSachMauTimKiem();
 
     window.addEventListener("cap-nhat-gio-hang", layTongSoMauTrongGio);
     window.addEventListener("focus", layTongSoMauTrongGio);
@@ -99,30 +146,111 @@ function Header() {
   }, [token]);
 
   useEffect(() => {
-    function dongMenuKhiBamNgoai(e) {
-      if (menuTaiKhoanRef.current && !menuTaiKhoanRef.current.contains(e.target)) {
+    function dongKhiBamNgoai(e) {
+      if (
+        menuTaiKhoanRef.current &&
+        !menuTaiKhoanRef.current.contains(e.target)
+      ) {
         setHienMenuTaiKhoan(false);
+      }
+
+      if (
+        khungTimKiemRef.current &&
+        !khungTimKiemRef.current.contains(e.target)
+      ) {
+        setHienGoiYTimKiem(false);
       }
     }
 
-    document.addEventListener("mousedown", dongMenuKhiBamNgoai);
+    document.addEventListener("mousedown", dongKhiBamNgoai);
 
     return () => {
-      document.removeEventListener("mousedown", dongMenuKhiBamNgoai);
+      document.removeEventListener("mousedown", dongKhiBamNgoai);
     };
   }, []);
 
   return (
     <div className="dau-trang">
-      <div className="header-noi-dung">
+      {/* Giữ nguyên hàng header cũ */}
+      <div className="header-noi-dung header-noi-dung-co-tim-kiem">
         <div className="header-trai">
           <Link to="/">
             <h2 className="logo">T-Rent</h2>
           </Link>
         </div>
 
-        <div className="menu-giua">
-          <Link to="/equipments">Mẫu thiết bị</Link>
+        <div className="menu-giua menu-giua-tim-kiem">
+          <div className="khung-header-tim-kiem" ref={khungTimKiemRef}>
+            <div className="o-tim-kiem-header">
+              <input
+                type="text"
+                value={tuKhoaTimKiem}
+                placeholder="Bạn muốn thuê gì hôm nay?"
+                onChange={(e) => {
+                  setTuKhoaTimKiem(e.target.value);
+                  setHienGoiYTimKiem(true);
+                }}
+                onFocus={() => setHienGoiYTimKiem(true)}
+              />
+          
+              <button
+                type="button"
+                className="nut-icon-tim-kiem-header"
+                aria-label="Tìm kiếm"
+                onClick={() => dieuHuong("/equipments")}
+              >
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle
+                    cx="11"
+                    cy="11"
+                    r="7"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M16.5 16.5L21 21"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          
+            {hienGoiYTimKiem && tuKhoaTimKiem.trim() && (
+              <div className="hop-goi-y-tim-kiem">
+                {danhSachGoiY.length === 0 ? (
+                  <div className="dong-goi-y-rong">
+                    Không tìm thấy mẫu thiết bị phù hợp
+                  </div>
+                ) : (
+                  danhSachGoiY.map((mau) => (
+                    <button
+                      type="button"
+                      className="dong-goi-y-tim-kiem"
+                      key={mau.id}
+                      onMouseDown={() => chonSanPham(mau)}
+                    >
+                      <div className="anh-goi-y-tim-kiem">
+                        {mau.anh_url ? (
+                          <img src={mau.anh_url} alt={mau.ten_mau} />
+                        ) : (
+                          <div className="khung-khong-anh-nho">Không ảnh</div>
+                        )}
+                      </div>
+          
+                      <div className="noi-dung-goi-y-tim-kiem">
+                        <div className="ten-goi-y-tim-kiem">{mau.ten_mau}</div>
+                        <div className="gia-coc-goi-y-tim-kiem">
+                          Tiền cọc: {dinhDangTien(mau.tien_coc)}
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="menu-phai">
@@ -203,6 +331,13 @@ function Header() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Ba mục nằm dưới thanh tìm kiếm */}
+      <div className="menu-danh-muc-header-moi">
+        <Link to="/equipments">Mẫu thiết bị</Link>
+        <Link to="/equipments?nhom=may-anh">Máy ảnh</Link>
+        <Link to="/equipments?nhom=ong-kinh">Ống kính</Link>
       </div>
     </div>
   );

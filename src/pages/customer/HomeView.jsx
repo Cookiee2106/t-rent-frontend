@@ -1,13 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { DUONG_DAN_API } from "../../api/api";
+import {
+  CAU_HINH_DANH_MUC,
+  layTheoSoLuong,
+  mauThuocDanhMuc,
+} from "../../config/equipmentDisplayConfig";
 
 function Home() {
-  const SO_SAN_PHAM_MOI_DONG = 4;
-  const SO_SAN_PHAM_MUON_LAY = 0;
+  const ANH_BANNER =
+    "https://res.cloudinary.com/dfxbfk4zp/image/upload/v1785330764/Screenshot_2026-07-29_195411_zdjzbp.png";
 
   const [danhSachMau, setDanhSachMau] = useState([]);
-  const [thongBao, setThongBao] = useState("");
   const [popupLoi, setPopupLoi] = useState("");
 
   function dinhDangTien(giaTri) {
@@ -49,7 +53,6 @@ function Home() {
 
   async function layDanhSachMauThietBi() {
     try {
-      setThongBao("");
       setPopupLoi("");
 
       const phanHoi = await fetch(`${DUONG_DAN_API}/api/equipment-models`);
@@ -69,31 +72,34 @@ function Home() {
     layDanhSachMauThietBi();
   }, []);
 
-  const danhSachHienThi =
-    SO_SAN_PHAM_MUON_LAY === 0
-      ? danhSachMau
-      : danhSachMau.slice(0, SO_SAN_PHAM_MUON_LAY);
+  // Chỉ những danh mục có hienTrangChu = true mới xuất hiện ở Sản phẩm nổi bật.
+  const danhSachMucNoiBat = useMemo(() => {
+    return CAU_HINH_DANH_MUC.filter((item) => item.hienTrangChu).map(
+      (cauHinh) => {
+        const danhSachTheoDanhMuc = danhSachMau.filter((mau) =>
+          mauThuocDanhMuc(mau, cauHinh)
+        );
 
-  return (
-    <div className="khung-trang-san-pham">
-      <div className="tieu-de-trang-chu">
-        <h1>Trang chủ T-Rent</h1>
-        <p>Thuê máy ảnh và thiết bị quay chụp nhanh chóng, rõ ràng.</p>
-      </div>
+        return {
+          ...cauHinh,
+          danhSach: layTheoSoLuong(
+            danhSachTheoDanhMuc,
+            cauHinh.soSanPhamMuonLayTrangChu
+          ),
+        };
+      }
+    );
+  }, [danhSachMau]);
 
-      {thongBao && <p className="thong-bao">{thongBao}</p>}
-
-      <div className="hang-tieu-de-muc">
-        <h2>Sản phẩm nổi bật</h2>
-      </div>
-
+  function renderDanhSachSanPham(danhSach, soSanPhamMoiDong) {
+    return (
       <div
         className="luoi-san-pham"
         style={{
-          gridTemplateColumns: `repeat(${SO_SAN_PHAM_MOI_DONG}, 1fr)`,
+          gridTemplateColumns: `repeat(${soSanPhamMoiDong}, minmax(0, 1fr))`,
         }}
       >
-        {danhSachHienThi.map((mau) => (
+        {danhSach.map((mau) => (
           <Link
             to={`/equipments/${mau.id}`}
             className="link-card-san-pham"
@@ -111,49 +117,102 @@ function Home() {
               <div className="noi-dung-san-pham">
                 <div className="ten-san-pham">{mau.ten_mau}</div>
 
-                {/*
-                <p>Hãng: {mau.ten_hang || "Chưa có"}</p>
+                <div className="khung-gia-card">
+                  <p className="dong-thong-tin-card gia-thue-card">
+                    Giá thuê/ngày: <b>{dinhDangTien(mau.gia_thue_ngay)}</b>
+                  </p>
 
-                <p>Danh mục: {mau.ten_danh_muc || "Chưa phân loại"}</p>
-                */}
-
-                  <div className="khung-gia-card">
-                    <p className="dong-thong-tin-card gia-thue-card">
-                      Giá thuê/ngày: <b>{dinhDangTien(mau.gia_thue_ngay)}</b>
-                    </p>
-
-                    <p className="dong-thong-tin-card tien-coc-card">
-                      Tiền cọc: <b>{dinhDangTien(mau.tien_coc)}</b>
-                    </p>
-                  </div>
+                  <p className="dong-thong-tin-card tien-coc-card">
+                    Tiền cọc: <b>{dinhDangTien(mau.tien_coc)}</b>
+                  </p>
+                </div>
 
                 <div className="khoang-bo-di-kem-card">
                   {hienThiBoDiKem(mau)}
                 </div>
-
-                {/*
-                Nếu muốn hiện lại nút xem chi tiết thì mở comment đoạn này.
-                Khi mở nút thì nên bỏ Link đang bọc toàn bộ card ở bên ngoài.
-
-                <Link to={`/equipments/${mau.id}`}>
-                  <button className="nut-rong">Xem chi tiết</button>
-                </Link>
-                */}
               </div>
             </div>
           </Link>
         ))}
 
-        {danhSachHienThi.length === 0 && (
-          <p className="thong-bao">Chưa có mẫu thiết bị nào.</p>
+        {danhSach.length === 0 && (
+          <p className="thong-bao">Chưa có sản phẩm trong mục này.</p>
         )}
       </div>
+    );
+  }
 
-      <div className="nhom-nut">
-        <Link to="/equipments">
-          <button>Xem tất cả mẫu thiết bị</button>
-        </Link>
+  return (
+    <div className="khung-trang-san-pham trang-chu-moi">
+      <div className="banner-trang-chu-moi">
+        <img
+          className="anh-banner-trang-chu-moi"
+          src={ANH_BANNER}
+          alt="Banner thuê thiết bị T-Rent"
+        />
+
+        <div className="noi-dung-banner-trang-chu-moi">
+          <h1>Thuê thiết bị quay chụp tại T-Rent</h1>
+          <p>Nhanh chóng, rõ ràng và thuận tiện</p>
+
+          <Link to="/equipments">
+            <button className="nut-banner-trang-chu">Xem mẫu thiết bị</button>
+          </Link>
+        </div>
       </div>
+
+      <section className="khung-san-pham-noi-bat-moi">
+        <div className="tieu-de-khoi-lon">
+          <h2>Sản phẩm nổi bật</h2>
+        </div>
+
+        {danhSachMucNoiBat.map((muc) => (
+          <div className="muc-noi-bat-rieng" key={muc.slug}>
+            <div className="hang-tieu-de-muc-co-nut">
+              <h3>{muc.ten}</h3>
+
+              <Link
+                to={`/equipments?nhom=${muc.slug}`}
+                className="link-xem-them"
+              >
+                Xem thêm <span aria-hidden="true">›</span>
+              </Link>
+            </div>
+
+            {renderDanhSachSanPham(
+              muc.danhSach,
+              muc.soSanPhamMoiDongTrangChu
+            )}
+          </div>
+        ))}
+      </section>
+
+      <section className="khung-quy-trinh-thue-moi">
+        <div className="tieu-de-khoi-lon">
+          <h2>Quy trình thuê tại T-Rent</h2>
+          <p>Chỉ với 3 bước đơn giản</p>
+        </div>
+
+        <div className="luoi-quy-trinh-thue">
+          <div className="the-buoc-thue">
+            <div className="so-buoc-thue">1</div>
+            <h3>Chọn thiết bị</h3>
+            <p>Chọn mẫu thiết bị phù hợp với nhu cầu của bạn.</p>
+          </div>
+
+          <div className="the-buoc-thue">
+            <div className="so-buoc-thue">2</div>
+            <h3>Thanh toán</h3>
+            <p>Chọn thời gian thuê, tạo đơn và thanh toán tiền cọc.</p>
+          </div>
+
+          <div className="the-buoc-thue">
+            <div className="so-buoc-thue">3</div>
+            <h3>Nhận và trả</h3>
+            <p>Nhận thiết bị đúng hẹn và hoàn trả sau khi sử dụng.</p>
+          </div>
+        </div>
+      </section>
 
       {popupLoi && (
         <div className="popup-thong-bao-overlay">

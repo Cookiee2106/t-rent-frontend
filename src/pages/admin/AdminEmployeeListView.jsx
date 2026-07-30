@@ -387,9 +387,9 @@ function EmployeeList() {
                       </button>
                     )}
 
-                    <button className="nut-xoa" onClick={() => moXacNhan("XOA", nv)}>
+                    {/* <button className="nut-xoa" onClick={() => moXacNhan("XOA", nv)}>
                       Xóa
-                    </button>
+                    </button> */}
                   </div>
                 </td>
               </tr>

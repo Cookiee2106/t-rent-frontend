@@ -1,10 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { DUONG_DAN_API } from "../../api/api";
+import {
+  CAU_HINH_BO_LOC_MAU_THIET_BI,
+  CAU_HINH_DANH_MUC,
+  CAU_HINH_TRANG_MAU_THIET_BI,
+  chuanHoaChuoi,
+  mauThuocDanhMuc,
+  timCauHinhDanhMucTheoSlug,
+} from "../../config/equipmentDisplayConfig";
 
 function EquipmentList() {
-  const SO_SAN_PHAM_MOI_DONG = 4;
-  const SO_SAN_PHAM_MUON_LAY = 0;
+  const [searchParams] = useSearchParams();
+  const nhom = searchParams.get("nhom") || "";
+  const cauHinhDanhMuc = timCauHinhDanhMucTheoSlug(nhom);
+  const laTrangTatCa = !cauHinhDanhMuc;
+
+  const SO_SAN_PHAM_MOI_DONG = cauHinhDanhMuc
+    ? cauHinhDanhMuc.soSanPhamMoiDongTrangDanhSach
+    : CAU_HINH_TRANG_MAU_THIET_BI.soSanPhamMoiDong;
+
+  const SO_SAN_PHAM_MUON_LAY = cauHinhDanhMuc
+    ? cauHinhDanhMuc.soSanPhamMuonLayTrangDanhSach
+    : CAU_HINH_TRANG_MAU_THIET_BI.soSanPhamMuonLay;
 
   const [danhSachMau, setDanhSachMau] = useState([]);
   const [danhSachGoc, setDanhSachGoc] = useState([]);
@@ -12,9 +30,10 @@ function EquipmentList() {
   const [thongBao, setThongBao] = useState("");
   const [popupLoi, setPopupLoi] = useState("");
 
-  const [tuKhoa, setTuKhoa] = useState("");
   const [hangId, setHangId] = useState("");
   const [danhMucId, setDanhMucId] = useState("");
+  const [mucGia, setMucGia] = useState("");
+  const [sapXepGia, setSapXepGia] = useState("");
 
   const [ngayNhan, setNgayNhan] = useState("");
   const [ngayTra, setNgayTra] = useState("");
@@ -72,18 +91,6 @@ function EquipmentList() {
     );
   }
 
-  function doiNgayNhan(giaTri) {
-    setNgayNhan(giaTri);
-    setDaTimTheoNgay(false);
-    setThongBao("");
-  }
-
-  function doiNgayTra(giaTri) {
-    setNgayTra(giaTri);
-    setDaTimTheoNgay(false);
-    setThongBao("");
-  }
-
   async function layDanhSachMauThietBi(coLocNgay = false) {
     try {
       setThongBao("");
@@ -91,17 +98,8 @@ function EquipmentList() {
 
       const params = new URLSearchParams();
 
-      if (hangId) {
-        params.set("hang_id", hangId);
-      }
-
-      if (danhMucId) {
-        params.set("danh_muc_id", danhMucId);
-      }
-
       if (coLocNgay) {
         if (!ngayNhan || !ngayTra) {
-          setPopupLoi("Vui lòng chọn đủ ngày nhận và ngày trả");
           return;
         }
 
@@ -133,25 +131,22 @@ function EquipmentList() {
       const phanHoi = await fetch(url);
       const duLieu = await phanHoi.json();
 
-      if (duLieu.success) {
-        setDanhSachMau(duLieu.data || []);
-
-        if (!coLocNgay && !hangId && !danhMucId) {
-          setDanhSachGoc(duLieu.data || []);
-        }
-
-        if (coLocNgay) {
-          setDaTimTheoNgay(true);
-        } else {
-          setDaTimTheoNgay(false);
-        }
-
-        if (coLocNgay && (duLieu.data || []).length === 0) {
-          setThongBao("Không có mẫu thiết bị sẵn sàng trong khoảng ngày đã chọn");
-        }
-      } else {
+      if (!duLieu.success) {
         setDaTimTheoNgay(false);
         setPopupLoi(duLieu.message);
+        return;
+      }
+
+      setDanhSachMau(duLieu.data || []);
+
+      if (!coLocNgay) {
+        setDanhSachGoc(duLieu.data || []);
+      }
+
+      setDaTimTheoNgay(coLocNgay);
+
+      if (coLocNgay && (duLieu.data || []).length === 0) {
+        setThongBao("Không có mẫu thiết bị sẵn sàng trong khoảng ngày đã chọn");
       }
     } catch {
       setDaTimTheoNgay(false);
@@ -162,9 +157,10 @@ function EquipmentList() {
   }
 
   function xoaLoc() {
-    setTuKhoa("");
     setHangId("");
     setDanhMucId("");
+    setMucGia("");
+    setSapXepGia("");
     setNgayNhan("");
     setNgayTra("");
     setThongBao("");
@@ -173,13 +169,19 @@ function EquipmentList() {
     setDanhSachMau(danhSachGoc);
   }
 
+  // Tải toàn bộ mẫu thiết bị khi vào trang.
   useEffect(() => {
     layDanhSachMauThietBi(false);
   }, []);
 
+  // Khi đã chọn đủ ngày nhận và ngày trả thì tự động gọi API.
   useEffect(() => {
-    layDanhSachMauThietBi(false);
-  }, [hangId, danhMucId]);
+    if (!ngayNhan || !ngayTra) {
+      return;
+    }
+
+    layDanhSachMauThietBi(true);
+  }, [ngayNhan, ngayTra]);
 
   const danhSachHang = useMemo(() => {
     const map = new Map();
@@ -190,10 +192,21 @@ function EquipmentList() {
       }
     });
 
-    return Array.from(map.entries()).map(([id, ten_hang]) => ({
+    const tatCaHang = Array.from(map.entries()).map(([id, ten_hang]) => ({
       id,
       ten_hang,
     }));
+
+    if (CAU_HINH_BO_LOC_MAU_THIET_BI.hang.layTatCa) {
+      return tatCaHang;
+    }
+
+    const danhSachTenDuocPhep =
+      CAU_HINH_BO_LOC_MAU_THIET_BI.hang.danhSachTen.map(chuanHoaChuoi);
+
+    return tatCaHang.filter((hang) =>
+      danhSachTenDuocPhep.includes(chuanHoaChuoi(hang.ten_hang))
+    );
   }, [danhSachGoc]);
 
   const danhSachDanhMuc = useMemo(() => {
@@ -205,42 +218,142 @@ function EquipmentList() {
       }
     });
 
-    return Array.from(map.entries()).map(([id, ten_danh_muc]) => ({
-      id,
-      ten_danh_muc,
-    }));
+    const tatCaDanhMuc = Array.from(map.entries()).map(
+      ([id, ten_danh_muc]) => ({
+        id,
+        ten_danh_muc,
+      })
+    );
+
+    if (CAU_HINH_BO_LOC_MAU_THIET_BI.danhMuc.layTatCa) {
+      return tatCaDanhMuc;
+    }
+
+    const danhSachTenDuocPhep =
+      CAU_HINH_BO_LOC_MAU_THIET_BI.danhMuc.danhSachTen.map(chuanHoaChuoi);
+
+    return tatCaDanhMuc.filter((danhMuc) =>
+      danhSachTenDuocPhep.includes(
+        chuanHoaChuoi(danhMuc.ten_danh_muc)
+      )
+    );
   }, [danhSachGoc]);
 
-  const danhSachSauKhiTim = danhSachMau.filter((mau) => {
-    const noiDung = `${mau.ten_hang || ""} ${mau.ten_mau || ""} ${
-      mau.ten_danh_muc || ""
-    }`.toLowerCase();
+  const danhSachSauKhiLoc = useMemo(() => {
+    /*
+      TRƯỜNG HỢP MUỐN LẤY TẤT CẢ MẪU ĐANG HIỂN THỊ:
+      Giữ nguyên dòng dưới để sau này có thể dùng lại.
 
-    return noiDung.includes(tuKhoa.toLowerCase());
-  });
+      let ketQua = [...danhSachMau];
+    */
 
-  const danhSachHienThi =
-    SO_SAN_PHAM_MUON_LAY > 0
-      ? danhSachSauKhiTim.slice(0, SO_SAN_PHAM_MUON_LAY)
-      : danhSachSauKhiTim;
+    // Hiện tại chỉ lấy những mẫu thuộc hãng và danh mục được phép trong cấu hình.
+    let ketQua = danhSachMau.filter((mau) => {
+      const cauHinhHang = CAU_HINH_BO_LOC_MAU_THIET_BI.hang;
+      const cauHinhDanhMucLoc = CAU_HINH_BO_LOC_MAU_THIET_BI.danhMuc;
+
+      const duocHienThiTheoHang =
+        cauHinhHang.layTatCa ||
+        cauHinhHang.danhSachTen
+          .map(chuanHoaChuoi)
+          .includes(chuanHoaChuoi(mau.ten_hang));
+
+      const duocHienThiTheoDanhMuc =
+        cauHinhDanhMucLoc.layTatCa ||
+        cauHinhDanhMucLoc.danhSachTen
+          .map(chuanHoaChuoi)
+          .includes(chuanHoaChuoi(mau.ten_danh_muc));
+
+      return duocHienThiTheoHang && duocHienThiTheoDanhMuc;
+    });
+
+    if (cauHinhDanhMuc) {
+      ketQua = ketQua.filter((mau) =>
+        mauThuocDanhMuc(mau, cauHinhDanhMuc)
+      );
+    }
+
+    if (hangId) {
+      ketQua = ketQua.filter(
+        (mau) => String(mau.hang_id || "") === String(hangId)
+      );
+    }
+
+    if (laTrangTatCa && danhMucId) {
+      ketQua = ketQua.filter(
+        (mau) => String(mau.danh_muc_id || "") === String(danhMucId)
+      );
+    }
+
+    if (mucGia) {
+      const cauHinhMucGia =
+        CAU_HINH_BO_LOC_MAU_THIET_BI.mucGia.find(
+          (item) => item.giaTri === mucGia
+        );
+
+      if (cauHinhMucGia) {
+        ketQua = ketQua.filter((mau) => {
+          const giaThue = Number(mau.gia_thue_ngay || 0);
+
+          const dungGiaTu =
+            cauHinhMucGia.tu === null || giaThue >= cauHinhMucGia.tu;
+
+          const dungGiaDen =
+            cauHinhMucGia.den === null || giaThue <= cauHinhMucGia.den;
+
+          return dungGiaTu && dungGiaDen;
+        });
+      }
+    }
+
+    if (sapXepGia === "thap-den-cao") {
+      ketQua.sort(
+        (a, b) =>
+          Number(a.gia_thue_ngay || 0) -
+          Number(b.gia_thue_ngay || 0)
+      );
+    }
+
+    if (sapXepGia === "cao-den-thap") {
+      ketQua.sort(
+        (a, b) =>
+          Number(b.gia_thue_ngay || 0) -
+          Number(a.gia_thue_ngay || 0)
+      );
+    }
+
+    return Number(SO_SAN_PHAM_MUON_LAY) === 0
+      ? ketQua
+      : ketQua.slice(0, Number(SO_SAN_PHAM_MUON_LAY));
+  }, [
+    danhSachMau,
+    cauHinhDanhMuc,
+    hangId,
+    danhMucId,
+    mucGia,
+    sapXepGia,
+    laTrangTatCa,
+    SO_SAN_PHAM_MUON_LAY,
+  ]);
 
   return (
-    <div className="khung-trang-san-pham">
-      <div className="tieu-de-trang-chu">
-        <h1>Mẫu thiết bị</h1>
-        <p>Xem danh sách mẫu thiết bị đang cho thuê tại T-Rent.</p>
-      </div>
+    <div className="khung-trang-san-pham trang-cua-hang-moi">
+      <nav className="breadcrumb-cua-hang" aria-label="Breadcrumb">
+        <Link to="/">Trang chủ</Link>
+        <span>/</span>
 
-      <div className="khung-loc-san-pham khung-loc-san-pham-nhieu-cot">
-        <div className="o-loc-san-pham">
-          <label>Tìm kiếm</label>
-          <input
-            value={tuKhoa}
-            onChange={(e) => setTuKhoa(e.target.value)}
-            placeholder="Nhập tên hãng, tên mẫu, danh mục..."
-          />
-        </div>
+        {cauHinhDanhMuc ? (
+          <>
+            <Link to="/equipments">Mẫu thiết bị</Link>
+            <span>/</span>
+            <span className="breadcrumb-muc-hien-tai">{cauHinhDanhMuc.ten}</span>
+          </>
+        ) : (
+          <span className="breadcrumb-muc-hien-tai">Mẫu thiết bị</span>
+        )}
+      </nav>
 
+      <div className="khung-loc-cua-hang">
         <div className="o-loc-san-pham">
           <label>Hãng</label>
           <select value={hangId} onChange={(e) => setHangId(e.target.value)}>
@@ -254,19 +367,49 @@ function EquipmentList() {
           </select>
         </div>
 
-        <div className="o-loc-san-pham">
-          <label>Danh mục</label>
-          <select
-            value={danhMucId}
-            onChange={(e) => setDanhMucId(e.target.value)}
-          >
-            <option value="">Tất cả danh mục</option>
+        {laTrangTatCa && (
+          <div className="o-loc-san-pham">
+            <label>Danh mục</label>
+            <select
+              value={danhMucId}
+              onChange={(e) => setDanhMucId(e.target.value)}
+            >
+              <option value="">Tất cả danh mục</option>
 
-            {danhSachDanhMuc.map((dm) => (
-              <option key={dm.id} value={dm.id}>
-                {dm.ten_danh_muc}
+              {danhSachDanhMuc.map((danhMuc) => (
+                <option key={danhMuc.id} value={danhMuc.id}>
+                  {danhMuc.ten_danh_muc}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* <div className="o-loc-san-pham">
+          <label>Mức giá thuê / ngày</label>
+          <select
+            value={mucGia}
+            onChange={(e) => setMucGia(e.target.value)}
+          >
+            <option value="">Tất cả mức giá</option>
+
+            {CAU_HINH_BO_LOC_MAU_THIET_BI.mucGia.map((item) => (
+              <option key={item.giaTri} value={item.giaTri}>
+                {item.ten}
               </option>
             ))}
+          </select>
+        </div> */}
+
+        <div className="o-loc-san-pham">
+          <label>Sắp xếp giá</label>
+          <select
+            value={sapXepGia}
+            onChange={(e) => setSapXepGia(e.target.value)}
+          >
+            <option value="">Mặc định</option>
+            <option value="thap-den-cao">Thấp đến cao</option>
+            <option value="cao-den-thap">Cao đến thấp</option>
           </select>
         </div>
 
@@ -276,7 +419,7 @@ function EquipmentList() {
             type="date"
             min={NGAY_BAT_DAU_DUOC_DAT}
             value={ngayNhan}
-            onChange={(e) => doiNgayNhan(e.target.value)}
+            onChange={(e) => setNgayNhan(e.target.value)}
           />
         </div>
 
@@ -286,35 +429,40 @@ function EquipmentList() {
             type="date"
             min={NGAY_BAT_DAU_DUOC_DAT}
             value={ngayTra}
-            onChange={(e) => doiNgayTra(e.target.value)}
+            onChange={(e) => setNgayTra(e.target.value)}
           />
         </div>
 
         <div className="nhom-nut-loc-san-pham">
           <button
-            onClick={() => layDanhSachMauThietBi(true)}
-            disabled={dangTimKiemTheoNgay}
+            className="nut-huy"
+            type="button"
+            onClick={xoaLoc}
           >
-            {dangTimKiemTheoNgay ? "Đang kiểm tra..." : "Tìm kiếm"}
+            Xóa lọc
           </button>
-
-          <button onClick={xoaLoc}>Xóa lọc</button>
         </div>
       </div>
 
+      {dangTimKiemTheoNgay && (
+        <p className="chu-mo thong-bao-dang-loc-ngay">
+          Đang kiểm tra thiết bị sẵn sàng...
+        </p>
+      )}
+
       {thongBao && <p className="thong-bao">{thongBao}</p>}
 
-      {danhSachHienThi.length === 0 && !thongBao && (
+      {danhSachSauKhiLoc.length === 0 && !thongBao && (
         <p className="thong-bao">Không tìm thấy mẫu thiết bị phù hợp.</p>
       )}
 
       <div
         className="luoi-san-pham"
         style={{
-          gridTemplateColumns: `repeat(${SO_SAN_PHAM_MOI_DONG}, 1fr)`,
+          gridTemplateColumns: `repeat(${SO_SAN_PHAM_MOI_DONG}, minmax(0, 1fr))`,
         }}
       >
-        {danhSachHienThi.map((mau) => (
+        {danhSachSauKhiLoc.map((mau) => (
           <Link
             to={`/equipments/${mau.id}`}
             className="link-card-san-pham"
@@ -331,15 +479,17 @@ function EquipmentList() {
 
               <div className="noi-dung-san-pham">
                 <div className="ten-san-pham">{mau.ten_mau}</div>
-                  <div className="khung-gia-card">
-                    <p className="dong-thong-tin-card gia-thue-card">
-                      Giá thuê/ngày: <b>{dinhDangTien(mau.gia_thue_ngay)}</b>
-                    </p>
 
-                    <p className="dong-thong-tin-card tien-coc-card">
-                      Tiền cọc: <b>{dinhDangTien(mau.tien_coc)}</b>
-                    </p>
-                  </div>
+                <div className="khung-gia-card">
+                  <p className="dong-thong-tin-card gia-thue-card">
+                    Giá thuê/ngày: <b>{dinhDangTien(mau.gia_thue_ngay)}</b>
+                  </p>
+
+                  <p className="dong-thong-tin-card tien-coc-card">
+                    Tiền cọc: <b>{dinhDangTien(mau.tien_coc)}</b>
+                  </p>
+                </div>
+
                 <div className="khoang-bo-di-kem-card">
                   {hienThiBoDiKem(mau)}
                 </div>
@@ -354,7 +504,7 @@ function EquipmentList() {
                   </p>
                 ) : (
                   <p className="chu-mo dong-thong-tin-card trang-thai-san-sang-card">
-                    Chọn ngày và bấm tìm kiếm để kiểm tra bộ sẵn sàng
+                    Chọn đủ ngày nhận và ngày trả để kiểm tra bộ sẵn sàng
                   </p>
                 )}
               </div>

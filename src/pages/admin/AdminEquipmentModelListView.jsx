@@ -495,7 +495,7 @@ function AdminEquipmentModelList() {
       setSoLuongBoDiKem(1);
 
       await layBoDiKem(mau.id);
-      await layGoiYBoDiKem(mau.id, "");
+      await layGoiYBoDiKem(mau.id, "", mau);
     } catch (loi) {
       moPopupThongBao(loi.message);
     }
@@ -518,29 +518,82 @@ function AdminEquipmentModelList() {
     setDanhSachBoDiKem(duLieu.data || []);
   }
 
-  function gomGoiYBoDiKem(data) {
-    const thietBiPhu = (data?.thiet_bi_phu || []).map((item) => ({
-      id: item.id,
-      loai: "THIET_BI_PHU",
-      ten_hien_thi: item.ten_mau,
-      mo_ta: `${item.ten_hang || ""} - ${item.ten_danh_muc || ""}`,
-      mau_thiet_bi_phu_id: item.id,
-      phu_kien_id: null,
-    }));
+  function chuanHoaTenHang(giaTri) {
+    return String(giaTri || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
 
-    const phuKien = (data?.phu_kien || []).map((item) => ({
-      id: item.id,
-      loai: "PHU_KIEN",
-      ten_hien_thi: item.ten_phu_kien,
-      mo_ta: `${item.ten_hang || ""} - ${item.ten_danh_muc || ""}`,
-      mau_thiet_bi_phu_id: null,
-      phu_kien_id: item.id,
-    }));
+  function laDanhMucTheNho(item) {
+    return (
+      chuanHoaTenHang(item?.ten_danh_muc) ===
+      chuanHoaTenHang("Thẻ nhớ")
+    );
+  }
+
+  function laBoDiKemHopLe(item, mauChinh) {
+    if (!mauChinh) {
+      return false;
+    }
+
+    // Riêng Thẻ nhớ: lấy tất cả, không phân biệt hãng.
+    if (laDanhMucTheNho(item)) {
+      return true;
+    }
+
+    const itemKhongCoHang =
+      !item?.hang_id && !chuanHoaTenHang(item?.ten_hang);
+
+    // Thiết bị phụ hoặc phụ kiện không gán hãng vẫn được lấy.
+    if (itemKhongCoHang) {
+      return true;
+    }
+
+    // Nếu cả hai bên có id hãng thì so sánh theo id.
+    if (item.hang_id && mauChinh.hang_id) {
+      return String(item.hang_id) === String(mauChinh.hang_id);
+    }
+
+    // Trường hợp API chỉ trả tên hãng thì so sánh tên đã chuẩn hóa.
+    return (
+      chuanHoaTenHang(item.ten_hang) ===
+      chuanHoaTenHang(mauChinh.ten_hang)
+    );
+  }
+
+  function gomGoiYBoDiKem(data, mauChinh) {
+    const thietBiPhu = (data?.thiet_bi_phu || [])
+      .filter((item) => laBoDiKemHopLe(item, mauChinh))
+      .map((item) => ({
+        id: item.id,
+        loai: "THIET_BI_PHU",
+        ten_hien_thi: item.ten_mau,
+        mo_ta: `${item.ten_hang || "Không có hãng"} - ${
+          item.ten_danh_muc || ""
+        }`,
+        mau_thiet_bi_phu_id: item.id,
+        phu_kien_id: null,
+      }));
+
+    const phuKien = (data?.phu_kien || [])
+      .filter((item) => laBoDiKemHopLe(item, mauChinh))
+      .map((item) => ({
+        id: item.id,
+        loai: "PHU_KIEN",
+        ten_hien_thi: item.ten_phu_kien,
+        mo_ta: `${item.ten_hang || "Không có hãng"} - ${
+          item.ten_danh_muc || ""
+        }`,
+        mau_thiet_bi_phu_id: null,
+        phu_kien_id: item.id,
+      }));
 
     return [...thietBiPhu, ...phuKien];
   }
 
-  async function layGoiYBoDiKem(mauId, tuKhoaTim) {
+  async function layGoiYBoDiKem(mauId, tuKhoaTim, mauChinh = mauDangChon) {
     const params = new URLSearchParams();
 
     if (tuKhoaTim) {
@@ -560,7 +613,7 @@ function AdminEquipmentModelList() {
       throw new Error(duLieu.message);
     }
 
-    setDanhSachGoiYBoDiKem(gomGoiYBoDiKem(duLieu.data || {}));
+    setDanhSachGoiYBoDiKem(gomGoiYBoDiKem(duLieu.data || {}, mauChinh));
   }
 
   async function doiTuKhoaBoDiKem(giaTri) {
@@ -571,7 +624,7 @@ function AdminEquipmentModelList() {
     if (!mauDangChon) return;
 
     try {
-      await layGoiYBoDiKem(mauDangChon.id, giaTri);
+      await layGoiYBoDiKem(mauDangChon.id, giaTri, mauDangChon);
     } catch {
       // Không hiện popup mỗi lần gõ.
     }
@@ -633,7 +686,7 @@ function AdminEquipmentModelList() {
         setTuKhoaBoDiKem("");
         setBoDiKemDangChon(null);
         setSoLuongBoDiKem(1);
-        await layGoiYBoDiKem(mauDangChon.id, "");
+        await layGoiYBoDiKem(mauDangChon.id, "", mauDangChon);
       } else {
         moPopupThongBao(duLieu.message);
       }
@@ -675,7 +728,7 @@ function AdminEquipmentModelList() {
 
       if (duLieu.success) {
         await layBoDiKem(mauDangChon.id);
-        await layGoiYBoDiKem(mauDangChon.id, "");
+        await layGoiYBoDiKem(mauDangChon.id, "", mauDangChon);
       } else {
         moPopupThongBao(duLieu.message);
       }
@@ -913,12 +966,33 @@ function AdminEquipmentModelList() {
 
             <div className="popup-noi-dung">
               {chiTietMau.anh_url && (
-                <img
-                  src={chiTietMau.anh_url}
-                  alt={chiTietMau.ten_mau}
-                  className="anh-lon-popup"
-                  onClick={() => setAnhDangXem(chiTietMau.anh_url)}
-                />
+                <div
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginBottom: "20px",
+                  }}
+                >
+                  <img
+                    src={chiTietMau.anh_url}
+                    alt={chiTietMau.ten_mau}
+                    onClick={() => setAnhDangXem(chiTietMau.anh_url)}
+                    style={{
+                      width: "460px",
+                      maxWidth: "100%",
+                      height: "300px",
+                      display: "block",
+                      objectFit: "contain",
+                      margin: "0 auto",
+                      border: "1px solid #ddd",
+                      borderRadius: "10px",
+                      background: "white",
+                      cursor: "pointer",
+                    }}
+                  />
+                </div>
               )}
 
               <table className="bang-popup bang-gon">
@@ -970,13 +1044,21 @@ function AdminEquipmentModelList() {
 
                   <tr>
                     <td>Mô tả</td>
-                    <td>{hienThi(chiTietMau.mo_ta)}</td>
+                    <td
+                      style={{
+                        whiteSpace: "pre-wrap",
+                        overflowWrap: "anywhere",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {hienThi(chiTietMau.mo_ta)}
+                    </td>
                   </tr>
 
-                  <tr>
+                  {/* <tr>
                     <td>Ngày tạo</td>
                     <td>{dinhDangNgay(chiTietMau.created_at)}</td>
-                  </tr>
+                  </tr> */}
                 </tbody>
               </table>
 
@@ -1006,18 +1088,6 @@ function AdminEquipmentModelList() {
                 </table>
               )}
 
-              <div className="popup-actions">
-                <button
-                  className="nut-cap-nhat-popup"
-                  onClick={() => moCapNhat(chiTietMau)}
-                >
-                  Cập nhật
-                </button>
-
-                <button className="nut-dong-y" onClick={() => moBoDiKem(chiTietMau)}>
-                  Bộ đi kèm
-                </button>
-              </div>
             </div>
           </div>
         </div>

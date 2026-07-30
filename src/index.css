@@ -3373,3 +3373,857 @@ textarea {
     width: 100%;
   }
 }
+
+/* ================= HEADER GIỮ MÀU CŨ + TÌM KIẾM ================= */
+
+/* Header vẫn dùng đúng màu cũ từ --mau-chinh-web */
+.khung-header-tim-kiem {
+  position: relative;
+  width: var(--chieu-rong-noi-dung-web);
+  margin: 0 auto;
+  padding: 0 0 14px;
+}
+
+.o-tim-kiem-header {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.o-tim-kiem-header input {
+  flex: 1;
+  height: 100%;
+  padding: 0 18px;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  font-size: 17px;
+}
+
+.nut-icon-tim-kiem-header,
+.nut-icon-tim-kiem-header:hover {
+  width: 58px;
+  height: 100%;
+  padding: 0;
+  border-radius: 0;
+  background: white;
+  color: var(--mau-chinh-web);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nut-icon-tim-kiem-header svg {
+  width: 27px;
+  height: 27px;
+}
+
+.hop-goi-y-tim-kiem {
+  position: absolute;
+  top: calc(100% - 7px);
+  left: 0;
+  right: 0;
+  z-index: 3500;
+  max-height: 390px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+.dong-goi-y-rong {
+  padding: 18px;
+  color: #475569;
+}
+
+.dong-goi-y-tim-kiem,
+.dong-goi-y-tim-kiem:hover {
+  width: 100%;
+  min-height: 76px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 0;
+  background: white;
+  color: #111827;
+  text-align: left;
+}
+
+.dong-goi-y-tim-kiem:hover {
+  background: #f3f4f6;
+}
+
+.anh-goi-y-tim-kiem {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.anh-goi-y-tim-kiem img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.khung-khong-anh-nho {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.noi-dung-goi-y-tim-kiem {
+  min-width: 0;
+}
+
+.ten-goi-y-tim-kiem {
+  margin-bottom: 6px;
+  overflow: hidden;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gia-coc-goi-y-tim-kiem {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.menu-danh-muc-header-moi {
+  width: var(--chieu-rong-noi-dung-web);
+  min-height: 52px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.menu-danh-muc-header-moi a {
+  min-width: 160px;
+  padding: 0 28px;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.menu-danh-muc-header-moi a + a {
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.menu-danh-muc-header-moi a:hover {
+  text-decoration: underline;
+}
+
+/* ================= BANNER TRANG CHỦ KHÔNG BỊ CẮT ================= */
+
+.trang-chu-moi {
+  overflow: visible;
+}
+
+.banner-trang-chu-moi {
+  position: relative;
+  width: 100%;
+  margin: 0 0 38px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #111827;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+}
+
+.anh-banner-trang-chu-moi {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.banner-trang-chu-moi::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.62) 0%,
+    rgba(15, 23, 42, 0.28) 45%,
+    rgba(15, 23, 42, 0.04) 75%
+  );
+  pointer-events: none;
+}
+
+.noi-dung-banner-trang-chu-moi {
+  position: absolute;
+  top: 50%;
+  left: 6%;
+  z-index: 1;
+  max-width: 520px;
+  color: white;
+  transform: translateY(-50%);
+}
+
+.noi-dung-banner-trang-chu-moi h1 {
+  margin: 0 0 12px;
+  font-size: clamp(28px, 3vw, 48px);
+  line-height: 1.15;
+}
+
+.noi-dung-banner-trang-chu-moi p {
+  margin: 0 0 20px;
+  font-size: clamp(15px, 1.4vw, 20px);
+}
+
+.nut-banner-trang-chu,
+.nut-banner-trang-chu:hover {
+  padding: 12px 20px;
+  background: var(--mau-chinh-web);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  font-weight: 700;
+}
+
+.nut-banner-trang-chu:hover {
+  background: var(--mau-chinh-web-hover);
+}
+
+/* ================= SẢN PHẨM NỔI BẬT ================= */
+
+.khung-san-pham-noi-bat-moi {
+  margin-top: 0;
+}
+
+.tieu-de-khoi-lon {
+  margin-bottom: 26px;
+  text-align: center;
+}
+
+.tieu-de-khoi-lon h2 {
+  margin: 0 0 8px;
+  color: var(--mau-chinh-web);
+  font-size: 32px;
+}
+
+.tieu-de-khoi-lon p {
+  margin: 0;
+  color: #64748b;
+  font-size: 17px;
+}
+
+.muc-noi-bat-rieng {
+  padding-bottom: 38px;
+}
+
+/* Đường ngăn cách rõ giữa Máy ảnh và Ống kính */
+.muc-noi-bat-rieng + .muc-noi-bat-rieng {
+  padding-top: 34px;
+  border-top: 1px solid #cbd5e1;
+}
+
+.hang-tieu-de-muc-co-nut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.hang-tieu-de-muc-co-nut h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 25px;
+  text-transform: uppercase;
+}
+
+.link-xem-them {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mau-chinh-web);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.link-xem-them:hover {
+  color: var(--mau-chinh-web-hover);
+  text-decoration: underline;
+}
+
+.link-xem-them span {
+  font-size: 24px;
+  line-height: 1;
+}
+
+/* ================= QUY TRÌNH THUÊ ================= */
+
+.khung-quy-trinh-thue-moi {
+  margin: 10px 0 42px;
+  padding-top: 34px;
+  border-top: 1px solid #cbd5e1;
+}
+
+.luoi-quy-trinh-thue {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.the-buoc-thue {
+  padding: 26px 22px;
+  background: white;
+  border: 1px solid #dbe1e8;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.so-buoc-thue {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--mau-chinh-web);
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.the-buoc-thue h3 {
+  margin: 0 0 10px;
+  color: var(--mau-chinh-web);
+  font-size: 22px;
+}
+
+.the-buoc-thue p {
+  margin: 0;
+  color: #475569;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .menu-danh-muc-header-moi a {
+    min-width: 0;
+    padding: 0 18px;
+  }
+
+  .noi-dung-banner-trang-chu-moi {
+    left: 4%;
+    max-width: 55%;
+  }
+
+  .luoi-quy-trinh-thue {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .header-noi-dung {
+    grid-template-columns: 1fr auto;
+  }
+
+  .header-noi-dung .menu-giua {
+    display: none;
+  }
+
+  .khung-header-tim-kiem {
+    padding-bottom: 10px;
+  }
+
+  .menu-danh-muc-header-moi {
+    min-height: 46px;
+  }
+
+  .menu-danh-muc-header-moi a {
+    padding: 0 10px;
+    font-size: 14px;
+  }
+
+  .banner-trang-chu-moi::after {
+    background: rgba(15, 23, 42, 0.52);
+  }
+
+  .noi-dung-banner-trang-chu-moi {
+    left: 18px;
+    right: 18px;
+    max-width: none;
+  }
+
+  .noi-dung-banner-trang-chu-moi p {
+    display: none;
+  }
+
+  .nut-banner-trang-chu {
+    padding: 9px 14px;
+  }
+
+  .hang-tieu-de-muc-co-nut h3 {
+    font-size: 20px;
+  }
+}
+/* =========================================================
+   CHỈNH HEADER: TÌM KIẾM CÙNG HÀNG VỚI LOGO VÀ GIỎ HÀNG
+========================================================= */
+.header-noi-dung-co-tim-kiem {
+  grid-template-columns: minmax(220px, 1fr) minmax(340px, 760px) minmax(220px, 1fr);
+  align-items: center;
+  min-height: 88px;
+  column-gap: 24px;
+}
+
+.header-noi-dung-co-tim-kiem .header-trai {
+  justify-self: start;
+}
+
+.header-noi-dung-co-tim-kiem .menu-giua-tim-kiem {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  justify-self: center;
+}
+
+.header-noi-dung-co-tim-kiem .header-phai {
+  justify-self: end;
+}
+
+.header-noi-dung-co-tim-kiem .khung-header-tim-kiem {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.header-noi-dung-co-tim-kiem .o-tim-kiem-header {
+  height: 46px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.header-noi-dung-co-tim-kiem .o-tim-kiem-header input {
+  font-size: 16px;
+}
+
+.header-noi-dung-co-tim-kiem .nut-icon-tim-kiem-header {
+  width: 52px;
+}
+
+.header-noi-dung-co-tim-kiem .hop-goi-y-tim-kiem {
+  top: calc(100% + 5px);
+  border-radius: 8px;
+}
+
+.menu-danh-muc-header-moi {
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+/* =========================================================
+   CHỈNH BANNER: THẤP HƠN NHƯNG VẪN GIỮ ĐƯỢC PHẦN TRUNG TÂM
+========================================================= */
+.banner-trang-chu-moi {
+  height: 240px;
+  margin-bottom: 26px;
+}
+
+.anh-banner-trang-chu-moi {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 62%;
+}
+
+.noi-dung-banner-trang-chu-moi {
+  max-width: 420px;
+}
+
+.noi-dung-banner-trang-chu-moi h1 {
+  font-size: clamp(22px, 2vw, 32px);
+}
+
+.noi-dung-banner-trang-chu-moi p {
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
+@media (max-width: 1000px) {
+  .header-noi-dung-co-tim-kiem {
+    grid-template-columns: minmax(140px, 1fr) minmax(260px, 520px) minmax(220px, 1fr);
+    column-gap: 16px;
+  }
+
+  .banner-trang-chu-moi {
+    height: 195px;
+  }
+}
+
+@media (max-width: 700px) {
+  .header-noi-dung-co-tim-kiem {
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    padding: 12px 0;
+  }
+
+  .header-noi-dung-co-tim-kiem .menu-giua-tim-kiem {
+    display: flex;
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .banner-trang-chu-moi {
+    height: 160px;
+  }
+
+  .noi-dung-banner-trang-chu-moi h1 {
+    font-size: 24px;
+  }
+}
+
+
+/* =========================================================
+   BANNER TRÀN NGANG VÀ DÍNH LIỀN VỚI HEADER
+   Chỉ chỉnh format, không đổi màu và nội dung
+========================================================= */
+
+/*
+  .noi-dung đang có padding-top: 24px nên trang chủ bị hở
+  một khoảng trắng giữa header và banner.
+*/
+.trang-chu-moi {
+  margin-top: -24px;
+  overflow: visible;
+}
+
+/* Banner tràn đúng toàn bộ chiều rộng màn hình */
+.trang-chu-moi .banner-trang-chu-moi {
+  position: relative;
+  left: 50%;
+  width: 100vw;
+  max-width: none;
+  height: 420px;
+
+  margin: 0 0 34px;
+  transform: translateX(-50%);
+
+  overflow: hidden;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Ảnh phủ kín banner */
+.trang-chu-moi .anh-banner-trang-chu-moi {
+  width: 100%;
+  height: 100%;
+  display: block;
+
+  object-fit: cover;
+  object-position: center 62%;
+}
+
+/* Nội dung banner vẫn thẳng hàng với nội dung website */
+.trang-chu-moi .noi-dung-banner-trang-chu-moi {
+  left: max(
+    36px,
+    calc((100vw - var(--chieu-rong-noi-dung-web)) / 2)
+  );
+}
+
+/* Tablet */
+@media (max-width: 1000px) {
+  .trang-chu-moi .banner-trang-chu-moi {
+    height: 330px;
+  }
+
+  .trang-chu-moi .noi-dung-banner-trang-chu-moi {
+    left: 32px;
+  }
+}
+
+/* Điện thoại: .noi-dung đổi padding còn 16px */
+@media (max-width: 700px) {
+  .trang-chu-moi {
+    margin-top: -16px;
+  }
+
+  .trang-chu-moi .banner-trang-chu-moi {
+    height: 230px;
+  }
+
+  .trang-chu-moi .noi-dung-banner-trang-chu-moi {
+    left: 20px;
+    right: 20px;
+    max-width: none;
+  }
+}
+
+/* =========================================================
+   BREADCRUMB + BỘ LỌC MẪU THIẾT BỊ
+========================================================= */
+
+.trang-cua-hang-moi {
+  padding-top: 10px;
+}
+
+.breadcrumb-cua-hang {
+  min-height: 92px;
+  margin: 0;
+  padding: 18px 4px 22px;
+
+  display: flex;
+  align-items: center;
+  gap: 17px;
+
+  font-family: Arial, sans-serif;
+  font-size: clamp(18px, 1.7vw, 28px);
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+/* Giữ nguyên phông chữ khi chưa bấm, đã bấm, focus hoặc active */
+.breadcrumb-cua-hang a,
+.breadcrumb-cua-hang a:link,
+.breadcrumb-cua-hang a:visited,
+.breadcrumb-cua-hang a:hover,
+.breadcrumb-cua-hang a:focus,
+.breadcrumb-cua-hang a:active,
+.breadcrumb-cua-hang span,
+.breadcrumb-cua-hang strong {
+  font-family: Arial, sans-serif;
+  font-style: normal;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-decoration: none;
+}
+
+.breadcrumb-cua-hang a,
+.breadcrumb-cua-hang a:link,
+.breadcrumb-cua-hang a:visited {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.breadcrumb-cua-hang a:hover,
+.breadcrumb-cua-hang a:focus,
+.breadcrumb-cua-hang a:active {
+  color: var(--mau-chinh-web);
+  outline: none;
+}
+
+.breadcrumb-cua-hang span {
+  color: #c4c4c4;
+  font-weight: 400;
+}
+
+.breadcrumb-cua-hang strong {
+  color: #111827;
+  font-weight: 800;
+}
+
+/* Không còn hai ô lọc khoảng giá nên lưới tự chia đều */
+.khung-loc-cua-hang {
+  margin-bottom: 24px;
+  padding: 18px;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: end;
+
+  background: white;
+  border: 1px solid #dbe1e8;
+  border-radius: 10px;
+}
+
+.khung-loc-cua-hang .nhom-nut-loc-san-pham {
+  min-height: 38px;
+  align-items: stretch;
+}
+
+.khung-loc-cua-hang .nhom-nut-loc-san-pham button {
+  min-width: 115px;
+  height: 38px;
+}
+
+@media (max-width: 850px) {
+  .breadcrumb-cua-hang {
+    min-height: 70px;
+    gap: 11px;
+    font-size: 18px;
+  }
+
+  .khung-loc-cua-hang {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .breadcrumb-cua-hang {
+    flex-wrap: wrap;
+    padding-top: 14px;
+  }
+
+  .khung-loc-cua-hang {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   SỬA FONT BREADCRUMB VÀ COMBOBOX TRANG MẪU THIẾT BỊ
+========================================================= */
+
+/* Cố định Arial cho toàn bộ breadcrumb ở mọi trạng thái click */
+.breadcrumb-cua-hang,
+.breadcrumb-cua-hang *,
+.breadcrumb-cua-hang a,
+.breadcrumb-cua-hang a:link,
+.breadcrumb-cua-hang a:visited,
+.breadcrumb-cua-hang a:hover,
+.breadcrumb-cua-hang a:focus,
+.breadcrumb-cua-hang a:active,
+.breadcrumb-cua-hang strong,
+.breadcrumb-cua-hang span {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  letter-spacing: 0 !important;
+  text-decoration: none !important;
+}
+
+/* Cố định font cho select và các option khi mở combobox */
+.khung-loc-cua-hang label,
+.khung-loc-cua-hang select,
+.khung-loc-cua-hang select option,
+.khung-loc-cua-hang input,
+.khung-loc-cua-hang button {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  letter-spacing: 0 !important;
+}
+
+.khung-loc-cua-hang select,
+.khung-loc-cua-hang input {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.khung-loc-cua-hang select option {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+/* Sau khi bỏ nút lọc ngày, các ô tự chia đều */
+.khung-loc-cua-hang {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.khung-loc-cua-hang .nhom-nut-loc-san-pham {
+  display: flex;
+  align-items: flex-end;
+}
+
+.khung-loc-cua-hang .nhom-nut-loc-san-pham .nut-huy {
+  width: 100%;
+  min-width: 110px;
+  height: 38px;
+}
+
+.thong-bao-dang-loc-ngay {
+  margin: 0 0 18px;
+  text-align: center;
+}
+
+@media (max-width: 850px) {
+  .khung-loc-cua-hang {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .khung-loc-cua-hang {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   SỬA DỨT ĐIỂM FONT BREADCRUMB
+========================================================= */
+
+/*
+  Không dùng thẻ strong cho mục hiện tại nữa.
+  Ép cùng một font cho tất cả chữ trong breadcrumb.
+*/
+.breadcrumb-cua-hang,
+.breadcrumb-cua-hang a,
+.breadcrumb-cua-hang a:link,
+.breadcrumb-cua-hang a:visited,
+.breadcrumb-cua-hang a:hover,
+.breadcrumb-cua-hang a:focus,
+.breadcrumb-cua-hang a:active,
+.breadcrumb-cua-hang span,
+.breadcrumb-cua-hang .breadcrumb-muc-hien-tai {
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  font-stretch: normal !important;
+  font-synthesis: none;
+  letter-spacing: 0 !important;
+  line-height: 1.25 !important;
+  text-decoration: none !important;
+}
+
+.breadcrumb-cua-hang a,
+.breadcrumb-cua-hang a:link,
+.breadcrumb-cua-hang a:visited {
+  color: #9ca3af;
+  font-weight: 400 !important;
+}
+
+.breadcrumb-cua-hang a:hover,
+.breadcrumb-cua-hang a:focus,
+.breadcrumb-cua-hang a:active {
+  color: var(--mau-chinh-web);
+  font-weight: 400 !important;
+  outline: none;
+}
+
+.breadcrumb-cua-hang > span:not(.breadcrumb-muc-hien-tai) {
+  color: #c4c4c4;
+  font-weight: 400 !important;
+}
+
+.breadcrumb-cua-hang .breadcrumb-muc-hien-tai {
+  color: #111827;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+}
+
+/* Giữ font combobox ổn định khi đóng và khi mở danh sách */
+.khung-loc-cua-hang select,
+.khung-loc-cua-hang select option {
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+  font-style: normal !important;
+  font-weight: 400 !important;
+  font-variant: normal !important;
+  font-synthesis: none;
+}

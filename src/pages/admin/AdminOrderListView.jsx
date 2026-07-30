@@ -11,6 +11,173 @@ const SO_DONG_MOI_TRANG = 10;
 const SO_FILE_TOI_DA = 5;
 const SO_ANH_MOI_DONG = 5;
 
+
+function ComboboxTimTaiSan({
+  value,
+  danhSachTaiSan,
+  onChange,
+  placeholder = "Tìm serial hoặc vị trí kho",
+}) {
+  const [tuKhoa, setTuKhoa] = useState("");
+  const [hienDanhSach, setHienDanhSach] = useState(false);
+
+  useEffect(() => {
+    const taiSanDangChon = danhSachTaiSan.find(
+      (item) => String(item.id) === String(value)
+    );
+
+    if (taiSanDangChon) {
+      setTuKhoa(
+        `${taiSanDangChon.so_serial || "Chưa có serial"} - ${
+          taiSanDangChon.ten_vi_tri_kho || "Chưa rõ vị trí"
+        }`
+      );
+    } else if (!value) {
+      setTuKhoa("");
+    }
+  }, [value, danhSachTaiSan]);
+
+  function chuanHoa(giaTri) {
+    return String(giaTri || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d");
+  }
+
+  const danhSachTimDuoc = danhSachTaiSan.filter((taiSan) => {
+    const noiDung = [
+      taiSan.so_serial,
+
+      // Sau này muốn tìm theo mã tài sản thì mở lại dòng dưới.
+      // taiSan.ma_tai_san,
+
+      taiSan.ten_vi_tri_kho,
+    ]
+      .map(chuanHoa)
+      .join(" ");
+
+    return noiDung.includes(chuanHoa(tuKhoa));
+  });
+
+  function doiTuKhoa(giaTri) {
+    setTuKhoa(giaTri);
+    setHienDanhSach(true);
+
+    // Khi nhân viên sửa nội dung sau khi đã chọn thì bỏ lựa chọn cũ.
+    if (value) {
+      onChange("");
+    }
+  }
+
+  function chonTaiSan(taiSan) {
+    onChange(taiSan.id);
+    setTuKhoa(
+      `${taiSan.so_serial || "Chưa có serial"} - ${
+        taiSan.ten_vi_tri_kho || "Chưa rõ vị trí"
+      }`
+    );
+    setHienDanhSach(false);
+  }
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        minWidth: "360px",
+      }}
+    >
+      <input
+        value={tuKhoa}
+        placeholder={placeholder}
+        autoComplete="off"
+        onFocus={() => setHienDanhSach(true)}
+        onChange={(e) => doiTuKhoa(e.target.value)}
+        onBlur={() => {
+          // Chờ sự kiện click của dòng gợi ý chạy xong rồi mới đóng.
+          setTimeout(() => setHienDanhSach(false), 150);
+        }}
+      />
+
+      {hienDanhSach && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 5px)",
+            left: 0,
+            right: 0,
+            zIndex: 3000,
+            maxHeight: "240px",
+            overflowY: "auto",
+            background: "white",
+            border: "1px solid #cbd5e1",
+            borderRadius: "7px",
+            boxShadow: "0 8px 20px rgba(0, 0, 0, 0.16)",
+          }}
+        >
+          {danhSachTimDuoc.length === 0 ? (
+            <div
+              style={{
+                padding: "11px 12px",
+                color: "#64748b",
+              }}
+            >
+              Không tìm thấy thiết bị phù hợp
+            </div>
+          ) : (
+            danhSachTimDuoc.map((taiSan) => (
+              <div
+                key={taiSan.id}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => chonTaiSan(taiSan)}
+                style={{
+                  padding: "10px 12px",
+                  cursor: "pointer",
+                  borderBottom: "1px solid #e5e7eb",
+                  background:
+                    String(taiSan.id) === String(value)
+                      ? "#eff6ff"
+                      : "white",
+                }}
+              >
+                <div style={{ fontWeight: 700 }}>
+                  Serial: {taiSan.so_serial || "Chưa có serial"}
+                </div>
+
+                {/*
+                  Sau này muốn hiển thị mã tài sản thì mở lại khối này.
+
+                  <div
+                    style={{
+                      marginTop: "3px",
+                      fontSize: "13px",
+                      color: "#475569",
+                    }}
+                  >
+                    Mã tài sản: {taiSan.ma_tai_san || "Chưa có mã tài sản"}
+                  </div>
+                */}
+
+                <div
+                  style={{
+                    marginTop: "3px",
+                    fontSize: "13px",
+                    color: "#475569",
+                  }}
+                >
+                  Vị trí: {taiSan.ten_vi_tri_kho || "Chưa rõ vị trí"}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AdminOrderList() {
   const [danhSachDon, setDanhSachDon] = useState([]);
   const [trangHienTai, setTrangHienTai] = useState(1);
@@ -1060,23 +1227,16 @@ function AdminOrderList() {
                                   <td>Thiết bị chính</td>
                                   <td>{hienThi(dong.ten_mau)}</td>
                                   <td>
-                                    <select
+                                    <ComboboxTimTaiSan
                                       value={luaChonVatPham[key] || ""}
-                                      onChange={(e) =>
-                                        thayDoiLuaChon(key, e.target.value)
-                                      }
-                                    >
-                                      <option value="">Chọn thiết bị</option>
-
-                                      {layTaiSanChuaChon(
+                                      danhSachTaiSan={layTaiSanChuaChon(
                                         dong.mau_thiet_bi_id,
                                         key
-                                      ).map((taiSan) => (
-                                        <option key={taiSan.id} value={taiSan.id}>
-                                          {hienThiTaiSanTrongSelect(taiSan)}
-                                        </option>
-                                      ))}
-                                    </select>
+                                      )}
+                                      onChange={(value) =>
+                                        thayDoiLuaChon(key, value)
+                                      }
+                                    />
                                   </td>
                                 </tr>
                               );
@@ -1096,26 +1256,16 @@ function AdminOrderList() {
                                         <td>Thiết bị đi kèm</td>
                                         <td>{taoTenVatPhamBoDiKem(bdk)}</td>
                                         <td>
-                                          <select
+                                          <ComboboxTimTaiSan
                                             value={luaChonVatPham[key] || ""}
-                                            onChange={(e) =>
-                                              thayDoiLuaChon(key, e.target.value)
-                                            }
-                                          >
-                                            <option value="">Chọn thiết bị</option>
-
-                                            {layTaiSanChuaChon(
+                                            danhSachTaiSan={layTaiSanChuaChon(
                                               bdk.mau_thiet_bi_phu_id,
                                               key
-                                            ).map((taiSan) => (
-                                              <option
-                                                key={taiSan.id}
-                                                value={taiSan.id}
-                                              >
-                                                {hienThiTaiSanTrongSelect(taiSan)}
-                                              </option>
-                                            ))}
-                                          </select>
+                                            )}
+                                            onChange={(value) =>
+                                              thayDoiLuaChon(key, value)
+                                            }
+                                          />
                                         </td>
                                       </tr>
                                     );
