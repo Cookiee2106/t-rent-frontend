@@ -4227,3 +4227,173 @@ textarea {
   font-variant: normal !important;
   font-synthesis: none;
 }
+
+/* =========================================================
+   FOOTER T-RENT GỌN - DÙNG MÀU CHÍNH CỦA WEBSITE
+   Dán phần này xuống cuối src/index.css.
+   ========================================================= */
+
+footer.chan-trang-dang-luoi {
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  margin-top: auto;
+  padding: 0 !important;
+  text-align: left !important;
+
+  /* Dùng màu chính đang có của website. */
+  background: var(--mau-chinh-web, #1f2937);
+  color: #ffffff;
+}
+
+.chan-trang-dang-luoi .chan-trang-noi-dung {
+  width: var(--chieu-rong-noi-dung-web, min(1420px, calc(100vw - 72px)));
+  margin: 0 auto;
+  padding: 28px 0 14px;
+}
+
+.chan-trang-dang-luoi .chan-trang-luoi {
+  display: grid;
+  grid-template-columns:
+    minmax(240px, 1.25fr)
+    minmax(145px, 0.72fr)
+    minmax(190px, 0.95fr)
+    minmax(245px, 1.1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.chan-trang-dang-luoi .cot-chan-trang {
+  min-width: 0;
+  text-align: left !important;
+}
+
+.chan-trang-dang-luoi .cot-chan-trang h2,
+.chan-trang-dang-luoi .cot-chan-trang h3,
+.chan-trang-dang-luoi .cot-chan-trang p {
+  text-align: left !important;
+}
+
+.chan-trang-dang-luoi .cot-chan-trang h3 {
+  margin: 0 0 13px;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.chan-trang-dang-luoi .logo-chan-trang {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  margin-bottom: 14px;
+}
+
+.chan-trang-dang-luoi .logo-chan-trang h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.chan-trang-dang-luoi .mo-ta-chan-trang {
+  max-width: 340px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.chan-trang-dang-luoi .danh-sach-lien-ket-chan-trang {
+  display: grid;
+  gap: 9px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.chan-trang-dang-luoi a {
+  color: rgba(255, 255, 255, 0.86);
+  text-decoration: none;
+}
+
+.chan-trang-dang-luoi a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.chan-trang-dang-luoi .danh-sach-lien-he-chan-trang {
+  display: grid;
+  gap: 9px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 14px;
+}
+
+.chan-trang-dang-luoi .danh-sach-lien-he-chan-trang p {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.chan-trang-dang-luoi .chan-trang-duoi {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 22px;
+  margin-top: 24px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.chan-trang-dang-luoi .chan-trang-duoi p {
+  margin: 0;
+  text-align: left !important;
+}
+
+.chan-trang-dang-luoi .lien-ket-phu-chan-trang {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.chan-trang-dang-luoi *,
+.chan-trang-dang-luoi *::before,
+.chan-trang-dang-luoi *::after {
+  box-sizing: border-box;
+}
+
+@media (max-width: 1050px) {
+  .chan-trang-dang-luoi .chan-trang-luoi {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 24px;
+  }
+}
+
+@media (max-width: 650px) {
+  .chan-trang-dang-luoi .chan-trang-noi-dung {
+    width: min(100% - 30px, 1420px);
+    padding: 24px 0 13px;
+  }
+
+  .chan-trang-dang-luoi .chan-trang-luoi {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .chan-trang-dang-luoi .chan-trang-duoi {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-top: 20px;
+  }
+
+  .chan-trang-dang-luoi .lien-ket-phu-chan-trang {
+    justify-content: flex-start;
+  }
+}
