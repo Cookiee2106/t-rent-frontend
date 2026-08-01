@@ -152,7 +152,7 @@ function Home() {
         />
 
         <div className="noi-dung-banner-trang-chu-moi">
-          <h1>Thuê thiết bị quay chụp tại T-Rent</h1>
+          <h1>Thuê máy ảnh và ống kính tại T-Rent</h1>
           <p>Nhanh chóng, rõ ràng và thuận tiện</p>
 
           <Link to="/equipments">
