@@ -519,7 +519,6 @@ function AdminAccessoryList() {
               <th>Danh mục</th>
               <th>Tổng SL</th>
               <th>Đang dùng</th>
-              <th>Khả dụng</th>
               <th>Trạng thái</th>
               <th>Vị trí kho</th>
               <th>Mô tả</th>
@@ -537,10 +536,6 @@ function AdminAccessoryList() {
                 <td>{hienThi(phuKien.ten_danh_muc)}</td>
                 <td>{dinhDangSo(phuKien.tong_so_luong)}</td>
                 <td>{dinhDangSo(phuKien.so_luong_dang_su_dung)}</td>
-                <td className="so-luong-kha-dung-phu-kien">
-                  {dinhDangSo(phuKien.so_luong_kha_dung)}
-                </td>
-
                 <td>
                   <span
                     className={`trang-thai-badge ${
@@ -615,7 +610,7 @@ function AdminAccessoryList() {
 
             {danhSachHienThi.length === 0 && (
               <tr>
-                <td colSpan="11" style={{ textAlign: "center" }}>
+                <td colSpan="10" style={{ textAlign: "center" }}>
                   Không có dữ liệu
                 </td>
               </tr>
@@ -713,13 +708,6 @@ function AdminAccessoryList() {
                   <tr>
                     <td>Đang dùng</td>
                     <td>{dinhDangSo(chiTietPhuKien.so_luong_dang_su_dung)}</td>
-                  </tr>
-
-                  <tr>
-                    <td>Khả dụng</td>
-                    <td className="so-luong-kha-dung-phu-kien">
-                      {dinhDangSo(chiTietPhuKien.so_luong_kha_dung)}
-                    </td>
                   </tr>
 
                   <tr>

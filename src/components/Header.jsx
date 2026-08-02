@@ -2,6 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { DUONG_DAN_API } from "../api/api";
 
+// Hiện tại thanh tìm kiếm chỉ hiển thị các danh mục này.
+// Tên được viết không dấu vì hàm chuanHoaChuoi sẽ bỏ dấu khi so sánh.
+const DANH_MUC_DUOC_TIM_KIEM = [
+  "may anh",
+  "ong kinh",
+];
+
+
 function Header() {
   const dieuHuong = useNavigate();
   const token = localStorage.getItem("token");
@@ -60,6 +68,13 @@ function Header() {
       .replace(/đ/g, "d");
   }
 
+  // Kiểm tra mẫu có thuộc danh mục được phép xuất hiện trong tìm kiếm không.
+  function laDanhMucDuocTimKiem(mau) {
+    const tenDanhMuc = chuanHoaChuoi(mau?.ten_danh_muc);
+
+    return DANH_MUC_DUOC_TIM_KIEM.includes(tenDanhMuc);
+  }
+
   async function layTongSoMauTrongGio() {
     try {
       if (!token) {
@@ -91,7 +106,19 @@ function Header() {
       const duLieu = await phanHoi.json();
 
       if (duLieu.success) {
-        setDanhSachMau(duLieu.data || []);
+        const danhSachTatCa = duLieu.data || [];
+
+        // CÁCH LẤY TẤT CẢ DANH MỤC:
+        // Bỏ comment dòng dưới và comment phần lọc hiện tại.
+        // setDanhSachMau(danhSachTatCa);
+
+        // CÁCH HIỆN TẠI:
+        // Chỉ lấy các danh mục có trong DANH_MUC_DUOC_TIM_KIEM.
+        const danhSachTheoDanhMuc = danhSachTatCa.filter(
+          laDanhMucDuocTimKiem
+        );
+
+        setDanhSachMau(danhSachTheoDanhMuc);
       } else {
         setDanhSachMau([]);
       }
@@ -110,7 +137,9 @@ function Header() {
     return danhSachMau
       .filter((mau) => {
         const noiDung = chuanHoaChuoi(
-          `${mau.ten_mau || ""} ${mau.ten_hang || ""} ${mau.ten_danh_muc || ""}`
+          `${mau.ten_mau || ""} ${mau.ten_hang || ""} ${
+            mau.ten_danh_muc || ""
+          }`
         );
 
         return noiDung.includes(tuKhoa);
