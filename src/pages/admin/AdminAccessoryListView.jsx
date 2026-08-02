@@ -3,6 +3,9 @@ import { DUONG_DAN_API, taoHeaderCoToken } from "../../api/api";
 
 const SO_DONG_MOI_TRANG = 10;
 
+const TRANG_THAI_HIEN_THI = 601;
+const TRANG_THAI_DA_AN = 602;
+
 function AdminAccessoryList() {
   const [danhSachPhuKien, setDanhSachPhuKien] = useState([]);
   const [danhSachHang, setDanhSachHang] = useState([]);
@@ -23,6 +26,7 @@ function AdminAccessoryList() {
   const [phuKienDangSua, setPhuKienDangSua] = useState(null);
 
   const [xacNhanXoa, setXacNhanXoa] = useState(null);
+  const [xacNhanDoiTrangThai, setXacNhanDoiTrangThai] = useState(null);
 
   const [tenHangDangChon, setTenHangDangChon] = useState("");
   const [tenDanhMucDangChon, setTenDanhMucDangChon] = useState("");
@@ -332,6 +336,44 @@ function AdminAccessoryList() {
     }
   }
 
+  async function doiTrangThaiPhuKien() {
+    if (!xacNhanDoiTrangThai) {
+      return;
+    }
+
+    const dangHien =
+      Number(xacNhanDoiTrangThai.trang_thai) ===
+      TRANG_THAI_HIEN_THI;
+
+    try {
+      const phanHoi = await fetch(
+        `${DUONG_DAN_API}/api/admin/accessories/${xacNhanDoiTrangThai.id}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            ...taoHeaderCoToken(),
+          },
+          body: JSON.stringify({
+            hanh_dong: dangHien ? "AN" : "HIEN",
+          }),
+        }
+      );
+
+      const duLieu = await phanHoi.json();
+
+      if (duLieu.success) {
+        setXacNhanDoiTrangThai(null);
+        moPopup(duLieu.message);
+        layDanhSachPhuKien();
+      } else {
+        moPopup(duLieu.message);
+      }
+    } catch {
+      moPopup("Không kết nối được server");
+    }
+  }
+
   async function xoaPhuKien() {
     if (!xacNhanXoa) {
       return;
@@ -478,6 +520,7 @@ function AdminAccessoryList() {
               <th>Tổng SL</th>
               <th>Đang dùng</th>
               <th>Khả dụng</th>
+              <th>Trạng thái</th>
               <th>Vị trí kho</th>
               <th>Mô tả</th>
               {/* <th>Ngày tạo</th> */}
@@ -497,6 +540,23 @@ function AdminAccessoryList() {
                 <td className="so-luong-kha-dung-phu-kien">
                   {dinhDangSo(phuKien.so_luong_kha_dung)}
                 </td>
+
+                <td>
+                  <span
+                    className={`trang-thai-badge ${
+                      Number(phuKien.trang_thai) ===
+                      TRANG_THAI_HIEN_THI
+                        ? "trang-thai-xanh"
+                        : "trang-thai-xam"
+                    }`}
+                  >
+                    {Number(phuKien.trang_thai) ===
+                    TRANG_THAI_HIEN_THI
+                      ? "Hiện"
+                      : "Ẩn"}
+                  </span>
+                </td>
+
                 <td>{hienThi(phuKien.ten_vi_tri)}</td>
                 <td>{hienThi(phuKien.mo_ta)}</td>
                 {/* <td>{dinhDangNgay(phuKien.created_at)}</td> */}
@@ -518,13 +578,36 @@ function AdminAccessoryList() {
                       Cập nhật
                     </button>
 
-                    <button
+                    {Number(phuKien.trang_thai) ===
+                    TRANG_THAI_HIEN_THI ? (
+                      <button
+                        className="nut-an"
+                        type="button"
+                        onClick={() =>
+                          setXacNhanDoiTrangThai(phuKien)
+                        }
+                      >
+                        Ẩn
+                      </button>
+                    ) : (
+                      <button
+                        className="nut-hien"
+                        type="button"
+                        onClick={() =>
+                          setXacNhanDoiTrangThai(phuKien)
+                        }
+                      >
+                        Hiện
+                      </button>
+                    )}
+
+                    {/* <button
                       className="nut-xoa"
                       type="button"
                       onClick={() => setXacNhanXoa(phuKien)}
                     >
                       Xóa
-                    </button>
+                    </button> */}
                   </div>
                 </td>
               </tr>
@@ -601,6 +684,25 @@ function AdminAccessoryList() {
                   <tr>
                     <td>Vị trí kho</td>
                     <td>{hienThi(chiTietPhuKien.ten_vi_tri)}</td>
+                  </tr>
+
+                  <tr>
+                    <td>Trạng thái</td>
+                    <td>
+                      <span
+                        className={`trang-thai-badge ${
+                          Number(chiTietPhuKien.trang_thai) ===
+                          TRANG_THAI_HIEN_THI
+                            ? "trang-thai-xanh"
+                            : "trang-thai-xam"
+                        }`}
+                      >
+                        {Number(chiTietPhuKien.trang_thai) ===
+                        TRANG_THAI_HIEN_THI
+                          ? "Hiện"
+                          : "Ẩn"}
+                      </span>
+                    </td>
                   </tr>
 
                   <tr>
@@ -779,6 +881,52 @@ function AdminAccessoryList() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {xacNhanDoiTrangThai && (
+        <div className="popup-nen">
+          <div className="popup-hop popup-xac-nhan">
+            <div className="popup-tieu-de">
+              <h3>
+                Xác nhận{" "}
+                {Number(xacNhanDoiTrangThai.trang_thai) ===
+                TRANG_THAI_HIEN_THI
+                  ? "ẩn"
+                  : "hiện"}
+              </h3>
+            </div>
+
+            <div className="popup-noi-dung">
+              <p>
+                Bạn có chắc muốn{" "}
+                {Number(xacNhanDoiTrangThai.trang_thai) ===
+                TRANG_THAI_HIEN_THI
+                  ? "ẩn"
+                  : "hiện"}{" "}
+                phụ kiện <b>{xacNhanDoiTrangThai.ten_phu_kien}</b>
+                không?
+              </p>
+            </div>
+
+            <div className="popup-actions">
+              <button
+                className="nut-dong-y"
+                type="button"
+                onClick={doiTrangThaiPhuKien}
+              >
+                Đồng ý
+              </button>
+
+              <button
+                className="nut-huy"
+                type="button"
+                onClick={() => setXacNhanDoiTrangThai(null)}
+              >
+                Hủy
+              </button>
+            </div>
           </div>
         </div>
       )}

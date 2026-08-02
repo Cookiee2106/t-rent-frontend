@@ -162,10 +162,7 @@ textarea {
   margin: 0 auto;
 }
 
-.tieu-de-trang-chu {
-  text-align: center;
-  margin-bottom: 24px;
-}
+
 
 .hang-tieu-de-muc {
   margin: 10px 0 14px;
@@ -218,18 +215,7 @@ textarea {
   text-decoration: none;
 }
 
-.the-san-pham {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 14px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 100%;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
+
 
 .link-card-san-pham:hover .the-san-pham,
 .the-san-pham:hover {
@@ -270,18 +256,9 @@ textarea {
   justify-content: center;
 }
 
-.noi-dung-san-pham {
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
 
-.ten-san-pham {
-  font-weight: bold;
-  margin-bottom: 8px;
-  line-height: 1.35;
-}
+
+
 
 .link-card-san-pham:hover .ten-san-pham,
 .the-san-pham:hover .ten-san-pham {
@@ -905,10 +882,7 @@ textarea {
 
 /* ================= ĐƠN HÀNG / THANH LÝ ================= */
 
-.trang-don-cua-toi h2 {
-  text-align: center;
-  margin-bottom: 22px;
-}
+
 
 .the-tep-popup {
   width: 180px;
@@ -1272,11 +1246,7 @@ textarea {
   text-align: right;
 }
 
-.tong-coc-can-thanh-toan {
-  color: var(--mau-chinh-web);
-  font-size: 18px;
-  font-weight: 700;
-}
+
 
 .nut-dat-hang-gio-hang {
   min-width: 170px;
@@ -1541,21 +1511,11 @@ textarea {
   cursor: default;
 }
 
-.nhom-so-luong-tra {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
-.o-so-luong-tra {
-  width: 70px;
-  min-width: 70px;
-}
 
-.so-luong-thieu {
-  white-space: nowrap;
-  font-size: 13px;
-}
+
+
+
 
 .chon-hinh-thuc-coc {
   width: 180px !important;
@@ -1751,14 +1711,9 @@ textarea {
 }
 
 /* Vàng: cập nhật ở bảng/danh sách */
-.nut-cap-nhat {
-  background: #f59e0b;
-  color: white;
-}
 
-.nut-cap-nhat:hover {
-  background: #d97706;
-}
+
+
 
 /* Đỏ: ẩn, xóa, hủy, từ chối, khóa */
 .nut-an,
@@ -1888,9 +1843,7 @@ textarea {
 }
 
 /* Thêm vào cuối index.css nếu trang Mẫu thiết bị bị chật sau khi thêm lọc hãng/danh mục */
-.khung-loc-san-pham-nhieu-cot {
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
-}
+
 
 @media (max-width: 1200px) {
   .khung-loc-san-pham-nhieu-cot {
@@ -1908,6 +1861,7 @@ textarea {
 
 /* Làm nổi bật phần tiêu đề đầu trang */
 .tieu-de-trang-chu {
+  text-align: center;
   background: linear-gradient(135deg, #111827, #1f2937);
   color: white;
   border-radius: 18px;
@@ -1930,14 +1884,30 @@ textarea {
 
 /* Card trang chủ và trang danh sách dùng chung */
 .the-san-pham {
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100%;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   border: 1px solid #e5e7eb;
 }
 
 .noi-dung-san-pham {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   gap: 4px;
 }
 
 .ten-san-pham {
+  font-weight: bold;
+  margin-bottom: 8px;
+  line-height: 1.35;
   font-size: 16px;
   min-height: 44px;
 }
@@ -2170,28 +2140,11 @@ textarea {
   font-weight: 800;
 }
 
-.link-don-hang-cua-toi {
-  color: #0ea5e9;
-  font-weight: 500;
-}
 
-.nut-tiep-tuc-mua-hang,
-.nut-quay-lai-gio-hang {
-  min-width: 320px;
-  height: 74px;
-  margin-top: 34px;
-  border-radius: 6px;
-  background: #0ea5e9;
-  color: white;
-  font-size: 23px;
-  font-weight: 800;
-}
 
-.nut-tiep-tuc-mua-hang:hover,
-.nut-quay-lai-gio-hang:hover {
-  background: #0ea5e9;
-  color: white;
-}
+
+
+
 
 @media (max-width: 640px) {
   .the-ket-qua-thanh-toan {
@@ -2214,21 +2167,12 @@ textarea {
 /* ================= SỬA MÀU TRANG KẾT QUẢ THANH TOÁN ================= */
 
 /* Mã giao dịch */
-.ma-giao-dich-thanh-toan {
-  color: var(--mau-chinh-web);
-  font-weight: 800;
-}
+
 
 /* Link đơn hàng của tôi dùng màu chính của web */
-.link-don-hang-cua-toi {
-  color: var(--mau-chinh-web);
-  font-weight: 700;
-}
 
-.link-don-hang-cua-toi:hover {
-  color: var(--mau-chinh-web-hover);
-  text-decoration: underline;
-}
+
+
 
 /* Nút tiếp tục mua hàng dùng màu chính của web */
 .nut-tiep-tuc-mua-hang {
@@ -2268,6 +2212,10 @@ textarea {
 /* Nút tiếp tục mua hàng và quay lại giỏ hàng */
 .nut-tiep-tuc-mua-hang,
 .nut-quay-lai-gio-hang {
+  min-width: 320px;
+  height: 74px;
+  margin-top: 34px;
+  border-radius: 6px;
   background: #1d4ed8;
   color: white;
   font-size: 20px;
@@ -2580,14 +2528,7 @@ textarea {
   gap: 12px;
 }
 
-.the-file-admin {
-  border: 1px solid #d8dee9;
-  border-radius: 10px;
-  background: #f9fafb;
-  padding: 10px;
-  cursor: pointer;
-  min-height: 190px;
-}
+
 
 .the-file-admin:hover {
   border-color: #2563eb;
@@ -2620,9 +2561,7 @@ textarea {
   color: #475569;
 }
 
-.luoi-file-dang-chon .the-file-admin {
-  min-height: 230px;
-}
+
 
 .nut-xoa-file-admin {
   width: 100%;
@@ -2687,6 +2626,11 @@ textarea {
 }
 
 .the-file-admin {
+  border: 1px solid #d8dee9;
+  border-radius: 10px;
+  background: #f9fafb;
+  padding: 10px;
+  cursor: pointer;
   min-height: 150px;
 }
 
@@ -3507,15 +3451,7 @@ textarea {
   font-weight: 700;
 }
 
-.menu-danh-muc-header-moi {
-  width: var(--chieu-rong-noi-dung-web);
-  min-height: 52px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.22);
-}
+
 
 .menu-danh-muc-header-moi a {
   min-width: 160px;
@@ -3536,25 +3472,11 @@ textarea {
 
 /* ================= BANNER TRANG CHỦ KHÔNG BỊ CẮT ================= */
 
-.trang-chu-moi {
-  overflow: visible;
-}
 
-.banner-trang-chu-moi {
-  position: relative;
-  width: 100%;
-  margin: 0 0 38px;
-  overflow: hidden;
-  border-radius: 16px;
-  background: #111827;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
-}
 
-.anh-banner-trang-chu-moi {
-  width: 100%;
-  height: auto;
-  display: block;
-}
+
+
+
 
 .banner-trang-chu-moi::after {
   content: "";
@@ -3569,26 +3491,11 @@ textarea {
   pointer-events: none;
 }
 
-.noi-dung-banner-trang-chu-moi {
-  position: absolute;
-  top: 50%;
-  left: 6%;
-  z-index: 1;
-  max-width: 520px;
-  color: white;
-  transform: translateY(-50%);
-}
 
-.noi-dung-banner-trang-chu-moi h1 {
-  margin: 0 0 12px;
-  font-size: clamp(28px, 3vw, 48px);
-  line-height: 1.15;
-}
 
-.noi-dung-banner-trang-chu-moi p {
-  margin: 0 0 20px;
-  font-size: clamp(15px, 1.4vw, 20px);
-}
+
+
+
 
 .nut-banner-trang-chu,
 .nut-banner-trang-chu:hover {
@@ -3832,6 +3739,12 @@ textarea {
 }
 
 .menu-danh-muc-header-moi {
+  width: var(--chieu-rong-noi-dung-web);
+  min-height: 52px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-top: 1px solid rgba(255, 255, 255, 0.22);
 }
 
@@ -3839,11 +3752,19 @@ textarea {
    CHỈNH BANNER: THẤP HƠN NHƯNG VẪN GIỮ ĐƯỢC PHẦN TRUNG TÂM
 ========================================================= */
 .banner-trang-chu-moi {
+  position: relative;
+  width: 100%;
+  margin: 0 0 38px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #111827;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
   height: 240px;
   margin-bottom: 26px;
 }
 
 .anh-banner-trang-chu-moi {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -3851,14 +3772,23 @@ textarea {
 }
 
 .noi-dung-banner-trang-chu-moi {
+  position: absolute;
+  top: 50%;
+  left: 6%;
+  z-index: 1;
+  color: white;
+  transform: translateY(-50%);
   max-width: 420px;
 }
 
 .noi-dung-banner-trang-chu-moi h1 {
+  margin: 0 0 12px;
+  line-height: 1.15;
   font-size: clamp(22px, 2vw, 32px);
 }
 
 .noi-dung-banner-trang-chu-moi p {
+  margin: 0 0 20px;
   margin-bottom: 16px;
   font-size: 16px;
 }
@@ -4015,19 +3945,9 @@ textarea {
   text-decoration: none;
 }
 
-.breadcrumb-cua-hang a,
-.breadcrumb-cua-hang a:link,
-.breadcrumb-cua-hang a:visited {
-  color: #9ca3af;
-  font-weight: 400;
-}
 
-.breadcrumb-cua-hang a:hover,
-.breadcrumb-cua-hang a:focus,
-.breadcrumb-cua-hang a:active {
-  color: var(--mau-chinh-web);
-  outline: none;
-}
+
+
 
 .breadcrumb-cua-hang span {
   color: #c4c4c4;
@@ -4040,24 +3960,9 @@ textarea {
 }
 
 /* Không còn hai ô lọc khoảng giá nên lưới tự chia đều */
-.khung-loc-cua-hang {
-  margin-bottom: 24px;
-  padding: 18px;
 
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
-  align-items: end;
 
-  background: white;
-  border: 1px solid #dbe1e8;
-  border-radius: 10px;
-}
 
-.khung-loc-cua-hang .nhom-nut-loc-san-pham {
-  min-height: 38px;
-  align-items: stretch;
-}
 
 .khung-loc-cua-hang .nhom-nut-loc-san-pham button {
   min-width: 115px;
@@ -4134,10 +4039,19 @@ textarea {
 
 /* Sau khi bỏ nút lọc ngày, các ô tự chia đều */
 .khung-loc-cua-hang {
+  margin-bottom: 24px;
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+  align-items: end;
+  background: white;
+  border: 1px solid #dbe1e8;
+  border-radius: 10px;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .khung-loc-cua-hang .nhom-nut-loc-san-pham {
+  min-height: 38px;
   display: flex;
   align-items: flex-end;
 }
