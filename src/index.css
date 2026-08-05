@@ -4311,3 +4311,691 @@ footer.chan-trang-dang-luoi {
     justify-content: flex-start;
   }
 }
+
+
+/* ==========================================================
+   TAB QUẢN LÝ HÃNG/NGÀM VÀ DANH MỤC/NHU CẦU
+   ========================================================== */
+
+.thanh-tab-quan-ly {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.nut-tab-quan-ly {
+  min-width: 180px;
+  height: 40px;
+  border: 1px solid #9ca3af;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 700;
+}
+
+.nut-tab-quan-ly:hover,
+.nut-tab-quan-ly.nut-tab-dang-chon {
+  border-color: var(--mau-chinh-web);
+  background: var(--mau-chinh-web);
+  color: #ffffff;
+}
+
+.bang-ngam-thiet-bi th,
+.bang-ngam-thiet-bi td,
+.bang-nhu-cau-su-dung th,
+.bang-nhu-cau-su-dung td {
+  vertical-align: middle;
+}
+
+.cot-mo-ta-nhu-cau {
+  min-width: 280px;
+  max-width: 440px;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* ==========================================================
+   NGÀM VÀ NHIỀU NHU CẦU TRONG FORM MẪU THIẾT BỊ
+   ========================================================== */
+
+.ghi-chu-o-form {
+  display: block;
+  margin-top: 6px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.luoi-checkbox-nhu-cau-admin {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.dong-checkbox-nhu-cau-admin {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  margin: 0 !important;
+  padding: 9px 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.dong-checkbox-nhu-cau-admin input {
+  width: auto !important;
+  min-width: 16px;
+  margin: 0;
+}
+
+.dong-checkbox-nhu-cau-admin span {
+  line-height: 1.35;
+}
+
+.nhu-cau-cu-da-an {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.danh-sach-chip-nhu-cau-admin {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip-nhu-cau-admin {
+  display: inline-block;
+  padding: 4px 8px;
+  border: 1px solid #93c5fd;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 13px;
+}
+
+.chip-nhu-cau-da-an {
+  border-color: #d1d5db;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+@media (max-width: 760px) {
+  .thanh-tab-quan-ly {
+    flex-direction: column;
+  }
+
+  .nut-tab-quan-ly {
+    width: 100%;
+  }
+
+  .luoi-checkbox-nhu-cau-admin {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ==========================================================
+   NGÀM / NHU CẦU V2
+   ========================================================== */
+
+.popup-nen-cap-hai {
+  z-index: 1300;
+}
+
+.popup-cau-hinh-nhu-cau {
+  width: min(920px, calc(100vw - 40px));
+  max-width: 95vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.popup-cau-hinh-nhu-cau .popup-noi-dung {
+  overflow-y: auto;
+}
+
+.hang-cau-hinh-nhu-cau-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hang-cau-hinh-nhu-cau-form button {
+  min-width: 150px;
+}
+
+.khung-them-nhu-cau {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.khung-them-nhu-cau .combobox-admin {
+  flex: 1;
+}
+
+.khung-them-nhu-cau > button {
+  width: 90px;
+  min-width: 90px;
+  height: 38px;
+}
+
+.cot-mo-ta-nhu-cau-popup {
+  min-width: 280px;
+  max-width: 500px;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 700px) {
+  .khung-them-nhu-cau {
+    flex-direction: column;
+  }
+
+  .khung-them-nhu-cau > button {
+    width: 100%;
+  }
+
+  .hang-cau-hinh-nhu-cau-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+
+/* ==========================================================
+   POPUP NHU CẦU V6
+   - Nút Đóng màu xanh
+   - Cột STT gọn
+   - Bảng cân đối hơn
+   - Nút nhu cầu nằm dưới ô Mô tả
+   ========================================================== */
+
+.trang-quan-ly-mau-thiet-bi .o-form-nhu-cau-su-dung {
+  margin-top: 4px;
+  padding: 14px;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.trang-quan-ly-mau-thiet-bi .so-luong-nhu-cau-da-chon {
+  color: #475569;
+  line-height: 38px;
+}
+
+.trang-quan-ly-mau-thiet-bi .popup-cau-hinh-nhu-cau {
+  width: min(860px, calc(100vw - 40px));
+  max-width: 95vw;
+  padding: 22px 28px 26px;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .popup-cau-hinh-nhu-cau
+  .popup-tieu-de {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .popup-cau-hinh-nhu-cau
+  .popup-noi-dung {
+  padding-top: 4px;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .popup-cau-hinh-nhu-cau
+  .khung-them-nhu-cau {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  align-items: start;
+  gap: 10px;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .popup-cau-hinh-nhu-cau
+  .khung-them-nhu-cau
+  > button {
+  width: 92px;
+  min-width: 92px;
+}
+
+.trang-quan-ly-mau-thiet-bi .bang-nhu-cau-popup {
+  table-layout: fixed;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .bang-nhu-cau-popup
+  th:first-child,
+.trang-quan-ly-mau-thiet-bi
+  .bang-nhu-cau-popup
+  td:first-child {
+  width: 58px;
+  min-width: 58px;
+  max-width: 58px;
+  padding-left: 6px;
+  padding-right: 6px;
+  text-align: center;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .bang-nhu-cau-popup
+  td:first-child {
+  font-weight: normal;
+  background: #ffffff;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .bang-nhu-cau-popup
+  th:nth-child(2) {
+  width: 210px;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .bang-nhu-cau-popup
+  th:last-child,
+.trang-quan-ly-mau-thiet-bi
+  .bang-nhu-cau-popup
+  td:last-child {
+  width: 105px;
+  min-width: 105px;
+  text-align: center;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .bang-nhu-cau-popup
+  th,
+.trang-quan-ly-mau-thiet-bi
+  .bang-nhu-cau-popup
+  td {
+  vertical-align: middle;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .bang-nhu-cau-popup
+  .cot-mo-ta-nhu-cau-popup {
+  min-width: 0;
+  max-width: none;
+}
+
+/* Cột STT trong popup bộ đi kèm cũng thu gọn. */
+.trang-quan-ly-mau-thiet-bi
+  .bang-bo-di-kem-popup
+  th:first-child,
+.trang-quan-ly-mau-thiet-bi
+  .bang-bo-di-kem-popup
+  td:first-child {
+  width: 58px;
+  min-width: 58px;
+  max-width: 58px;
+  padding-left: 6px;
+  padding-right: 6px;
+  text-align: center;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .bang-bo-di-kem-popup
+  td:first-child {
+  font-weight: normal;
+  background: #ffffff;
+}
+
+@media (max-width: 700px) {
+  .trang-quan-ly-mau-thiet-bi
+    .popup-cau-hinh-nhu-cau
+    .khung-them-nhu-cau {
+    grid-template-columns: 1fr;
+  }
+
+  .trang-quan-ly-mau-thiet-bi
+    .popup-cau-hinh-nhu-cau
+    .khung-them-nhu-cau
+    > button {
+    width: 100%;
+  }
+
+  .trang-quan-ly-mau-thiet-bi .so-luong-nhu-cau-da-chon {
+    line-height: 1.4;
+  }
+}
+
+
+/* ==========================================================
+   POPUP NHU CẦU V8
+   Mở rộng riêng khi chưa có nhu cầu để combobox dễ sử dụng.
+   ========================================================== */
+
+.trang-quan-ly-mau-thiet-bi
+  .popup-cau-hinh-nhu-cau.popup-nhu-cau-chua-co-du-lieu {
+  width: min(980px, calc(100vw - 40px));
+  min-height: 540px;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .popup-cau-hinh-nhu-cau.popup-nhu-cau-chua-co-du-lieu
+  .popup-noi-dung {
+  min-height: 410px;
+  overflow-y: visible;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .popup-cau-hinh-nhu-cau.popup-nhu-cau-chua-co-du-lieu
+  .danh-sach-combobox-admin {
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 200;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .popup-cau-hinh-nhu-cau.popup-nhu-cau-chua-co-du-lieu
+  .khung-them-nhu-cau {
+  margin-bottom: 24px;
+}
+
+@media (max-width: 700px) {
+  .trang-quan-ly-mau-thiet-bi
+    .popup-cau-hinh-nhu-cau.popup-nhu-cau-chua-co-du-lieu {
+    width: calc(100vw - 24px);
+    min-height: 500px;
+  }
+
+  .trang-quan-ly-mau-thiet-bi
+    .popup-cau-hinh-nhu-cau.popup-nhu-cau-chua-co-du-lieu
+    .popup-noi-dung {
+    min-height: 370px;
+  }
+}
+
+
+/* ==========================================================
+   POPUP CẬP NHẬT NHU CẦU V10
+   Popup Cập nhật luôn lớn hơn popup Thêm.
+   ========================================================== */
+
+.trang-quan-ly-mau-thiet-bi
+  .popup-cau-hinh-nhu-cau.popup-nhu-cau-cap-nhat-rong {
+  width: min(1100px, calc(100vw - 40px));
+  min-height: 640px;
+  max-height: calc(100vh - 32px);
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .popup-cau-hinh-nhu-cau.popup-nhu-cau-cap-nhat-rong
+  .popup-noi-dung {
+  min-height: 495px;
+  overflow-y: visible;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .popup-cau-hinh-nhu-cau.popup-nhu-cau-cap-nhat-rong
+  .danh-sach-combobox-admin {
+  max-height: 360px;
+  overflow-y: auto;
+  z-index: 260;
+}
+
+.trang-quan-ly-mau-thiet-bi
+  .popup-cau-hinh-nhu-cau.popup-nhu-cau-cap-nhat-rong
+  .admin-bang-wrapper {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+@media (max-width: 700px) {
+  .trang-quan-ly-mau-thiet-bi
+    .popup-cau-hinh-nhu-cau.popup-nhu-cau-cap-nhat-rong {
+    width: calc(100vw - 24px);
+    min-height: 550px;
+  }
+
+  .trang-quan-ly-mau-thiet-bi
+    .popup-cau-hinh-nhu-cau.popup-nhu-cau-cap-nhat-rong
+    .popup-noi-dung {
+    min-height: 415px;
+  }
+}
+
+
+/* ==========================================================
+   DANH SÁCH GỌN + NHU CẦU + GỢI Ý SẢN PHẨM
+   ========================================================== */
+
+.khung-loc-cua-hang-gon {
+  grid-template-columns:
+    repeat(6, minmax(0, 1fr))
+    minmax(130px, 0.55fr);
+}
+
+.khung-loc-cua-hang-gon .o-loc-san-pham {
+  min-width: 0;
+}
+
+.khung-loc-cua-hang-gon .nhom-nut-loc-san-pham {
+  align-self: end;
+  grid-column: auto;
+  min-width: 0;
+}
+
+.khung-loc-cua-hang-gon .nhom-nut-loc-san-pham button {
+  width: 100%;
+  min-height: 38px;
+  white-space: nowrap;
+}
+
+.khoang-nhu-cau-card {
+  min-height: 52px;
+  margin: 5px 0 3px;
+}
+
+.tieu-de-nhu-cau-card {
+  margin: 0 0 5px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.danh-sach-chip-nhu-cau-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.chip-nhu-cau-card {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 4px 8px;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.danh-sach-nhu-cau-chi-tiet {
+  display: grid;
+  gap: 10px;
+}
+
+.muc-nhu-cau-chi-tiet {
+  padding: 11px 13px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.muc-nhu-cau-chi-tiet b {
+  color: #1e3a8a;
+}
+
+.muc-nhu-cau-chi-tiet p {
+  margin: 5px 0 0;
+  color: #475569;
+  line-height: 1.5;
+  white-space: normal;
+}
+
+.khung-goi-y-chi-tiet {
+  width: 100%;
+  margin-top: 30px;
+}
+
+.khung-goi-y-chi-tiet .hang-tieu-de-muc {
+  margin-bottom: 15px;
+}
+
+.khung-goi-y-chi-tiet .hang-tieu-de-muc p {
+  margin: 6px 0 0;
+}
+
+.luoi-san-pham-goi-y {
+  width: 100%;
+}
+
+.the-san-pham-goi-y {
+  height: 100%;
+}
+
+.the-san-pham-goi-y .noi-dung-san-pham {
+  min-height: 245px;
+}
+
+.thong-bao-goi-y {
+  margin-top: 24px;
+  text-align: center;
+}
+
+@media (max-width: 1200px) {
+  .khung-loc-cua-hang-gon {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .khung-loc-cua-hang-gon {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .luoi-san-pham-goi-y {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .khung-loc-cua-hang-gon {
+    grid-template-columns: 1fr;
+  }
+
+  .luoi-san-pham-goi-y {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* ==========================================================
+   GỢI Ý TÁCH KHỎI Ô CHI TIẾT - GIỐNG TRANG HOME
+   ========================================================== */
+
+.trang-chi-tiet-va-goi-y {
+  width: var(--chieu-rong-noi-dung-web);
+  margin: 0 auto;
+}
+
+.trang-chi-tiet-va-goi-y .khung-chi-tiet-day-du {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.khung-goi-y-ben-ngoai {
+  width: 100%;
+  margin-top: 42px;
+}
+
+.muc-goi-y-chi-tiet {
+  width: 100%;
+  padding-bottom: 38px;
+}
+
+.khung-goi-y-ben-ngoai + .khung-goi-y-ben-ngoai {
+  margin-top: 0;
+  padding-top: 34px;
+  border-top: 1px solid #cbd5e1;
+}
+
+.muc-goi-y-chi-tiet .hang-tieu-de-muc-co-nut {
+  margin-bottom: 12px;
+}
+
+.muc-goi-y-chi-tiet .hang-tieu-de-muc-co-nut h3 {
+  text-transform: uppercase;
+}
+
+.mo-ta-muc-goi-y {
+  margin: 0 0 18px;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.nut-xem-them-goi-y,
+.nut-xem-them-goi-y:hover {
+  width: auto;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.nut-xem-them-goi-y:hover {
+  color: var(--mau-chinh-web-hover);
+  text-decoration: underline;
+}
+
+.luoi-san-pham-goi-y {
+  width: 100%;
+  align-items: stretch;
+}
+
+.the-san-pham-goi-y {
+  height: 100%;
+}
+
+.the-san-pham-goi-y .noi-dung-san-pham {
+  min-height: 230px;
+}
+
+@media (max-width: 900px) {
+  .luoi-san-pham-goi-y {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .trang-chi-tiet-va-goi-y {
+    width: calc(100vw - 32px);
+  }
+
+  .muc-goi-y-chi-tiet .hang-tieu-de-muc-co-nut {
+    align-items: flex-start;
+  }
+
+  .muc-goi-y-chi-tiet .hang-tieu-de-muc-co-nut h3 {
+    font-size: 20px;
+  }
+
+  .luoi-san-pham-goi-y {
+    grid-template-columns: 1fr !important;
+  }
+}

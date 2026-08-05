@@ -106,13 +106,13 @@ function AdminLayout({ children }) {
 
               {laQuanTriVien() && (
                 <Link to="/admin/equipment-categories">
-                  Quản lý danh mục thiết bị
+                  Quản lý danh mục
                 </Link>
               )}
 
               {laQuanTriVien() && (
                 <Link to="/admin/equipment-brands">
-                  Quản lý hãng thiết bị
+                  Quản lý hãng và ngàm thiết bị
                 </Link>
               )}
 

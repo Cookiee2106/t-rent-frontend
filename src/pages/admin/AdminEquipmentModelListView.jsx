@@ -10,6 +10,8 @@ function AdminEquipmentModelList() {
   const [danhSachMau, setDanhSachMau] = useState([]);
   const [danhSachDanhMuc, setDanhSachDanhMuc] = useState([]);
   const [danhSachHang, setDanhSachHang] = useState([]);
+  const [danhSachNgam, setDanhSachNgam] = useState([]);
+  const [danhSachNhuCau, setDanhSachNhuCau] = useState([]);
 
   const [tuKhoaNhap, setTuKhoaNhap] = useState("");
   const [hangNhap, setHangNhap] = useState("");
@@ -32,11 +34,24 @@ function AdminEquipmentModelList() {
   const [formMau, setFormMau] = useState({
     danh_muc_id: "",
     hang_id: "",
+    ngam_id: "",
+    nhu_cau_ids: [],
     ten_mau: "",
     mo_ta: "",
     gia_thue_ngay: "",
     tien_coc: "",
   });
+
+  // Chỉ gửi lại ngàm hoặc nhu cầu khi người dùng thực sự thay đổi.
+  // Nhờ vậy vẫn cập nhật được mẫu cũ đang gắn dữ liệu đã bị ẩn.
+  const [ngamDaThayDoi, setNgamDaThayDoi] = useState(false);
+  const [nhuCauDaThayDoi, setNhuCauDaThayDoi] = useState(false);
+
+  // Popup cấu hình nhu cầu dùng chung cho form Thêm và Cập nhật.
+  const [hienPopupNhuCau, setHienPopupNhuCau] = useState(false);
+  const [tuKhoaNhuCau, setTuKhoaNhuCau] = useState("");
+  const [hienGoiYNhuCau, setHienGoiYNhuCau] = useState(false);
+  const [nhuCauDangChon, setNhuCauDangChon] = useState(null);
 
   const [tuKhoaDanhMucForm, setTuKhoaDanhMucForm] = useState("");
   const [hienGoiYDanhMucForm, setHienGoiYDanhMucForm] = useState(false);
@@ -45,6 +60,7 @@ function AdminEquipmentModelList() {
 
   const comboDanhMucRef = useRef(null);
   const comboHangRef = useRef(null);
+  const comboNhuCauRef = useRef(null);
   const comboBoDiKemRef = useRef(null);
 
   const [anhMauFile, setAnhMauFile] = useState(null);
@@ -65,6 +81,7 @@ function AdminEquipmentModelList() {
     layDanhSachMau();
     layDanhSachDanhMuc();
     layDanhSachHang();
+    layLuaChonCauHinhMau();
   }, []);
 
   useEffect(() => {
@@ -75,6 +92,13 @@ function AdminEquipmentModelList() {
 
       if (comboHangRef.current && !comboHangRef.current.contains(e.target)) {
         setHienGoiYHangForm(false);
+      }
+
+      if (
+        comboNhuCauRef.current &&
+        !comboNhuCauRef.current.contains(e.target)
+      ) {
+        setHienGoiYNhuCau(false);
       }
 
       if (comboBoDiKemRef.current && !comboBoDiKemRef.current.contains(e.target)) {
@@ -152,6 +176,134 @@ function AdminEquipmentModelList() {
     return hang?.ten_hang || "";
   }
 
+  function laDanhMucCanNgam(danhMucId) {
+    const danhMuc = danhSachDanhMuc.find(
+      (item) => String(item.id) === String(danhMucId)
+    );
+
+    const tenDanhMuc = String(danhMuc?.ten_danh_muc || "")
+      .trim()
+      .toLowerCase();
+
+    return tenDanhMuc === "máy ảnh" || tenDanhMuc === "ống kính";
+  }
+
+  function layDanhSachNhuCauTrongForm() {
+    const mapNhuCau = new Map();
+
+    danhSachNhuCau.forEach((item) => {
+      mapNhuCau.set(String(item.id), item);
+    });
+
+    (mauDangChon?.nhu_cau_su_dung || []).forEach((item) => {
+      if (!mapNhuCau.has(String(item.id))) {
+        mapNhuCau.set(String(item.id), item);
+      }
+    });
+
+    return [...mapNhuCau.values()];
+  }
+
+  function layDanhSachNhuCauDaChon() {
+    const tapId = new Set(
+      (formMau.nhu_cau_ids || []).map((id) => String(id))
+    );
+
+    return layDanhSachNhuCauTrongForm().filter((item) =>
+      tapId.has(String(item.id))
+    );
+  }
+
+  function layDanhSachGoiYNhuCau() {
+    const tapIdDaChon = new Set(
+      (formMau.nhu_cau_ids || []).map((id) => String(id))
+    );
+
+    const khoa = tuKhoaNhuCau.trim().toLowerCase();
+
+    return danhSachNhuCau.filter((item) => {
+      const chuaChon = !tapIdDaChon.has(String(item.id));
+      const dungTuKhoa =
+        !khoa ||
+        `${item.ten_nhu_cau || ""} ${item.mo_ta || ""}`
+          .toLowerCase()
+          .includes(khoa);
+
+      return chuaChon && dungTuKhoa;
+    });
+  }
+
+  function doiNgamForm(giaTri) {
+    setFormMau({
+      ...formMau,
+      ngam_id: giaTri,
+    });
+
+    setNgamDaThayDoi(true);
+  }
+
+  function moPopupCauHinhNhuCau() {
+    setTuKhoaNhuCau("");
+    setNhuCauDangChon(null);
+    setHienGoiYNhuCau(false);
+    setHienPopupNhuCau(true);
+  }
+
+  function dongPopupCauHinhNhuCau() {
+    setHienPopupNhuCau(false);
+    setTuKhoaNhuCau("");
+    setNhuCauDangChon(null);
+    setHienGoiYNhuCau(false);
+  }
+
+  function doiTuKhoaNhuCau(giaTri) {
+    setTuKhoaNhuCau(giaTri);
+    setNhuCauDangChon(null);
+    setHienGoiYNhuCau(true);
+  }
+
+  function chonGoiYNhuCau(item) {
+    setNhuCauDangChon(item);
+    setTuKhoaNhuCau(item.ten_nhu_cau || "");
+    setHienGoiYNhuCau(false);
+  }
+
+  function themNhuCauVaoForm() {
+    if (!nhuCauDangChon) {
+      moPopupThongBao("Vui lòng chọn nhu cầu");
+      return;
+    }
+
+    const id = String(nhuCauDangChon.id);
+    const danhSachId = (formMau.nhu_cau_ids || []).map(String);
+
+    if (danhSachId.includes(id)) {
+      moPopupThongBao("Nhu cầu đã có trong danh sách");
+      return;
+    }
+
+    setFormMau({
+      ...formMau,
+      nhu_cau_ids: [...danhSachId, id],
+    });
+
+    setNhuCauDaThayDoi(true);
+    setTuKhoaNhuCau("");
+    setNhuCauDangChon(null);
+    setHienGoiYNhuCau(false);
+  }
+
+  function xoaNhuCauKhoiForm(nhuCauId) {
+    setFormMau({
+      ...formMau,
+      nhu_cau_ids: (formMau.nhu_cau_ids || [])
+        .map(String)
+        .filter((id) => id !== String(nhuCauId)),
+    });
+
+    setNhuCauDaThayDoi(true);
+  }
+
   function doiTuKhoaDanhMucForm(giaTri) {
     setTuKhoaDanhMucForm(giaTri);
     doiFormMau("danh_muc_id", "");
@@ -159,19 +311,68 @@ function AdminEquipmentModelList() {
   }
 
   function chonDanhMucForm(danhMuc) {
-    doiFormMau("danh_muc_id", danhMuc.id);
+    const danhMucCuCanNgam = laDanhMucCanNgam(formMau.danh_muc_id);
+
+    const tenDanhMucMoi = String(danhMuc.ten_danh_muc || "")
+      .trim()
+      .toLowerCase();
+
+    const danhMucMoiCanNgam =
+      tenDanhMucMoi === "máy ảnh" || tenDanhMucMoi === "ống kính";
+
+    if (danhMucCuCanNgam !== danhMucMoiCanNgam) {
+      setFormMau({
+        ...formMau,
+        danh_muc_id: danhMuc.id,
+        ngam_id: "",
+        nhu_cau_ids: [],
+      });
+
+      setNgamDaThayDoi(true);
+      setNhuCauDaThayDoi(true);
+    } else {
+      setFormMau({
+        ...formMau,
+        danh_muc_id: danhMuc.id,
+      });
+    }
+
     setTuKhoaDanhMucForm(danhMuc.ten_danh_muc);
     setHienGoiYDanhMucForm(false);
   }
 
   function doiTuKhoaHangForm(giaTri) {
     setTuKhoaHangForm(giaTri);
-    doiFormMau("hang_id", "");
+
+    setFormMau({
+      ...formMau,
+      hang_id: "",
+      ngam_id: "",
+    });
+
+    setNgamDaThayDoi(true);
     setHienGoiYHangForm(true);
   }
 
   function chonHangForm(hang) {
-    doiFormMau("hang_id", hang.id);
+    const ngamHienTai = danhSachNgam.find(
+      (item) => String(item.id) === String(formMau.ngam_id)
+    );
+
+    const ngamConDungHang =
+      ngamHienTai &&
+      String(ngamHienTai.hang_so_huu_id) === String(hang.id);
+
+    setFormMau({
+      ...formMau,
+      hang_id: hang.id,
+      ngam_id: ngamConDungHang ? formMau.ngam_id : "",
+    });
+
+    if (!ngamConDungHang) {
+      setNgamDaThayDoi(true);
+    }
+
     setTuKhoaHangForm(hang.ten_hang);
     setHienGoiYHangForm(false);
   }
@@ -234,6 +435,26 @@ function AdminEquipmentModelList() {
     }
   }
 
+  async function layLuaChonCauHinhMau() {
+    try {
+      const phanHoi = await fetch(
+        `${DUONG_DAN_API}/api/admin/equipment-models/configuration-options`,
+        {
+          headers: taoHeaderCoToken(),
+        }
+      );
+
+      const duLieu = await phanHoi.json();
+
+      if (duLieu.success) {
+        setDanhSachNgam(duLieu.data?.ngam || []);
+        setDanhSachNhuCau(duLieu.data?.nhu_cau || []);
+      }
+    } catch {
+      // Không chặn màn hình nếu ngàm hoặc nhu cầu chưa tải được.
+    }
+  }
+
   async function layChiTietMau(mauId) {
     const phanHoi = await fetch(
       `${DUONG_DAN_API}/api/admin/equipment-models/${mauId}`,
@@ -270,11 +491,19 @@ function AdminEquipmentModelList() {
     setFormMau({
       danh_muc_id: "",
       hang_id: "",
+      ngam_id: "",
+      nhu_cau_ids: [],
       ten_mau: "",
       mo_ta: "",
       gia_thue_ngay: "",
       tien_coc: "",
     });
+
+    setNgamDaThayDoi(true);
+    setNhuCauDaThayDoi(true);
+    setHienPopupNhuCau(false);
+    setTuKhoaNhuCau("");
+    setNhuCauDangChon(null);
 
     setTuKhoaDanhMucForm("");
     setTuKhoaHangForm("");
@@ -293,11 +522,21 @@ function AdminEquipmentModelList() {
     setFormMau({
       danh_muc_id: mau.danh_muc_id || "",
       hang_id: mau.hang_id || "",
+      ngam_id: mau.ngam_id || "",
+      nhu_cau_ids: (mau.nhu_cau_su_dung || [])
+        .map((item) => String(item.id))
+        .filter(Boolean),
       ten_mau: mau.ten_mau || "",
       mo_ta: mau.mo_ta || "",
       gia_thue_ngay: mau.gia_thue_ngay || "",
       tien_coc: mau.tien_coc || "",
     });
+
+    setNgamDaThayDoi(false);
+    setNhuCauDaThayDoi(false);
+    setHienPopupNhuCau(false);
+    setTuKhoaNhuCau("");
+    setNhuCauDangChon(null);
 
     setTuKhoaDanhMucForm(mau.ten_danh_muc || layTenDanhMucTheoId(mau.danh_muc_id));
     setTuKhoaHangForm(mau.ten_hang || layTenHangTheoId(mau.hang_id));
@@ -328,6 +567,12 @@ function AdminEquipmentModelList() {
 
     setAnhMauFile(null);
     setAnhMauPreview("");
+    setNgamDaThayDoi(false);
+    setNhuCauDaThayDoi(false);
+    setHienPopupNhuCau(false);
+    setTuKhoaNhuCau("");
+    setNhuCauDangChon(null);
+    setHienGoiYNhuCau(false);
   }
 
   function doiFormMau(tenTruong, giaTri) {
@@ -368,6 +613,18 @@ function AdminEquipmentModelList() {
       return false;
     }
 
+    if (laDanhMucCanNgam(formMau.danh_muc_id)) {
+      if (!formMau.ngam_id) {
+        moPopupThongBao("Vui lòng chọn ngàm");
+        return false;
+      }
+
+      if (!formMau.nhu_cau_ids || formMau.nhu_cau_ids.length === 0) {
+        moPopupThongBao("Vui lòng chọn ít nhất một nhu cầu sử dụng");
+        return false;
+      }
+    }
+
     if (Number(formMau.gia_thue_ngay || 0) < 0) {
       moPopupThongBao("Giá thuê không hợp lệ");
       return false;
@@ -403,6 +660,21 @@ function AdminEquipmentModelList() {
       formData.append("mo_ta", formMau.mo_ta || "");
       formData.append("gia_thue_ngay", Number(formMau.gia_thue_ngay || 0));
       formData.append("tien_coc", Number(formMau.tien_coc || 0));
+
+      const danhMucCanNgam = laDanhMucCanNgam(formMau.danh_muc_id);
+
+      // Khi thêm luôn gửi ngàm và nhu cầu.
+      // Khi cập nhật chỉ gửi nếu người dùng thực sự thay đổi.
+      if (danhMucCanNgam && (laThem || ngamDaThayDoi)) {
+        formData.append("ngam_id", formMau.ngam_id);
+      }
+
+      if (danhMucCanNgam && (laThem || nhuCauDaThayDoi)) {
+        formData.append(
+          "nhu_cau_ids",
+          JSON.stringify(formMau.nhu_cau_ids || [])
+        );
+      }
 
       if (anhMauFile) {
         formData.append("anh_mau", anhMauFile);
@@ -1013,6 +1285,52 @@ function AdminEquipmentModelList() {
                   </tr>
 
                   <tr>
+                    <td>Ngàm</td>
+                    <td>
+                      {chiTietMau.ten_ngam ? (
+                        <>
+                          {chiTietMau.ten_ngam}
+                          {Number(chiTietMau.trang_thai_ngam) ===
+                          TRANG_THAI_DA_AN
+                            ? " (Đã ẩn)"
+                            : ""}
+                        </>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>Nhu cầu sử dụng</td>
+                    <td>
+                      {(chiTietMau.nhu_cau_su_dung || []).length === 0 ? (
+                        "-"
+                      ) : (
+                        <div className="danh-sach-chip-nhu-cau-admin">
+                          {(chiTietMau.nhu_cau_su_dung || []).map((item) => (
+                            <span
+                              key={item.id}
+                              className={
+                                Number(item.trang_thai) ===
+                                TRANG_THAI_DA_AN
+                                  ? "chip-nhu-cau-admin chip-nhu-cau-da-an"
+                                  : "chip-nhu-cau-admin"
+                              }
+                            >
+                              {item.ten_nhu_cau}
+                              {Number(item.trang_thai) ===
+                              TRANG_THAI_DA_AN
+                                ? " (Đã ẩn)"
+                                : ""}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+
+                  <tr>
                     <td>Giá thuê/ngày</td>
                     <td>{dinhDangTien(chiTietMau.gia_thue_ngay)}</td>
                   </tr>
@@ -1189,6 +1507,53 @@ function AdminEquipmentModelList() {
                   </div>
                 </div>
 
+                {laDanhMucCanNgam(formMau.danh_muc_id) && (
+                  <>
+                    <div className="o-form">
+                      <label>Ngàm</label>
+
+                      <select
+                        value={formMau.ngam_id}
+                        onChange={(e) => doiNgamForm(e.target.value)}
+                      >
+                        <option value="">-- Chọn ngàm --</option>
+
+                        {mauDangChon?.ngam_id &&
+                          !danhSachNgam.some(
+                            (item) =>
+                              String(item.id) ===
+                              String(mauDangChon.ngam_id)
+                          ) && (
+                            <option
+                              value={mauDangChon.ngam_id}
+                              disabled
+                            >
+                              {mauDangChon.ten_ngam || "Ngàm cũ"} - Đã ẩn
+                            </option>
+                          )}
+
+                        {danhSachNgam
+                          .filter(
+                            (ngam) =>
+                              !formMau.hang_id ||
+                              String(ngam.hang_so_huu_id) ===
+                                String(formMau.hang_id)
+                          )
+                          .map((ngam) => (
+                            <option key={ngam.id} value={ngam.id}>
+                              {ngam.ten_ngam}
+                            </option>
+                          ))}
+                      </select>
+
+                      <small className="ghi-chu-o-form">
+                        Ngàm dùng nội bộ để kiểm tra ống kính tương thích.
+                      </small>
+                    </div>
+
+                  </>
+                )}
+
                 <div className="o-form">
                   <label>Tên mẫu</label>
 
@@ -1244,6 +1609,39 @@ function AdminEquipmentModelList() {
                   />
                 </div>
 
+                {laDanhMucCanNgam(formMau.danh_muc_id) && (
+                  <div className="o-form o-form-nhu-cau-su-dung">
+                    <label>Nhu cầu sử dụng</label>
+
+                    <div className="hang-cau-hinh-nhu-cau-form">
+                      <button
+                        type="button"
+                        className={
+                          cheDoPopup === "THEM"
+                            ? "nut-them"
+                            : "nut-cap-nhat-popup"
+                        }
+                        onClick={moPopupCauHinhNhuCau}
+                      >
+                        {cheDoPopup === "THEM"
+                          ? "Thêm nhu cầu"
+                          : "Cập nhật nhu cầu"}
+                      </button>
+
+                      <span className="so-luong-nhu-cau-da-chon">
+                        Đã chọn{" "}
+                        <b>{(formMau.nhu_cau_ids || []).length}</b> nhu cầu
+                      </span>
+                    </div>
+
+                    {(formMau.nhu_cau_ids || []).length === 0 && (
+                      <small className="ghi-chu-o-form">
+                        Máy ảnh và ống kính bắt buộc có ít nhất một nhu cầu sử dụng.
+                      </small>
+                    )}
+                  </div>
+                )}
+
                 <div className="popup-actions">
                   <button
                     className={
@@ -1266,6 +1664,116 @@ function AdminEquipmentModelList() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {hienPopupNhuCau && (
+        <div className="popup-nen popup-nen-cap-hai">
+          <div
+            className={
+              cheDoPopup === "CAP_NHAT"
+                ? "popup-hop popup-cau-hinh-nhu-cau popup-nhu-cau-cap-nhat-rong"
+                : layDanhSachNhuCauDaChon().length === 0
+                ? "popup-hop popup-cau-hinh-nhu-cau popup-nhu-cau-chua-co-du-lieu"
+                : "popup-hop popup-cau-hinh-nhu-cau"
+            }
+          >
+            <div className="popup-tieu-de">
+              <h3>
+                Nhu cầu của {formMau.ten_mau.trim() || "mẫu thiết bị"}
+              </h3>
+
+              <button
+                type="button"
+                className="nut-dong-popup"
+                onClick={dongPopupCauHinhNhuCau}
+              >
+                Đóng
+              </button>
+            </div>
+
+            <div className="popup-noi-dung">
+              <div className="khung-them-nhu-cau">
+                <div className="combobox-admin" ref={comboNhuCauRef}>
+                  <input
+                    value={tuKhoaNhuCau}
+                    placeholder="Tìm và chọn nhu cầu"
+                    onFocus={() => setHienGoiYNhuCau(true)}
+                    onChange={(e) => doiTuKhoaNhuCau(e.target.value)}
+                  />
+
+                  {hienGoiYNhuCau && (
+                    <div className="danh-sach-combobox-admin">
+                      {layDanhSachGoiYNhuCau().length === 0 ? (
+                        <div className="dong-combobox-admin">
+                          Không có gợi ý
+                        </div>
+                      ) : (
+                        layDanhSachGoiYNhuCau().map((item) => (
+                          <div
+                            key={item.id}
+                            className="dong-combobox-admin"
+                            onClick={() => chonGoiYNhuCau(item)}
+                          >
+                            <b>{item.ten_nhu_cau}</b>
+                            <span>{item.mo_ta || "Không có mô tả"}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  className="nut-them"
+                  onClick={themNhuCauVaoForm}
+                >
+                  Thêm
+                </button>
+              </div>
+
+              <h3>Danh sách nhu cầu đã chọn</h3>
+
+              {layDanhSachNhuCauDaChon().length === 0 ? (
+                <p>Chưa có nhu cầu sử dụng.</p>
+              ) : (
+                <div className="admin-bang-wrapper">
+                  <table className="bang-popup bang-gon bang-nhu-cau-popup">
+                    <thead>
+                      <tr>
+                        <th>STT</th>
+                        <th>Tên nhu cầu</th>
+                        <th>Mô tả</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {layDanhSachNhuCauDaChon().map((item, index) => (
+                        <tr key={item.id}>
+                          <td>{index + 1}</td>
+                          <td>{item.ten_nhu_cau}</td>
+                          <td className="cot-mo-ta-nhu-cau-popup">
+                            {item.mo_ta || "-"}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="nut-xoa"
+                              onClick={() => xoaNhuCauKhoiForm(item.id)}
+                            >
+                              Xóa
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1330,7 +1838,7 @@ function AdminEquipmentModelList() {
               {danhSachBoDiKem.length === 0 ? (
                 <p>Chưa có bộ đi kèm.</p>
               ) : (
-                <table className="bang-popup bang-gon">
+                <table className="bang-popup bang-gon bang-bo-di-kem-popup">
                   <thead>
                     <tr>
                       <th>STT</th>

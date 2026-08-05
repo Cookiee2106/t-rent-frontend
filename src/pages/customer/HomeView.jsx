@@ -51,6 +51,34 @@ function Home() {
     );
   }
 
+  function hienThiNhuCauSuDung(mau) {
+    const danhSach = Array.isArray(mau.nhu_cau_su_dung)
+      ? mau.nhu_cau_su_dung
+      : [];
+
+    if (danhSach.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="khoang-nhu-cau-card">
+        <p className="tieu-de-nhu-cau-card">Phù hợp:</p>
+
+        <div className="danh-sach-chip-nhu-cau-card">
+          {danhSach.map((item) => (
+            <span
+              className="chip-nhu-cau-card"
+              key={item.id}
+              title={item.mo_ta || item.ten_nhu_cau}
+            >
+              {item.ten_nhu_cau}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   async function layDanhSachMauThietBi() {
     try {
       setPopupLoi("");
@@ -127,9 +155,15 @@ function Home() {
                   </p>
                 </div>
 
+                {hienThiNhuCauSuDung(mau)}
+
                 <div className="khoang-bo-di-kem-card">
                   {hienThiBoDiKem(mau)}
                 </div>
+
+                <p className="chu-mo dong-thong-tin-card trang-thai-san-sang-card">
+                  Chọn đủ ngày nhận và ngày trả để kiểm tra bộ sẵn sàng
+                </p>
               </div>
             </div>
           </Link>

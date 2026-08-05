@@ -32,6 +32,7 @@ function EquipmentList() {
 
   const [hangId, setHangId] = useState("");
   const [danhMucId, setDanhMucId] = useState("");
+  const [nhuCauId, setNhuCauId] = useState("");
   const [mucGia, setMucGia] = useState("");
   const [sapXepGia, setSapXepGia] = useState("");
 
@@ -84,6 +85,34 @@ function EquipmentList() {
           {danhSach.map((item) => (
             <span className="chip-bo-di-kem" key={item.id}>
               {layTenVatPhamDiKem(item)} x{item.so_luong || 1}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function hienThiNhuCauSuDung(mau) {
+    const danhSach = Array.isArray(mau.nhu_cau_su_dung)
+      ? mau.nhu_cau_su_dung
+      : [];
+
+    if (danhSach.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="khoang-nhu-cau-card">
+        <p className="tieu-de-nhu-cau-card">Phù hợp:</p>
+
+        <div className="danh-sach-chip-nhu-cau-card">
+          {danhSach.map((item) => (
+            <span
+              className="chip-nhu-cau-card"
+              key={item.id}
+              title={item.mo_ta || item.ten_nhu_cau}
+            >
+              {item.ten_nhu_cau}
             </span>
           ))}
         </div>
@@ -159,6 +188,7 @@ function EquipmentList() {
   function xoaLoc() {
     setHangId("");
     setDanhMucId("");
+    setNhuCauId("");
     setMucGia("");
     setSapXepGia("");
     setNgayNhan("");
@@ -239,6 +269,30 @@ function EquipmentList() {
     );
   }, [danhSachGoc]);
 
+  const danhSachNhuCau = useMemo(() => {
+    const map = new Map();
+
+    danhSachGoc.forEach((mau) => {
+      const danhSach = Array.isArray(mau.nhu_cau_su_dung)
+        ? mau.nhu_cau_su_dung
+        : [];
+
+      danhSach.forEach((item) => {
+        if (item.id && item.ten_nhu_cau) {
+          map.set(String(item.id), {
+            id: item.id,
+            ten_nhu_cau: item.ten_nhu_cau,
+            mo_ta: item.mo_ta || "",
+          });
+        }
+      });
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.ten_nhu_cau.localeCompare(b.ten_nhu_cau, "vi")
+    );
+  }, [danhSachGoc]);
+
   const danhSachSauKhiLoc = useMemo(() => {
     /*
       TRƯỜNG HỢP MUỐN LẤY TẤT CẢ MẪU ĐANG HIỂN THỊ:
@@ -282,6 +336,14 @@ function EquipmentList() {
     if (laTrangTatCa && danhMucId) {
       ketQua = ketQua.filter(
         (mau) => String(mau.danh_muc_id || "") === String(danhMucId)
+      );
+    }
+
+    if (nhuCauId) {
+      ketQua = ketQua.filter((mau) =>
+        (mau.nhu_cau_su_dung || []).some(
+          (item) => String(item.id || "") === String(nhuCauId)
+        )
       );
     }
 
@@ -330,6 +392,7 @@ function EquipmentList() {
     cauHinhDanhMuc,
     hangId,
     danhMucId,
+    nhuCauId,
     mucGia,
     sapXepGia,
     laTrangTatCa,
@@ -353,7 +416,7 @@ function EquipmentList() {
         )}
       </nav>
 
-      <div className="khung-loc-cua-hang">
+      <div className="khung-loc-cua-hang khung-loc-cua-hang-gon">
         <div className="o-loc-san-pham">
           <label>Hãng</label>
           <select value={hangId} onChange={(e) => setHangId(e.target.value)}>
@@ -400,6 +463,22 @@ function EquipmentList() {
             ))}
           </select>
         </div> */}
+
+        <div className="o-loc-san-pham">
+          <label>Nhu cầu sử dụng</label>
+          <select
+            value={nhuCauId}
+            onChange={(e) => setNhuCauId(e.target.value)}
+          >
+            <option value="">Tất cả nhu cầu</option>
+
+            {danhSachNhuCau.map((nhuCau) => (
+              <option key={nhuCau.id} value={nhuCau.id}>
+                {nhuCau.ten_nhu_cau}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="o-loc-san-pham">
           <label>Sắp xếp giá</label>
@@ -489,6 +568,8 @@ function EquipmentList() {
                     Tiền cọc: <b>{dinhDangTien(mau.tien_coc)}</b>
                   </p>
                 </div>
+
+                {hienThiNhuCauSuDung(mau)}
 
                 <div className="khoang-bo-di-kem-card">
                   {hienThiBoDiKem(mau)}
