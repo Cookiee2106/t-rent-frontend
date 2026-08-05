@@ -812,7 +812,7 @@ function Cart() {
                 onClick={datHang}
                 disabled={dangDatHang}
               >
-                {dangDatHang ? "Đang xử lý..." : "Đặt hàng"}
+                {dangDatHang ? "Đang xử lý..." : "Thuê ngay"}
               </button>
             </div>
           </div>

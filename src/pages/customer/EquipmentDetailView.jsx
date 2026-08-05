@@ -479,7 +479,7 @@ function EquipmentDetail() {
         */
         window.dispatchEvent(new Event("cap-nhat-gio-hang"));
 
-        moPopup("Thêm vào giỏ hàng thành công");
+        moPopup("Thêm vào giỏ thành công");
       } else {
         moPopup(duLieu.message);
       }
@@ -546,7 +546,7 @@ function EquipmentDetail() {
     : "Máy ảnh dùng được với mẫu này";
 
   const moTaThietBiPhuHop = laChiTietMayAnh
-    ? "Các ống kính dùng được với mẫu bạn đang xem"
+    ? "Các ống kính có nhu cầu tương tự với mẫu máy bạn đang xem"
     : "Các máy ảnh dùng được với mẫu bạn đang xem";
 
   const thongBaoDangTaiThietBiPhuHop = laChiTietMayAnh
@@ -730,7 +730,7 @@ function EquipmentDetail() {
 
               {ketQuaKhaDung && ketQuaKhaDung.co_the_thue && (
                 <p className="chu-mo">
-                  Có thể thêm {soLuong} bộ vào giỏ hàng trong khoảng ngày đã chọn.
+                  Có thể thêm {soLuong} bộ vào giỏ trong khoảng ngày đã chọn.
                 </p>
               )}
             </>
@@ -738,7 +738,7 @@ function EquipmentDetail() {
         </div>
 
         <div className="nhom-nut nhom-nut-chi-tiet">
-          <button onClick={themVaoGioHang}>Thêm vào giỏ hàng</button>
+          <button onClick={themVaoGioHang}>Thêm vào giỏ</button>
 
           <Link to="/equipments">
             <button>Quay lại danh sách</button>
