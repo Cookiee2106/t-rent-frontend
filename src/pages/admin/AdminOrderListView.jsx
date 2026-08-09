@@ -7,7 +7,16 @@ const TRANG_THAI_DANG_THUE = 1103;
 const TRANG_THAI_HOAN_THANH = 1104;
 const TRANG_THAI_QUA_HAN = 1105;
 
+const TRANG_THAI_YEU_CAU_HUY_CHO_XU_LY = 1701;
+const TRANG_THAI_YEU_CAU_HUY_DA_XAC_NHAN = 1702;
+const TRANG_THAI_YEU_CAU_HUY_TU_CHOI = 1703;
+
+const LOAI_HOAN_COC = 2303;
+const LOAI_KHAU_TRU_COC = 2304;
+const LOAI_PHU_THU = 2305;
+
 const SO_DONG_MOI_TRANG = 10;
+const SO_DONG_YEU_CAU_HUY_MOI_TRANG = 10;
 const SO_FILE_TOI_DA = 5;
 const SO_ANH_MOI_DONG = 5;
 
@@ -178,6 +187,102 @@ function ComboboxTimTaiSan({
   );
 }
 
+function ComboboxTimViTriPhuKien({
+  value,
+  danhSachViTri,
+  onChange,
+  placeholder = "Tìm vị trí kho",
+}) {
+  const [tuKhoa, setTuKhoa] = useState("");
+  const [hienDanhSach, setHienDanhSach] = useState(false);
+
+  useEffect(() => {
+    const viTriDangChon = danhSachViTri.find(
+      (item) =>
+        String(item.phu_kien_vi_tri_kho_id) === String(value)
+    );
+
+    if (viTriDangChon) {
+      setTuKhoa(
+        `${viTriDangChon.ten_vi_tri || "Chưa rõ vị trí"} - Sẵn sàng: ${
+          viTriDangChon.so_luong_hien_thi ?? 0
+        }`
+      );
+    } else if (!value) {
+      setTuKhoa("");
+    }
+  }, [value, danhSachViTri]);
+
+  function chuanHoa(giaTri) {
+    return String(giaTri || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d");
+  }
+
+  const danhSachTimDuoc = danhSachViTri.filter((viTri) =>
+    chuanHoa(viTri.ten_vi_tri).includes(chuanHoa(tuKhoa))
+  );
+
+  function doiTuKhoa(giaTri) {
+    setTuKhoa(giaTri);
+    setHienDanhSach(true);
+
+    if (value) {
+      onChange("");
+    }
+  }
+
+  function chonViTri(viTri) {
+    onChange(viTri.phu_kien_vi_tri_kho_id);
+    setTuKhoa(
+      `${viTri.ten_vi_tri || "Chưa rõ vị trí"} - Sẵn sàng: ${
+        viTri.so_luong_hien_thi ?? 0
+      }`
+    );
+    setHienDanhSach(false);
+  }
+
+  return (
+    <div className="combobox-vi-tri-phu-kien-ban-giao">
+      <input
+        value={tuKhoa}
+        placeholder={placeholder}
+        autoComplete="off"
+        onFocus={() => setHienDanhSach(true)}
+        onChange={(e) => doiTuKhoa(e.target.value)}
+        onBlur={() => {
+          setTimeout(() => setHienDanhSach(false), 150);
+        }}
+      />
+
+      {hienDanhSach && (
+        <div className="danh-sach-combobox-vi-tri-phu-kien">
+          {danhSachTimDuoc.length === 0 ? (
+            <div className="dong-combobox-vi-tri-phu-kien">
+              Không có vị trí đủ số lượng
+            </div>
+          ) : (
+            danhSachTimDuoc.map((viTri) => (
+              <div
+                key={viTri.phu_kien_vi_tri_kho_id}
+                className="dong-combobox-vi-tri-phu-kien"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => chonViTri(viTri)}
+              >
+                <b>{viTri.ten_vi_tri}</b>
+                <span>Sẵn sàng: {viTri.so_luong_hien_thi ?? 0}</span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AdminOrderList() {
   const [danhSachDon, setDanhSachDon] = useState([]);
   const [trangHienTai, setTrangHienTai] = useState(1);
@@ -188,6 +293,22 @@ function AdminOrderList() {
   const [dangTai, setDangTai] = useState(false);
   const [popupThongBao, setPopupThongBao] = useState("");
 
+  const [tyLePhiHuy, setTyLePhiHuy] = useState("");
+  const [dangTaiChinhSach, setDangTaiChinhSach] = useState(false);
+  const [dangCapNhatChinhSach, setDangCapNhatChinhSach] = useState(false);
+
+  const [moPopupYeuCauHuy, setMoPopupYeuCauHuy] = useState(false);
+  const [danhSachYeuCauHuy, setDanhSachYeuCauHuy] = useState([]);
+  const [trangYeuCauHuyHienTai, setTrangYeuCauHuyHienTai] = useState(1);
+  const [soLuongYeuCauHuyChoXuLy, setSoLuongYeuCauHuyChoXuLy] =
+    useState(0);
+  const [dangTaiDanhSachYeuCauHuy, setDangTaiDanhSachYeuCauHuy] =
+    useState(false);
+
+  const [donXuLyHuy, setDonXuLyHuy] = useState(null);
+  const [ghiChuXuLyHuy, setGhiChuXuLyHuy] = useState("");
+  const [dangXuLyHuy, setDangXuLyHuy] = useState(false);
+
   const [moPopupChiTiet, setMoPopupChiTiet] = useState(false);
   const [chiTietDon, setChiTietDon] = useState(null);
   const [dangTaiChiTiet, setDangTaiChiTiet] = useState(false);
@@ -196,6 +317,8 @@ function AdminOrderList() {
   const [donBanGiao, setDonBanGiao] = useState(null);
   const [boDiKemTheoChiTiet, setBoDiKemTheoChiTiet] = useState({});
   const [taiSanTheoMau, setTaiSanTheoMau] = useState({});
+  const [viTriPhuKienTheoId, setViTriPhuKienTheoId] = useState({});
+  const [phanBoPhuKien, setPhanBoPhuKien] = useState({});
   const [luaChonVatPham, setLuaChonVatPham] = useState({});
   const [ghiChuBanGiao, setGhiChuBanGiao] = useState("");
   const [hopDongFiles, setHopDongFiles] = useState([]);
@@ -210,6 +333,52 @@ function AdminOrderList() {
 
   function hienThi(giaTri) {
     return giaTri || "-";
+  }
+
+  function layKetQuaThanhLyDaChon(don) {
+    if (
+      !don ||
+      (Number(don.trang_thai) !== TRANG_THAI_HOAN_THANH && !don.tra_luc)
+    ) {
+      return null;
+    }
+
+    const danhSachThanhToan = don.thanh_toan || [];
+
+    const tinhTongTheoLoai = (loaiDongTienId) =>
+      danhSachThanhToan
+        .filter(
+          (item) =>
+            Number(item.loai_dong_tien_id) === Number(loaiDongTienId)
+        )
+        .reduce((tong, item) => tong + Number(item.so_tien || 0), 0);
+
+    const tienPhuThu = tinhTongTheoLoai(LOAI_PHU_THU);
+    const tienKhauTru = tinhTongTheoLoai(LOAI_KHAU_TRU_COC);
+    const tienHoanCoc = tinhTongTheoLoai(LOAI_HOAN_COC);
+
+    if (tienPhuThu > 0) {
+      return {
+        ten: "Phụ thu",
+        so_tien: tienPhuThu,
+      };
+    }
+
+    if (tienKhauTru > 0) {
+      return {
+        ten: "Khấu trừ cọc",
+        so_tien: tienKhauTru,
+      };
+    }
+
+    if (tienHoanCoc > 0) {
+      return {
+        ten: "Hoàn cọc",
+        so_tien: tienHoanCoc,
+      };
+    }
+
+    return null;
   }
 
   function dinhDangTien(giaTri) {
@@ -259,6 +428,31 @@ function AdminOrderList() {
     }
 
     return "trang-thai-badge trang-thai-xam";
+  }
+
+  function layClassTrangThaiYeuCauHuy(id) {
+    const trangThai = Number(id);
+
+    if (trangThai === TRANG_THAI_YEU_CAU_HUY_CHO_XU_LY) {
+      return "trang-thai-badge trang-thai-cam";
+    }
+
+    if (trangThai === TRANG_THAI_YEU_CAU_HUY_DA_XAC_NHAN) {
+      return "trang-thai-badge trang-thai-xanh";
+    }
+
+    if (trangThai === TRANG_THAI_YEU_CAU_HUY_TU_CHOI) {
+      return "trang-thai-badge trang-thai-do";
+    }
+
+    return "trang-thai-badge trang-thai-xam";
+  }
+
+  function dangChoXuLyHuy(don) {
+    return (
+      Number(don?.yeu_cau_huy?.trang_thai_id) ===
+      TRANG_THAI_YEU_CAU_HUY_CHO_XU_LY
+    );
   }
 
   function tenMauDayDu(item) {
@@ -389,6 +583,166 @@ function AdminOrderList() {
     );
   }
 
+  async function layChinhSachThue() {
+    try {
+      setDangTaiChinhSach(true);
+
+      const phanHoi = await fetch(
+        `${DUONG_DAN_API}/api/admin/rental-policy`,
+        {
+          headers: {
+            ...taoHeaderCoToken(),
+          },
+        }
+      );
+
+      const duLieu = await phanHoi.json();
+
+      if (duLieu.success) {
+        setTyLePhiHuy(String(duLieu.data?.ty_le_phi_huy ?? ""));
+      } else {
+        moPopup(duLieu.message);
+      }
+    } catch {
+      moPopup("Không kết nối được server");
+    } finally {
+      setDangTaiChinhSach(false);
+    }
+  }
+
+  async function capNhatChinhSachThue() {
+    try {
+      setDangCapNhatChinhSach(true);
+
+      const tyLe = Number(tyLePhiHuy);
+
+      if (!Number.isFinite(tyLe) || tyLe < 0 || tyLe > 100) {
+        throw new Error("Tỷ lệ phí hủy phải từ 0 đến 100");
+      }
+
+      const phanHoi = await fetch(
+        `${DUONG_DAN_API}/api/admin/rental-policy`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...taoHeaderCoToken(),
+          },
+          body: JSON.stringify({
+            ty_le_phi_huy: tyLe,
+          }),
+        }
+      );
+
+      const duLieu = await phanHoi.json();
+
+      if (!duLieu.success) {
+        throw new Error(duLieu.message);
+      }
+
+      setTyLePhiHuy(String(duLieu.data?.ty_le_phi_huy ?? tyLe));
+      moPopup(duLieu.message);
+    } catch (loi) {
+      moPopup(loi.message || "Không kết nối được server");
+    } finally {
+      setDangCapNhatChinhSach(false);
+    }
+  }
+
+  async function layDanhSachYeuCauHuy() {
+    try {
+      setDangTaiDanhSachYeuCauHuy(true);
+
+      const phanHoi = await fetch(
+        `${DUONG_DAN_API}/api/admin/orders?yeu_cau_huy=1`,
+        {
+          headers: {
+            ...taoHeaderCoToken(),
+          },
+        }
+      );
+
+      const noiDung = await phanHoi.text();
+      let duLieu;
+
+      try {
+        duLieu = JSON.parse(noiDung);
+      } catch {
+        throw new Error(
+          `API yêu cầu hủy trả về dữ liệu không hợp lệ (HTTP ${phanHoi.status})`
+        );
+      }
+
+      if (!duLieu.success) {
+        throw new Error(duLieu.message);
+      }
+
+      setDanhSachYeuCauHuy(duLieu.data || []);
+      setSoLuongYeuCauHuyChoXuLy(Number(duLieu.so_luong_cho_xu_ly || 0));
+    } catch (loi) {
+      moPopup(loi.message || "Không kết nối được server");
+    } finally {
+      setDangTaiDanhSachYeuCauHuy(false);
+    }
+  }
+
+  async function moXuLyYeuCauHuy(donId) {
+    try {
+      const don = await layChiTietDon(donId);
+
+      if (!dangChoXuLyHuy(don)) {
+        throw new Error("Yêu cầu hủy không còn ở trạng thái Chờ xử lý");
+      }
+
+      setDonXuLyHuy(don);
+      setGhiChuXuLyHuy("");
+    } catch (loi) {
+      moPopup(loi.message || "Không kết nối được server");
+    }
+  }
+
+  async function xuLyYeuCauHuy(hanhDong) {
+    try {
+      if (!donXuLyHuy?.yeu_cau_huy?.id) {
+        throw new Error("Không tìm thấy yêu cầu hủy đơn");
+      }
+
+      setDangXuLyHuy(true);
+
+      const endpoint = hanhDong === "confirm" ? "confirm" : "reject";
+
+      const phanHoi = await fetch(
+        `${DUONG_DAN_API}/api/admin/cancel-requests/${donXuLyHuy.yeu_cau_huy.id}/${endpoint}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            ...taoHeaderCoToken(),
+          },
+          body: JSON.stringify({
+            ghi_chu_xu_ly: ghiChuXuLyHuy.trim(),
+          }),
+        }
+      );
+
+      const duLieu = await phanHoi.json();
+
+      if (!duLieu.success) {
+        throw new Error(duLieu.message);
+      }
+
+      setDonXuLyHuy(null);
+      setGhiChuXuLyHuy("");
+      moPopup(duLieu.message);
+      await layDanhSachDon();
+      await layDanhSachYeuCauHuy();
+    } catch (loi) {
+      moPopup(loi.message || "Không kết nối được server");
+    } finally {
+      setDangXuLyHuy(false);
+    }
+  }
+
   async function layDanhSachDon() {
     try {
       setDangTai(true);
@@ -479,6 +833,28 @@ function AdminOrderList() {
     return duLieu.data?.bo_di_kem || [];
   }
 
+  async function layViTriKhoPhuKien(phuKienId) {
+    const params = new URLSearchParams();
+    params.set("phu_kien_id", phuKienId);
+
+    const phanHoi = await fetch(
+      `${DUONG_DAN_API}/api/warehouse-locations/options?${params.toString()}`,
+      {
+        headers: {
+          ...taoHeaderCoToken(),
+        },
+      }
+    );
+
+    const duLieu = await phanHoi.json();
+
+    if (!duLieu.success) {
+      throw new Error(duLieu.message);
+    }
+
+    return duLieu.data || [];
+  }
+
   async function layTaiSanSanSang(mauThietBiId, ngayNhan, ngayTra) {
     const params = new URLSearchParams();
 
@@ -511,6 +887,8 @@ function AdminOrderList() {
       setDonBanGiao(null);
       setBoDiKemTheoChiTiet({});
       setTaiSanTheoMau({});
+      setViTriPhuKienTheoId({});
+      setPhanBoPhuKien({});
       setLuaChonVatPham({});
       setGhiChuBanGiao("");
       setHopDongFiles([]);
@@ -522,8 +900,14 @@ function AdminOrderList() {
         throw new Error("Chỉ lập bàn giao được đơn ở trạng thái Đã giữ chỗ");
       }
 
+      if (dangChoXuLyHuy(chiTiet)) {
+        throw new Error("Đơn đang có yêu cầu hủy Chờ xử lý, không thể bàn giao");
+      }
+
       const boDiKemTam = {};
       const taiSanTam = {};
+      const viTriPhuKienTam = {};
+      const phanBoPhuKienTam = {};
       const luaChonTam = {};
 
       async function napTaiSanTheoMau(mauId) {
@@ -560,7 +944,30 @@ function AdminOrderList() {
           }
 
           if (bdk.phu_kien_id) {
-            luaChonTam[`pk-${dong.id}-${bdk.id}`] = soLuongCan;
+            if (!viTriPhuKienTam[bdk.phu_kien_id]) {
+              viTriPhuKienTam[bdk.phu_kien_id] =
+                await layViTriKhoPhuKien(bdk.phu_kien_id);
+            }
+
+            const danhSachViTri = viTriPhuKienTam[bdk.phu_kien_id] || [];
+            const coViTriDuSoLuong = danhSachViTri.some(
+              (item) => Number(item.so_luong_kha_dung || 0) >= soLuongCan
+            );
+
+            if (!coViTriDuSoLuong) {
+              throw new Error(
+                `${taoTenVatPhamBoDiKem(bdk)} không có vị trí nào còn đủ ${soLuongCan} để bàn giao`
+              );
+            }
+
+            const keyPhuKien = `pk-${dong.id}-${bdk.id}`;
+
+            phanBoPhuKienTam[keyPhuKien] = [
+              {
+                phu_kien_vi_tri_kho_id: "",
+                so_luong: soLuongCan,
+              },
+            ];
           }
         }
       }
@@ -568,6 +975,8 @@ function AdminOrderList() {
       setDonBanGiao(chiTiet);
       setBoDiKemTheoChiTiet(boDiKemTam);
       setTaiSanTheoMau(taiSanTam);
+      setViTriPhuKienTheoId(viTriPhuKienTam);
+      setPhanBoPhuKien(phanBoPhuKienTam);
       setLuaChonVatPham(luaChonTam);
     } catch (loi) {
       setMoPopupBanGiao(false);
@@ -579,6 +988,80 @@ function AdminOrderList() {
     setLuaChonVatPham({
       ...luaChonVatPham,
       [key]: value,
+    });
+  }
+
+  function thayDoiPhanBoPhuKien(key, index, tenTruong, giaTri) {
+    setPhanBoPhuKien((duLieuCu) => ({
+      ...duLieuCu,
+      [key]: (duLieuCu[key] || []).map((item, viTri) =>
+        viTri === index
+          ? {
+              ...item,
+              [tenTruong]: giaTri,
+            }
+          : item
+      ),
+    }));
+  }
+
+  function laySoLuongDaChonTaiViTri(
+    phuKienViTriKhoId,
+    keyBoQua,
+    indexBoQua
+  ) {
+    let tong = 0;
+
+    for (const [key, danhSach] of Object.entries(phanBoPhuKien)) {
+      (danhSach || []).forEach((item, index) => {
+        if (key === keyBoQua && index === indexBoQua) return;
+
+        if (
+          String(item.phu_kien_vi_tri_kho_id || "") ===
+          String(phuKienViTriKhoId || "")
+        ) {
+          tong += Number(item.so_luong || 0);
+        }
+      });
+    }
+
+    return tong;
+  }
+
+  function laySoLuongConLaiTaiViTri(
+    phuKienId,
+    phuKienViTriKhoId,
+    keyHienTai,
+    indexHienTai
+  ) {
+    const viTri = (viTriPhuKienTheoId[phuKienId] || []).find(
+      (item) =>
+        String(item.phu_kien_vi_tri_kho_id) ===
+        String(phuKienViTriKhoId)
+    );
+
+    if (!viTri) return 0;
+
+    // Chỉ hiển thị số sẵn sàng hiện tại do Backend trả về.
+    // Chọn vị trí trong popup bàn giao chưa làm giảm số lượng.
+    // Số sẵn sàng chỉ thay đổi sau khi xác nhận bàn giao thành công.
+    return Math.max(Number(viTri.so_luong_kha_dung || 0), 0);
+  }
+
+  function layDanhSachViTriDuSoLuong(
+    phuKienId,
+    keyHienTai,
+    soLuongCan
+  ) {
+    return (viTriPhuKienTheoId[phuKienId] || []).filter((item) => {
+      const soLuongConLai = laySoLuongConLaiTaiViTri(
+        phuKienId,
+        item.phu_kien_vi_tri_kho_id,
+        keyHienTai,
+        0
+      );
+
+      return soLuongConLai >= Number(soLuongCan || 0);
     });
   }
 
@@ -670,11 +1153,27 @@ function AdminOrderList() {
 
         if (bdk.phu_kien_id) {
           const key = `pk-${dong.id}-${bdk.id}`;
-          const soLuongGiao = Number(luaChonVatPham[key] || 0);
+          const phanBo = (phanBoPhuKien[key] || [])[0];
+          const phuKienViTriKhoId = String(
+            phanBo?.phu_kien_vi_tri_kho_id || ""
+          ).trim();
 
-          if (soLuongGiao !== soLuongCan) {
+          if (!phuKienViTriKhoId) {
             throw new Error(
-              `Số lượng ${taoTenVatPhamBoDiKem(bdk)} phải bằng ${soLuongCan}`
+              `Chưa chọn vị trí kho cho ${taoTenVatPhamBoDiKem(bdk)}`
+            );
+          }
+
+          const soLuongConLai = laySoLuongConLaiTaiViTri(
+            bdk.phu_kien_id,
+            phuKienViTriKhoId,
+            key,
+            0
+          );
+
+          if (soLuongConLai < soLuongCan) {
+            throw new Error(
+              `Vị trí đã chọn chỉ còn ${soLuongConLai} ${taoTenVatPhamBoDiKem(bdk)}, không đủ ${soLuongCan}`
             );
           }
 
@@ -683,7 +1182,8 @@ function AdminOrderList() {
             bo_di_kem_id: bdk.id,
             thiet_bi_id: null,
             phu_kien_id: bdk.phu_kien_id,
-            so_luong_giao: soLuongGiao,
+            phu_kien_vi_tri_kho_id: phuKienViTriKhoId,
+            so_luong_giao: soLuongCan,
           });
         }
       }
@@ -775,9 +1275,67 @@ function AdminOrderList() {
     layDanhSachDon();
   }, [trangHienTai, trangThaiLoc, tuKhoa]);
 
+  useEffect(() => {
+    layChinhSachThue();
+    layDanhSachYeuCauHuy();
+  }, []);
+
+  const tongTrangYeuCauHuy = Math.max(
+    1,
+    Math.ceil(
+      danhSachYeuCauHuy.length / SO_DONG_YEU_CAU_HUY_MOI_TRANG
+    )
+  );
+
+  const viTriBatDauYeuCauHuy =
+    (trangYeuCauHuyHienTai - 1) * SO_DONG_YEU_CAU_HUY_MOI_TRANG;
+
+  const danhSachYeuCauHuyHienThi = danhSachYeuCauHuy.slice(
+    viTriBatDauYeuCauHuy,
+    viTriBatDauYeuCauHuy + SO_DONG_YEU_CAU_HUY_MOI_TRANG
+  );
+
+  useEffect(() => {
+    if (trangYeuCauHuyHienTai > tongTrangYeuCauHuy) {
+      setTrangYeuCauHuyHienTai(tongTrangYeuCauHuy);
+    }
+  }, [
+    danhSachYeuCauHuy.length,
+    trangYeuCauHuyHienTai,
+    tongTrangYeuCauHuy,
+  ]);
+
   return (
     <div className="trang-quan-ly-don-thue">
-      <h2>Quản lý đơn thuê</h2>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "12px",
+          flexWrap: "wrap",
+          marginBottom: "16px",
+        }}
+      >
+        <h2 style={{ margin: 0 }}>Quản lý đơn thuê</h2>
+
+        <button
+          className="nut-huy nut-yeu-cau-huy-admin"
+          type="button"
+          onClick={async () => {
+            setTrangYeuCauHuyHienTai(1);
+            setMoPopupYeuCauHuy(true);
+            await layChinhSachThue();
+            await layDanhSachYeuCauHuy();
+          }}
+        >
+          Yêu cầu hủy
+
+          <span className="so-luong-yeu-cau-huy-admin">
+            {soLuongYeuCauHuyChoXuLy}
+          </span>
+        </button>
+      </div>
 
       <div className="khung-loc-admin">
         <input
@@ -852,6 +1410,7 @@ function AdminOrderList() {
                       {layTenTrangThai(don.trang_thai, don.ten_trang_thai)}
                     </span>
                   </td>
+
                   <td>{dinhDangNgay(don.created_at)}</td>
                   <td>
                     <div className="cot-thao-tac">
@@ -866,7 +1425,10 @@ function AdminOrderList() {
                       <button
                         className="nut-ban-giao nut-thao-tac-bang-nhau"
                         type="button"
-                        disabled={Number(don.trang_thai) !== TRANG_THAI_DA_GIU_CHO}
+                        disabled={
+                          Number(don.trang_thai) !== TRANG_THAI_DA_GIU_CHO ||
+                          dangChoXuLyHuy(don)
+                        }
                         onClick={() => moLapBanGiao(don.id)}
                       >
                         Bàn giao
@@ -981,14 +1543,63 @@ function AdminOrderList() {
                         </td>
                       </tr>
 
-                      <tr>
-                        <td>Lý do hủy</td>
-                        <td>{hienThi(chiTietDon.ly_do_huy)}</td>
-                      </tr>
+                      {Number(chiTietDon.trang_thai) === TRANG_THAI_DA_HUY && (
+                        <>
+                          <tr>
+                            <td>Phí hủy đơn (%)</td>
+                            <td>
+                              {Number(
+                                chiTietDon.yeu_cau_huy
+                                  ?.ty_le_phi_huy_snapshot ??
+                                  chiTietDon.ty_le_phi_huy_snapshot ??
+                                  0
+                              )}
+                              %
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>Phí hủy</td>
+                            <td>
+                              {dinhDangTien(
+                                chiTietDon.yeu_cau_huy?.phi_huy
+                              )}
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>Tiền cọc đã hoàn lại</td>
+                            <td>
+                              {dinhDangTien(
+                                chiTietDon.yeu_cau_huy?.tien_coc_hoan_lai
+                              )}
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>Lý do hủy</td>
+                            <td>
+                              {hienThi(
+                                chiTietDon.ly_do_huy ||
+                                  chiTietDon.yeu_cau_huy?.ly_do_huy
+                              )}
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>Ghi chú hủy</td>
+                            <td>
+                              {hienThi(
+                                chiTietDon.yeu_cau_huy?.ghi_chu_xu_ly
+                              )}
+                            </td>
+                          </tr>
+                        </>
+                      )}
                     </tbody>
                   </table>
 
-                  <h3>Thông tin bàn giao / thanh lý</h3>
+                  <h3>Thông tin bàn giao/thanh lý</h3>
 
                   <table className="bang-popup">
                     <tbody>
@@ -1022,14 +1633,53 @@ function AdminOrderList() {
                         <td>{hienThi(chiTietDon.ghi_chu_thanh_ly)}</td>
                       </tr>
 
-                      <tr>
-                        <td>Phí phát sinh</td>
-                        <td>{dinhDangTien(chiTietDon.phi_phat_sinh_tien)}</td>
-                      </tr>
+                      {(() => {
+                        const ketQuaThanhLy =
+                          layKetQuaThanhLyDaChon(chiTietDon);
+
+                        if (!ketQuaThanhLy) return null;
+
+                        return (
+                          <tr>
+                            <td>{ketQuaThanhLy.ten}</td>
+                            <td>{dinhDangTien(ketQuaThanhLy.so_tien)}</td>
+                          </tr>
+                        );
+                      })()}
                     </tbody>
                   </table>
 
-                  <h3>Vật phẩm đã bàn giao</h3>
+                  <h3>Thiết bị trong đơn</h3>
+
+                  {(chiTietDon.chi_tiet || []).length > 0 ? (
+                    <div className="admin-bang-wrapper">
+                      <table className="bang-quan-ly bang-gon">
+                        <thead>
+                          <tr>
+                            <th>STT</th>
+                            <th>Tên mẫu</th>
+                            <th>Giá trị thiết bị</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {chiTietDon.chi_tiet.map((item, index) => (
+                            <tr key={item.id}>
+                              <td>{index + 1}</td>
+                              <td>{hienThi(item.ten_mau)}</td>
+                              <td>
+                                {dinhDangTien(item.gia_tri_thiet_bi_snapshot)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p>Chưa có thiết bị trong đơn.</p>
+                  )}
+
+                  <h3>Vật phẩm bàn giao</h3>
 
                   {(chiTietDon.vat_pham_ban_giao || []).length > 0 ? (
                     <div className="admin-bang-wrapper">
@@ -1204,9 +1854,20 @@ function AdminOrderList() {
                             <div className="anh-mau-ban-giao-rong">Không ảnh</div>
                           )}
 
-                          <h4>
-                            {hienThi(dong.ten_mau)} - Số lượng: {soLuongDat}
-                          </h4>
+                          <div>
+                            <h4>
+                              {hienThi(dong.ten_mau)} - Số lượng: {soLuongDat}
+                            </h4>
+
+                            <p style={{ margin: "4px 0 0" }}>
+                              Giá trị thiết bị:{" "}
+                              <b>
+                                {dinhDangTien(
+                                  dong.gia_tri_thiet_bi_snapshot
+                                )}
+                              </b>
+                            </p>
+                          </div>
                         </div>
 
                         <table className="bang-quan-ly bang-gon">
@@ -1275,27 +1936,54 @@ function AdminOrderList() {
 
                               if (bdk.phu_kien_id) {
                                 const key = `pk-${dong.id}-${bdk.id}`;
+                                const phanBo = (phanBoPhuKien[key] || [])[0];
+                                const danhSachViTriDuSoLuong =
+                                  layDanhSachViTriDuSoLuong(
+                                    bdk.phu_kien_id,
+                                    key,
+                                    soLuongCan
+                                  );
+
+                                const danhSachViTriCombobox =
+                                  danhSachViTriDuSoLuong.map((viTri) => {
+                                    const soLuongConLai =
+                                      laySoLuongConLaiTaiViTri(
+                                        bdk.phu_kien_id,
+                                        viTri.phu_kien_vi_tri_kho_id,
+                                        key,
+                                        0
+                                      );
+
+                                    return {
+                                      ...viTri,
+                                      so_luong_hien_thi: soLuongConLai,
+                                    };
+                                  });
 
                                 return (
                                   <tr key={key}>
                                     <td>Phụ kiện</td>
                                     <td>{taoTenVatPhamBoDiKem(bdk)}</td>
                                     <td>
-                                      <div className="nhom-nhap-so-luong-phu-kien">
-                                        <input
-                                          className="o-so-luong-phu-kien"
-                                          type="number"
-                                          min="0"
-                                          value={luaChonVatPham[key] || 0}
-                                          onChange={(e) =>
-                                            thayDoiLuaChon(key, e.target.value)
-                                          }
-                                        />
-
-                                        <span className="goi-y-so-luong">
-                                          Cần giao: {soLuongCan}
-                                        </span>
+                                      <div className="goi-y-so-luong goi-y-so-luong-ban-giao">
+                                        Cần giao: {soLuongCan}
                                       </div>
+
+                                      <ComboboxTimViTriPhuKien
+                                        value={
+                                          phanBo?.phu_kien_vi_tri_kho_id || ""
+                                        }
+                                        danhSachViTri={danhSachViTriCombobox}
+                                        onChange={(value) =>
+                                          thayDoiPhanBoPhuKien(
+                                            key,
+                                            0,
+                                            "phu_kien_vi_tri_kho_id",
+                                            value
+                                          )
+                                        }
+                                        placeholder="Tìm và chọn vị trí kho"
+                                      />
                                     </td>
                                   </tr>
                                 );
@@ -1362,6 +2050,311 @@ function AdminOrderList() {
 
                   </div>
                 </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {donXuLyHuy && donXuLyHuy.yeu_cau_huy && (
+        <div className="popup-nen popup-nen-cap-hai">
+          <div className="popup-hop popup-xac-nhan">
+            <div className="popup-tieu-de">
+              <h3>Xử lý hủy đơn</h3>
+
+              <button
+                className="nut-dong-popup"
+                type="button"
+                disabled={dangXuLyHuy}
+                onClick={() => {
+                  setDonXuLyHuy(null);
+                  setGhiChuXuLyHuy("");
+                }}
+              >
+                Đóng
+              </button>
+            </div>
+
+            <div className="popup-noi-dung">
+              <table className="bang-popup">
+                <tbody>
+                  <tr>
+                    <td>Mã đơn</td>
+                    <td>{hienThi(donXuLyHuy.ma_don)}</td>
+                  </tr>
+
+                  <tr>
+                    <td>Khách hàng</td>
+                    <td>{hienThi(donXuLyHuy.ten_khach_hang)}</td>
+                  </tr>
+
+                  <tr>
+                    <td>Trạng thái</td>
+                    <td>
+                      <span
+                        className={layClassTrangThaiYeuCauHuy(
+                          donXuLyHuy.yeu_cau_huy.trang_thai_id
+                        )}
+                      >
+                        {donXuLyHuy.yeu_cau_huy.ten_trang_thai || "-"}
+                      </span>
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>Lý do hủy</td>
+                    <td>{hienThi(donXuLyHuy.yeu_cau_huy.ly_do_huy)}</td>
+                  </tr>
+
+                  <tr>
+                    <td>Tiền cọc</td>
+                    <td>
+                      {dinhDangTien(
+                        donXuLyHuy.yeu_cau_huy.tong_tien_coc_snapshot
+                      )}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>Tỷ lệ phí hủy</td>
+                    <td>
+                      {Number(
+                        donXuLyHuy.yeu_cau_huy.ty_le_phi_huy_snapshot || 0
+                      )}
+                      %
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td>Phí hủy</td>
+                    <td>{dinhDangTien(donXuLyHuy.yeu_cau_huy.phi_huy)}</td>
+                  </tr>
+
+                  <tr>
+                    <td>Tiền cọc hoàn lại</td>
+                    <td>
+                      {dinhDangTien(
+                        donXuLyHuy.yeu_cau_huy.tien_coc_hoan_lai
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="o-form can-trai">
+                <label>Ghi chú xử lý</label>
+                <textarea
+                  value={ghiChuXuLyHuy}
+                  onChange={(e) => setGhiChuXuLyHuy(e.target.value)}
+                  placeholder="Nhập ghi chú xử lý nếu có..."
+                />
+              </div>
+            </div>
+
+            <div className="popup-actions">
+              <button
+                className="nut-huy"
+                type="button"
+                disabled={dangXuLyHuy}
+                onClick={() => xuLyYeuCauHuy("reject")}
+              >
+                Từ chối
+              </button>
+
+              <button
+                className="nut-dong-y"
+                type="button"
+                disabled={dangXuLyHuy}
+                onClick={() => xuLyYeuCauHuy("confirm")}
+              >
+                {dangXuLyHuy ? "Đang xử lý..." : "Xác nhận hủy"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {moPopupYeuCauHuy && (
+        <div className="popup-nen">
+          <div
+            className="popup-hop popup-lon"
+            style={{
+              maxWidth: "1500px",
+              width: "98vw",
+              height: "92vh",
+              maxHeight: "96vh",
+            }}
+          >
+            <div className="popup-tieu-de">
+              <h3>Danh sách yêu cầu hủy</h3>
+
+              <button
+                className="nut-dong-popup"
+                type="button"
+                onClick={() => setMoPopupYeuCauHuy(false)}
+              >
+                Đóng
+              </button>
+            </div>
+
+            <div className="popup-noi-dung">
+              <div
+                style={{
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "10px",
+                  padding: "14px",
+                  marginBottom: "14px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "end",
+                    gap: "12px",
+                  }}
+                >
+                  <div className="o-form" style={{ margin: 0, maxWidth: "220px" }}>
+                    <label>Phí hủy đơn (%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={tyLePhiHuy}
+                      disabled={dangTaiChinhSach || dangCapNhatChinhSach}
+                      onChange={(e) => setTyLePhiHuy(e.target.value)}
+                    />
+                  </div>
+
+                  <button
+                    className="nut-dong-y"
+                    type="button"
+                    disabled={dangTaiChinhSach || dangCapNhatChinhSach}
+                    onClick={capNhatChinhSachThue}
+                  >
+                    {dangCapNhatChinhSach ? "Đang cập nhật..." : "Cập nhật"}
+                  </button>
+                </div>
+
+                <p
+                  style={{
+                    margin: "10px 0 0 0",
+                    color: "#64748b",
+                    fontSize: "14px",
+                  }}
+                >
+                  Số yêu cầu hủy chờ xử lý: <b>{soLuongYeuCauHuyChoXuLy}</b>
+                </p>
+              </div>
+
+              <div className="admin-bang-wrapper">
+                <table className="bang-quan-ly bang-gon bang-yeu-cau-huy">
+                  <thead>
+                    <tr>
+                      <th>STT</th>
+                      <th>Mã đơn</th>
+                      <th>Khách hàng</th>
+                      <th>Ngày nhận</th>
+                      <th>Ngày trả</th>
+                      <th>Tiền cọc</th>
+                      <th>Phí hủy</th>
+                      <th>Hoàn lại</th>
+                      <th>Trạng thái</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {dangTaiDanhSachYeuCauHuy ? (
+                      <tr>
+                        <td colSpan="10" style={{ textAlign: "center" }}>
+                          Đang tải danh sách yêu cầu hủy...
+                        </td>
+                      </tr>
+                    ) : danhSachYeuCauHuy.length === 0 ? (
+                      <tr>
+                        <td colSpan="10" style={{ textAlign: "center" }}>
+                          Chưa có yêu cầu hủy nào
+                        </td>
+                      </tr>
+                    ) : (
+                      danhSachYeuCauHuyHienThi.map((don, index) => (
+                        <tr key={don.yeu_cau_huy?.id || don.id}>
+                          <td>{index + 1}</td>
+                          <td>{hienThi(don.ma_don)}</td>
+                          <td>{hienThi(don.ten_khach_hang)}</td>
+                          <td>{dinhDangNgay(don.ngay_nhan)}</td>
+                          <td>{dinhDangNgay(don.ngay_tra)}</td>
+                          <td>{dinhDangTien(don.tong_tien_coc)}</td>
+                          <td>{dinhDangTien(don.yeu_cau_huy?.phi_huy)}</td>
+                          <td>{dinhDangTien(don.yeu_cau_huy?.tien_coc_hoan_lai)}</td>
+                          <td>
+                            <span
+                              className={layClassTrangThaiYeuCauHuy(
+                                don.yeu_cau_huy?.trang_thai_id
+                              )}
+                            >
+                              {don.yeu_cau_huy?.ten_trang_thai || "-"}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="cot-thao-tac">
+
+                              <button
+                                className="nut-huy nut-thao-tac-bang-nhau"
+                                type="button"
+                                disabled={!dangChoXuLyHuy(don)}
+                                onClick={() => {
+                                  if (dangChoXuLyHuy(don)) {
+                                    moXuLyYeuCauHuy(don.id);
+                                  }
+                                }}
+                              >
+                                Xử lý hủy
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {tongTrangYeuCauHuy > 1 && (
+                <div className="phan-trang">
+                  <button
+                    type="button"
+                    disabled={trangYeuCauHuyHienTai === 1}
+                    onClick={() =>
+                      setTrangYeuCauHuyHienTai(
+                        trangYeuCauHuyHienTai - 1
+                      )
+                    }
+                  >
+                    Trước
+                  </button>
+
+                  <span>
+                    Trang {trangYeuCauHuyHienTai} / {tongTrangYeuCauHuy}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={
+                      trangYeuCauHuyHienTai === tongTrangYeuCauHuy
+                    }
+                    onClick={() =>
+                      setTrangYeuCauHuyHienTai(
+                        trangYeuCauHuyHienTai + 1
+                      )
+                    }
+                  >
+                    Sau
+                  </button>
+                </div>
               )}
             </div>
           </div>

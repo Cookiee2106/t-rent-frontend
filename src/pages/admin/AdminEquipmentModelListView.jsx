@@ -12,6 +12,7 @@ function AdminEquipmentModelList() {
   const [danhSachHang, setDanhSachHang] = useState([]);
   const [danhSachNgam, setDanhSachNgam] = useState([]);
   const [danhSachNhuCau, setDanhSachNhuCau] = useState([]);
+  const [tyLeCocMacDinh, setTyLeCocMacDinh] = useState(null);
 
   const [tuKhoaNhap, setTuKhoaNhap] = useState("");
   const [hangNhap, setHangNhap] = useState("");
@@ -39,7 +40,8 @@ function AdminEquipmentModelList() {
     ten_mau: "",
     mo_ta: "",
     gia_thue_ngay: "",
-    tien_coc: "",
+    gia_tri_thiet_bi: "",
+    ty_le_coc: "",
   });
 
   // Chỉ gửi lại ngàm hoặc nhu cầu khi người dùng thực sự thay đổi.
@@ -128,6 +130,41 @@ function AdminEquipmentModelList() {
 
   function dinhDangTien(giaTri) {
     return Number(giaTri || 0).toLocaleString("vi-VN") + " đ";
+  }
+
+  function dinhDangTienNeuCo(giaTri) {
+    if (giaTri === undefined || giaTri === null || giaTri === "") {
+      return "-";
+    }
+
+    return dinhDangTien(giaTri);
+  }
+
+  function dinhDangPhanTram(giaTri) {
+    if (giaTri === undefined || giaTri === null || giaTri === "") {
+      return "-";
+    }
+
+    return `${Number(giaTri)}%`;
+  }
+
+  function tinhTienCocDuKien() {
+    const giaTriThietBi = Number(formMau.gia_tri_thiet_bi);
+    const tyLeCoc = Number(formMau.ty_le_coc);
+
+    if (
+      !Number.isInteger(giaTriThietBi) ||
+      giaTriThietBi < 0 ||
+      !Number.isFinite(tyLeCoc) ||
+      tyLeCoc < 0 ||
+      tyLeCoc > 100
+    ) {
+      return 0;
+    }
+
+    return Math.round(
+      giaTriThietBi * tyLeCoc / 100
+    );
   }
 
   function layTenMau(mau) {
@@ -449,6 +486,18 @@ function AdminEquipmentModelList() {
       if (duLieu.success) {
         setDanhSachNgam(duLieu.data?.ngam || []);
         setDanhSachNhuCau(duLieu.data?.nhu_cau || []);
+
+        const tyLeMacDinh = Number(
+          duLieu.data?.ty_le_coc_mac_dinh
+        );
+
+        if (
+          Number.isFinite(tyLeMacDinh) &&
+          tyLeMacDinh >= 0 &&
+          tyLeMacDinh <= 100
+        ) {
+          setTyLeCocMacDinh(tyLeMacDinh);
+        }
       }
     } catch {
       // Không chặn màn hình nếu ngàm hoặc nhu cầu chưa tải được.
@@ -496,7 +545,8 @@ function AdminEquipmentModelList() {
       ten_mau: "",
       mo_ta: "",
       gia_thue_ngay: "",
-      tien_coc: "",
+      gia_tri_thiet_bi: "",
+      ty_le_coc: tyLeCocMacDinh === null ? "" : String(tyLeCocMacDinh),
     });
 
     setNgamDaThayDoi(true);
@@ -528,8 +578,10 @@ function AdminEquipmentModelList() {
         .filter(Boolean),
       ten_mau: mau.ten_mau || "",
       mo_ta: mau.mo_ta || "",
-      gia_thue_ngay: mau.gia_thue_ngay || "",
-      tien_coc: mau.tien_coc || "",
+      gia_thue_ngay: mau.gia_thue_ngay ?? "",
+      gia_tri_thiet_bi: mau.gia_tri_thiet_bi ?? "",
+      ty_le_coc:
+        mau.ty_le_coc ?? (tyLeCocMacDinh === null ? "" : String(tyLeCocMacDinh)),
     });
 
     setNgamDaThayDoi(false);
@@ -630,8 +682,22 @@ function AdminEquipmentModelList() {
       return false;
     }
 
-    if (Number(formMau.tien_coc || 0) < 0) {
-      moPopupThongBao("Tiền cọc không hợp lệ");
+    if (
+      formMau.gia_tri_thiet_bi === "" ||
+      !Number.isInteger(Number(formMau.gia_tri_thiet_bi)) ||
+      Number(formMau.gia_tri_thiet_bi) < 0
+    ) {
+      moPopupThongBao("Giá trị thiết bị phải là số nguyên lớn hơn hoặc bằng 0");
+      return false;
+    }
+
+    if (
+      formMau.ty_le_coc === "" ||
+      !Number.isFinite(Number(formMau.ty_le_coc)) ||
+      Number(formMau.ty_le_coc) < 0 ||
+      Number(formMau.ty_le_coc) > 100
+    ) {
+      moPopupThongBao("Tỷ lệ tiền cọc phải từ 0 đến 100");
       return false;
     }
 
@@ -659,7 +725,8 @@ function AdminEquipmentModelList() {
       formData.append("ten_mau", formMau.ten_mau);
       formData.append("mo_ta", formMau.mo_ta || "");
       formData.append("gia_thue_ngay", Number(formMau.gia_thue_ngay || 0));
-      formData.append("tien_coc", Number(formMau.tien_coc || 0));
+      formData.append("gia_tri_thiet_bi", Number(formMau.gia_tri_thiet_bi));
+      formData.append("ty_le_coc", Number(formMau.ty_le_coc));
 
       const danhMucCanNgam = laDanhMucCanNgam(formMau.danh_muc_id);
 
@@ -849,18 +916,19 @@ function AdminEquipmentModelList() {
         phu_kien_id: null,
       }));
 
-    const phuKien = (data?.phu_kien || [])
-      .filter((item) => laBoDiKemHopLe(item, mauChinh))
-      .map((item) => ({
-        id: item.id,
-        loai: "PHU_KIEN",
-        ten_hien_thi: item.ten_phu_kien,
-        mo_ta: `${item.ten_hang || "Không có hãng"} - ${
-          item.ten_danh_muc || ""
-        }`,
-        mau_thiet_bi_phu_id: null,
-        phu_kien_id: item.id,
-      }));
+    // Phụ kiện không còn lọc theo hãng ở Frontend.
+    // Backend là nguồn sự thật:
+    // chỉ Cáp sau của Ống kính mới được lọc theo cùng ngàm.
+    const phuKien = (data?.phu_kien || []).map((item) => ({
+      id: item.id,
+      loai: "PHU_KIEN",
+      ten_hien_thi: item.ten_phu_kien,
+      mo_ta: `${item.ten_danh_muc || ""}${
+        item.ten_ngam ? ` - Ngàm ${item.ten_ngam}` : ""
+      }`,
+      mau_thiet_bi_phu_id: null,
+      phu_kien_id: item.id,
+    }));
 
     return [...thietBiPhu, ...phuKien];
   }
@@ -1121,6 +1189,8 @@ function AdminEquipmentModelList() {
               <th>Hãng</th>
               <th>Danh mục</th>
               <th>Giá thuê/ngày</th>
+              <th>Giá trị thiết bị</th>
+              <th>Tỷ lệ cọc</th>
               <th>Tiền cọc</th>
               <th>Sẵn sàng</th>
               <th>Trạng thái</th>
@@ -1131,13 +1201,13 @@ function AdminEquipmentModelList() {
           <tbody>
             {dangTai ? (
               <tr>
-                <td colSpan="10" style={{ textAlign: "center" }}>
+                <td colSpan="12" style={{ textAlign: "center" }}>
                   Đang tải dữ liệu...
                 </td>
               </tr>
             ) : danhSachHienThi.length === 0 ? (
               <tr>
-                <td colSpan="10" style={{ textAlign: "center" }}>
+                <td colSpan="12" style={{ textAlign: "center" }}>
                   Không có dữ liệu
                 </td>
               </tr>
@@ -1163,6 +1233,8 @@ function AdminEquipmentModelList() {
                   <td>{hienThi(mau.ten_hang)}</td>
                   <td>{hienThi(mau.ten_danh_muc)}</td>
                   <td>{dinhDangTien(mau.gia_thue_ngay)}</td>
+                  <td>{dinhDangTienNeuCo(mau.gia_tri_thiet_bi)}</td>
+                  <td>{dinhDangPhanTram(mau.ty_le_coc)}</td>
                   <td>{dinhDangTien(mau.tien_coc)}</td>
                   <td>{hienThi(mau.so_luong_san_sang)}</td>
 
@@ -1333,6 +1405,16 @@ function AdminEquipmentModelList() {
                   <tr>
                     <td>Giá thuê/ngày</td>
                     <td>{dinhDangTien(chiTietMau.gia_thue_ngay)}</td>
+                  </tr>
+
+                  <tr>
+                    <td>Giá trị thiết bị</td>
+                    <td>{dinhDangTienNeuCo(chiTietMau.gia_tri_thiet_bi)}</td>
+                  </tr>
+
+                  <tr>
+                    <td>Tỷ lệ tiền cọc</td>
+                    <td>{dinhDangPhanTram(chiTietMau.ty_le_coc)}</td>
                   </tr>
 
                   <tr>
@@ -1590,14 +1672,47 @@ function AdminEquipmentModelList() {
                 </div>
 
                 <div className="o-form">
-                  <label>Tiền cọc</label>
+                  <label>Giá trị thiết bị</label>
 
                   <input
                     type="number"
                     min="0"
-                    value={formMau.tien_coc}
-                    onChange={(e) => doiFormMau("tien_coc", e.target.value)}
+                    step="1"
+                    value={formMau.gia_tri_thiet_bi}
+                    onChange={(e) =>
+                      doiFormMau("gia_tri_thiet_bi", e.target.value)
+                    }
                   />
+                </div>
+
+                <div className="o-form">
+                  <label>Tỷ lệ tiền cọc (%)</label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={formMau.ty_le_coc}
+                    onChange={(e) =>
+                      doiFormMau("ty_le_coc", e.target.value)
+                    }
+                  />
+
+                  <small className="ghi-chu-o-form">
+                    Mặc định: {tyLeCocMacDinh === null ? "-" : `${tyLeCocMacDinh}%`}.
+                  </small>
+                </div>
+
+                <div className="o-form">
+                  <label>Tiền cọc dự kiến</label>
+
+                  <input
+                    type="text"
+                    value={dinhDangTien(tinhTienCocDuKien())}
+                    readOnly
+                  />
+
                 </div>
 
                 <div className="o-form">
@@ -1860,8 +1975,10 @@ function AdminEquipmentModelList() {
                             ? `${item.ten_hang_thiet_bi_phu || ""} - ${
                                 item.ten_danh_muc_thiet_bi_phu || ""
                               }`
-                            : `${item.ten_hang_phu_kien || ""} - ${
-                                item.ten_danh_muc_phu_kien || ""
+                            : `${item.ten_danh_muc_phu_kien || ""}${
+                                item.ten_ngam_phu_kien
+                                  ? ` - Ngàm ${item.ten_ngam_phu_kien}`
+                                  : ""
                               }`}
                         </td>
 

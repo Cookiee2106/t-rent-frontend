@@ -59,6 +59,42 @@ function SettlementList() {
     return giaTri || "-";
   }
 
+  function layKetQuaThanhLyDaChon(don) {
+    if (
+      !don ||
+      (Number(don.trang_thai) !== TRANG_THAI_HOAN_THANH && !don.tra_luc)
+    ) {
+      return null;
+    }
+
+    const tienPhuThu = Number(don.tien_da_phu_thu || 0);
+    const tienKhauTru = Number(don.tien_da_khau_tru || 0);
+    const tienHoanCoc = Number(don.tien_da_hoan_coc || 0);
+
+    if (tienPhuThu > 0) {
+      return {
+        ten: "Phụ thu",
+        so_tien: tienPhuThu,
+      };
+    }
+
+    if (tienKhauTru > 0) {
+      return {
+        ten: "Khấu trừ cọc",
+        so_tien: tienKhauTru,
+      };
+    }
+
+    if (tienHoanCoc > 0) {
+      return {
+        ten: "Hoàn cọc",
+        so_tien: tienHoanCoc,
+      };
+    }
+
+    return null;
+  }
+
   function laFileAnh(file) {
     if (!file) return false;
     if (file.loai_file && file.loai_file.startsWith("image/")) return true;
@@ -191,7 +227,14 @@ function SettlementList() {
   }
 
   function taoKeyPhuKien(item) {
-    return `${item.chi_tiet_don_thue_id}_${item.bo_di_kem_id || ""}_${item.phu_kien_id}`;
+    const banGiaoVatPhamId =
+      item.ban_giao_vat_pham_id || item.id || null;
+
+    if (banGiaoVatPhamId) {
+      return `BGVP_${banGiaoVatPhamId}`;
+    }
+
+    return `${item.chi_tiet_don_thue_id}_${item.bo_di_kem_id || ""}_${item.phu_kien_id}_${item.phu_kien_vi_tri_kho_id || ""}`;
   }
 
   function taoDanhSachKiemTraMacDinh(chiTiet) {
@@ -219,10 +262,12 @@ function SettlementList() {
         if (!vatPham.thiet_bi_id && vatPham.phu_kien_id) {
           danhSach.push({
             loai_kiem_tra: "PHU_KIEN",
+            ban_giao_vat_pham_id: vatPham.id,
             thiet_bi_id: null,
             chi_tiet_don_thue_id: sanPham.chi_tiet_don_thue_id,
             bo_di_kem_id: vatPham.bo_di_kem_id || null,
             phu_kien_id: vatPham.phu_kien_id,
+            phu_kien_vi_tri_kho_id: vatPham.phu_kien_vi_tri_kho_id || null,
             trang_thai_sau_tra: "",
             so_luong_giao: Number(vatPham.so_luong_giao || 1),
             so_luong_tra_lai: Number(vatPham.so_luong_giao || 1),
@@ -243,9 +288,11 @@ function SettlementList() {
 
     if (vatPham.phu_kien_id) {
       const keyCanTim = taoKeyPhuKien({
+        id: vatPham.id,
         chi_tiet_don_thue_id: sanPham.chi_tiet_don_thue_id,
         bo_di_kem_id: vatPham.bo_di_kem_id || null,
         phu_kien_id: vatPham.phu_kien_id,
+        phu_kien_vi_tri_kho_id: vatPham.phu_kien_vi_tri_kho_id || null,
       });
 
       return danhSachKiemTraVatPham.findIndex((item) => {
@@ -385,9 +432,11 @@ function SettlementList() {
       const danhSachPhuKien = danhSachKiemTraVatPham
         .filter((item) => item.loai_kiem_tra === "PHU_KIEN")
         .map((item) => ({
+          ban_giao_vat_pham_id: item.ban_giao_vat_pham_id,
           chi_tiet_don_thue_id: item.chi_tiet_don_thue_id,
           bo_di_kem_id: item.bo_di_kem_id,
           phu_kien_id: item.phu_kien_id,
+          phu_kien_vi_tri_kho_id: item.phu_kien_vi_tri_kho_id || null,
           so_luong_tra_lai: Number(item.so_luong_tra_lai),
         }));
 
@@ -545,14 +594,6 @@ function SettlementList() {
               <td>{dinhDangTien(chiTietThanhLy.tong_tien_coc)}</td>
             </tr>
             <tr>
-              <td>Tổng tiền thuê đã thanh toán</td>
-              <td>{dinhDangTien(chiTietThanhLy.tien_thue_da_thanh_toan)}</td>
-            </tr>
-            <tr>
-              <td>Tổng tiền cọc đã thanh toán</td>
-              <td>{dinhDangTien(chiTietThanhLy.tien_coc_da_thanh_toan)}</td>
-            </tr>
-            <tr>
               <td>Trạng thái</td>
               <td>{hienThiTrangThaiDon(chiTietThanhLy.trang_thai, chiTietThanhLy.ten_trang_thai)}</td>
             </tr>
@@ -595,22 +636,18 @@ function SettlementList() {
               <td>Ghi chú thanh lý</td>
               <td>{hienThi(chiTietThanhLy.ghi_chu_thanh_ly)}</td>
             </tr>
-            <tr>
-              <td>Phí phát sinh</td>
-              <td>{dinhDangTien(chiTietThanhLy.phi_phat_sinh_tien)}</td>
-            </tr>
-            <tr>
-              <td>Đã hoàn cọc</td>
-              <td>{dinhDangTien(chiTietThanhLy.tien_da_hoan_coc)}</td>
-            </tr>
-            <tr>
-              <td>Đã khấu trừ cọc</td>
-              <td>{dinhDangTien(chiTietThanhLy.tien_da_khau_tru)}</td>
-            </tr>
-            <tr>
-              <td>Đã phụ thu</td>
-              <td>{dinhDangTien(chiTietThanhLy.tien_da_phu_thu)}</td>
-            </tr>
+            {(() => {
+              const ketQuaThanhLy = layKetQuaThanhLyDaChon(chiTietThanhLy);
+
+              if (!ketQuaThanhLy) return null;
+
+              return (
+                <tr>
+                  <td>{ketQuaThanhLy.ten}</td>
+                  <td>{dinhDangTien(ketQuaThanhLy.so_tien)}</td>
+                </tr>
+              );
+            })()}
           </tbody>
         </table>
       </>
@@ -646,14 +683,6 @@ function SettlementList() {
             <tr>
               <td>Ngày trả dự kiến</td>
               <td>{dinhDangNgay(chiTietThanhLy.ngay_tra)}</td>
-            </tr>
-            <tr>
-              <td>Tổng tiền thuê đã thanh toán</td>
-              <td>{dinhDangTien(chiTietThanhLy.tien_thue_da_thanh_toan)}</td>
-            </tr>
-            <tr>
-              <td>Tổng tiền cọc đã thanh toán</td>
-              <td>{dinhDangTien(chiTietThanhLy.tien_coc_da_thanh_toan)}</td>
             </tr>
             <tr>
               <td>Ghi chú bàn giao</td>
@@ -748,6 +777,10 @@ function SettlementList() {
   function renderSanPhamBanGiao(coKiemKe) {
     if (!chiTietThanhLy) return null;
 
+    const daThanhLy =
+      Number(chiTietThanhLy.trang_thai) === TRANG_THAI_HOAN_THANH ||
+      Boolean(chiTietThanhLy.tra_luc);
+
     return (
       <>
         <h3>{coKiemKe ? "Kiểm kê vật phẩm khi trả" : "Vật phẩm đã bàn giao"}</h3>
@@ -781,6 +814,7 @@ function SettlementList() {
                     <th>SL giao</th>
                     <th>Vị trí</th>
                     {coKiemKe && <th>Trạng thái sau trả / SL trả</th>}
+                    {!coKiemKe && daThanhLy && <th>SL trả</th>}
                   </tr>
                 </thead>
 
@@ -795,6 +829,14 @@ function SettlementList() {
                         <td>{hienThi(vatPham.ten_vi_tri_kho)}</td>
 
                         {coKiemKe && renderCotKiemTra(vatPham, sanPham)}
+
+                        {!coKiemKe && daThanhLy && (
+                          <td>
+                            {vatPham.phu_kien_id
+                              ? vatPham.so_luong_tra_lai ?? "-"
+                              : "-"}
+                          </td>
+                        )}
                       </tr>
                     )
                   )}

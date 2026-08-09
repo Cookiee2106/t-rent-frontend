@@ -3,9 +3,15 @@ import { DUONG_DAN_API, taoHeaderCoToken } from "../../api/api";
 
 const SO_DONG_MOI_TRANG = 10;
 
+const NAM_HIEN_TAI = new Date().getFullYear();
+const DANH_SACH_NAM_DOANH_THU = Array.from(
+  { length: NAM_HIEN_TAI - 1999 },
+  (_, index) => NAM_HIEN_TAI - index
+);
+
 // Nếu muốn phần Tổng quan thiết bị vật lý hiển thị ít/nhiều thẻ trên 1 hàng hơn,
 // chỉ cần đổi số bên dưới.
-const SO_THE_TONG_QUAN_THIET_BI_MOI_HANG = 7;
+const SO_THE_TONG_QUAN_THIET_BI_MOI_HANG = 5;
 
 // Nếu muốn phần Tổng quan phụ kiện hiển thị ít/nhiều thẻ trên 1 hàng hơn,
 // chỉ cần đổi số bên dưới.
@@ -21,9 +27,11 @@ function ReportAuditPage() {
   // const [denNgayDoanhThu, setDenNgayDoanhThu] = useState("");
 
   // Lọc doanh thu theo tháng để thống nhất với bảng "Doanh thu theo tháng".
+  const [namDoanhThu, setNamDoanhThu] = useState(String(NAM_HIEN_TAI));
   const [tuThangDoanhThu, setTuThangDoanhThu] = useState("");
   const [denThangDoanhThu, setDenThangDoanhThu] = useState("");
   const [baoCaoDoanhThu, setBaoCaoDoanhThu] = useState(null);
+  const [trangDoanhThuTheoMau, setTrangDoanhThuTheoMau] = useState(1);
 
   const [hangId, setHangId] = useState("0");
   const [danhMucId, setDanhMucId] = useState("0");
@@ -91,6 +99,21 @@ function ReportAuditPage() {
     return (!tuThang && !denThang) || (tuThang && denThang);
   }
 
+  function khoangThangDoanhThuHopLe() {
+    if (!coDuThang(tuThangDoanhThu, denThangDoanhThu)) return false;
+
+    if (!tuThangDoanhThu && !denThangDoanhThu) return true;
+
+    if (
+      !tuThangDoanhThu.startsWith(`${namDoanhThu}-`) ||
+      !denThangDoanhThu.startsWith(`${namDoanhThu}-`)
+    ) {
+      return false;
+    }
+
+    return tuThangDoanhThu <= denThangDoanhThu;
+  }
+
   // Chuyển 07/2026 thành ngày đầu tháng: 2026-07-01.
   function layNgayDauThang(thangNam) {
     if (!thangNam) return "";
@@ -118,7 +141,7 @@ function ReportAuditPage() {
   }
 
   async function layBaoCaoDoanhThu() {
-    if (!coDuThang(tuThangDoanhThu, denThangDoanhThu)) return;
+    if (!khoangThangDoanhThuHopLe()) return;
 
     try {
       setDangTai(true);
@@ -134,10 +157,16 @@ function ReportAuditPage() {
       // Ví dụ:
       // Từ tháng 07/2026 -> from = 2026-07-01.
       // Đến tháng 08/2026 -> to = 2026-08-31.
+      let tuNgayBaoCao = `${namDoanhThu}-01-01`;
+      let denNgayBaoCao = `${namDoanhThu}-12-31`;
+
       if (tuThangDoanhThu && denThangDoanhThu) {
-        params.set("from", layNgayDauThang(tuThangDoanhThu));
-        params.set("to", layNgayCuoiThang(denThangDoanhThu));
+        tuNgayBaoCao = layNgayDauThang(tuThangDoanhThu);
+        denNgayBaoCao = layNgayCuoiThang(denThangDoanhThu);
       }
+
+      params.set("from", tuNgayBaoCao);
+      params.set("to", denNgayBaoCao);
 
       const phanHoi = await fetch(
         `${DUONG_DAN_API}/api/admin/reports/revenue?${params.toString()}`,
@@ -275,8 +304,10 @@ function ReportAuditPage() {
     // setTuNgayDoanhThu("");
     // setDenNgayDoanhThu("");
 
+    setNamDoanhThu(String(NAM_HIEN_TAI));
     setTuThangDoanhThu("");
     setDenThangDoanhThu("");
+    setTrangDoanhThuTheoMau(1);
   }
 
   function xoaLocTonKho() {
@@ -300,7 +331,7 @@ function ReportAuditPage() {
 
     // DEPENDENCY LỌC THEO NGÀY CŨ - GIỮ LẠI, KHÔNG XÓA.
     // [tabDangChon, tuNgayDoanhThu, denNgayDoanhThu]
-  }, [tabDangChon, tuThangDoanhThu, denThangDoanhThu]);
+  }, [tabDangChon, namDoanhThu, tuThangDoanhThu, denThangDoanhThu]);
 
   useEffect(() => {
     if (tabDangChon === "TON_KHO") {
@@ -369,6 +400,7 @@ function ReportAuditPage() {
     nhan,
     giaTri,
     capNhatGiaTri,
+    nam,
   }) {
     return (
       <div
@@ -427,6 +459,8 @@ function ReportAuditPage() {
           aria-label={nhan}
           title={nhan}
           value={giaTri}
+          min={nam ? `${nam}-01` : undefined}
+          max={nam ? `${nam}-12` : undefined}
           onChange={(e) => capNhatGiaTri(e.target.value)}
           style={{
             position: "absolute",
@@ -446,6 +480,19 @@ function ReportAuditPage() {
     const doanhThuTheoMau =
       baoCaoDoanhThu?.revenue_by_models || [];
 
+    const tongTrangDoanhThuTheoMau = Math.max(
+      1,
+      Math.ceil(doanhThuTheoMau.length / SO_DONG_MOI_TRANG)
+    );
+
+    const batDauDoanhThuTheoMau =
+      (trangDoanhThuTheoMau - 1) * SO_DONG_MOI_TRANG;
+
+    const danhSachDoanhThuTheoMau = doanhThuTheoMau.slice(
+      batDauDoanhThuTheoMau,
+      batDauDoanhThuTheoMau + SO_DONG_MOI_TRANG
+    );
+
     return (
       <div>
         <div className="khung-loc-admin">
@@ -463,16 +510,40 @@ function ReportAuditPage() {
           />
           */}
 
+          <select
+            value={namDoanhThu}
+            onChange={(e) => {
+              setNamDoanhThu(e.target.value);
+              setTuThangDoanhThu("");
+              setDenThangDoanhThu("");
+              setTrangDoanhThuTheoMau(1);
+            }}
+          >
+            {DANH_SACH_NAM_DOANH_THU.map((nam) => (
+              <option key={nam} value={nam}>
+                Năm {nam}
+              </option>
+            ))}
+          </select>
+
           {renderOChonThang({
             nhan: "Từ tháng",
             giaTri: tuThangDoanhThu,
-            capNhatGiaTri: setTuThangDoanhThu,
+            nam: namDoanhThu,
+            capNhatGiaTri: (giaTri) => {
+              setTuThangDoanhThu(giaTri);
+              setTrangDoanhThuTheoMau(1);
+            },
           })}
 
           {renderOChonThang({
             nhan: "Đến tháng",
             giaTri: denThangDoanhThu,
-            capNhatGiaTri: setDenThangDoanhThu,
+            nam: namDoanhThu,
+            capNhatGiaTri: (giaTri) => {
+              setDenThangDoanhThu(giaTri);
+              setTrangDoanhThuTheoMau(1);
+            },
           })}
 
           <button className="nut-huy" type="button" onClick={xoaLocDoanhThu}>
@@ -494,16 +565,24 @@ function ReportAuditPage() {
           </p>
         )}
 
+        {coDuThang(tuThangDoanhThu, denThangDoanhThu) &&
+          tuThangDoanhThu &&
+          !khoangThangDoanhThuHopLe() && (
+            <p className="thong-bao">
+              Khoảng tháng phải thuộc năm {namDoanhThu} và tháng bắt đầu không được lớn hơn tháng kết thúc.
+            </p>
+          )}
+
         <div
           className="luoi-the-thong-ke luoi-the-thong-ke-gon"
           style={{ gridTemplateColumns: "repeat(2, minmax(220px, 1fr))" }}
         >
           {renderTheThongKe(
-            "Tổng doanh thu tiền thuê",
+            "Tổng doanh thu",
             dinhDangTien(baoCaoDoanhThu?.tong_doanh_thu)
           )}
           {renderTheThongKe(
-            "Số đơn đã ghi nhận tiền thuê",
+            "Số đơn có doanh thu",
             baoCaoDoanhThu?.tong_don_thue || 0
           )}
         </div>
@@ -516,8 +595,8 @@ function ReportAuditPage() {
               <tr>
                 <th>STT</th>
                 <th>Tháng</th>
-                <th>Số đơn thuê</th>
-                <th>Doanh thu tiền thuê</th>
+                <th>Số đơn có doanh thu</th>
+                <th>Doanh thu</th>
               </tr>
             </thead>
 
@@ -560,9 +639,9 @@ function ReportAuditPage() {
             </thead>
 
             <tbody>
-              {doanhThuTheoMau.map((item, index) => (
+              {danhSachDoanhThuTheoMau.map((item, index) => (
                 <tr key={item.mau_thiet_bi_id || index}>
-                  <td>{index + 1}</td>
+                  <td>{batDauDoanhThuTheoMau + index + 1}</td>
                   <td>{hienThi(item.ten_mau)}</td>
                   <td>{hienThi(item.ten_hang)}</td>
                   <td>{hienThi(item.ten_danh_muc)}</td>
@@ -582,6 +661,30 @@ function ReportAuditPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="phan-trang">
+          <button
+            className="nut-dong-popup"
+            type="button"
+            disabled={trangDoanhThuTheoMau === 1}
+            onClick={() => setTrangDoanhThuTheoMau(trangDoanhThuTheoMau - 1)}
+          >
+            Trước
+          </button>
+
+          <span>
+            Trang {trangDoanhThuTheoMau} / {tongTrangDoanhThuTheoMau}
+          </span>
+
+          <button
+            className="nut-dong-popup"
+            type="button"
+            disabled={trangDoanhThuTheoMau === tongTrangDoanhThuTheoMau}
+            onClick={() => setTrangDoanhThuTheoMau(trangDoanhThuTheoMau + 1)}
+          >
+            Sau
+          </button>
         </div>
 
       </div>
@@ -633,10 +736,8 @@ function ReportAuditPage() {
           }}
         >
           {renderTheThongKe("Tổng thiết bị", summary.tong_thiet_bi || 0)}
-          {renderTheThongKe("Sẵn sàng", summary.thiet_bi_san_sang || 0)}
           {renderTheThongKe("Đang thuê", summary.thiet_bi_dang_thue || 0)}
           {renderTheThongKe("Đang bảo trì", summary.thiet_bi_dang_bao_tri || 0)}
-          {renderTheThongKe("Đã thanh lý", summary.thiet_bi_da_thanh_ly || 0)}
           {renderTheThongKe("Hư hỏng", summary.thiet_bi_hu_hong || 0)}
           {renderTheThongKe("Bị mất", summary.thiet_bi_bi_mat || 0)}
         </div>
@@ -650,7 +751,7 @@ function ReportAuditPage() {
           }}
         >
           {renderTheThongKe(
-            "Tổng số lượng hiện có",
+            "Tổng phụ kiện",
             summary.tong_so_luong_phu_kien || 0
           )}
           {renderTheThongKe("Đang thuê", tongPhuKienDangThue)}
@@ -671,7 +772,6 @@ function ReportAuditPage() {
                 <th>Sẵn sàng</th>
                 <th>Đang thuê</th>
                 <th>Đang bảo trì</th>
-                <th>Đã thanh lý</th>
                 <th>Hư hỏng</th>
                 <th>Bị mất</th>
               </tr>
@@ -688,7 +788,6 @@ function ReportAuditPage() {
                   <td>{item.san_sang}</td>
                   <td>{item.dang_thue}</td>
                   <td>{item.dang_bao_tri}</td>
-                  <td>{item.da_thanh_ly}</td>
                   <td>{item.hu_hong}</td>
                   <td>{item.bi_mat}</td>
                 </tr>
@@ -696,7 +795,7 @@ function ReportAuditPage() {
 
               {danhSachThietBiDaLoc.length === 0 && (
                 <tr>
-                  <td colSpan="11" style={{ textAlign: "center" }}>
+                  <td colSpan="10" style={{ textAlign: "center" }}>
                     Không có dữ liệu
                   </td>
                 </tr>
@@ -713,9 +812,8 @@ function ReportAuditPage() {
               <tr>
                 <th>STT</th>
                 <th>Phụ kiện</th>
-                <th>Hãng</th>
                 <th>Danh mục</th>
-                <th>Tổng hiện có</th>
+                <th>Tổng phụ kiện</th>
                 <th>Đang thuê</th>
                 <th>Sẵn sàng</th>
                 <th>Mất/hư hỏng</th>
@@ -727,7 +825,6 @@ function ReportAuditPage() {
                 <tr key={item.id}>
                   <td>{index + 1}</td>
                   <td>{hienThi(item.ten_phu_kien)}</td>
-                  <td>{hienThi(item.ten_hang)}</td>
                   <td>{hienThi(item.ten_danh_muc)}</td>
                   <td>{item.tong_so_luong}</td>
                   <td>{item.dang_thue}</td>
@@ -738,7 +835,7 @@ function ReportAuditPage() {
 
               {danhSachPhuKienDaLoc.length === 0 && (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: "center" }}>
+                  <td colSpan="7" style={{ textAlign: "center" }}>
                     Không có dữ liệu
                   </td>
                 </tr>
@@ -920,7 +1017,7 @@ function ReportAuditPage() {
           type="button"
           onClick={() => setTabDangChon("TON_KHO")}
         >
-          Tồn kho
+          Tài sản cho thuê
         </button>
 
         <button

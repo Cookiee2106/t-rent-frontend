@@ -18,6 +18,7 @@ function Cart() {
 
   const [thongBao, setThongBao] = useState("");
   const [popupThongBao, setPopupThongBao] = useState("");
+  const [popupXacNhanThue, setPopupXacNhanThue] = useState(null);
 
   function taoHeaderCoToken() {
     const token = localStorage.getItem("token");
@@ -37,6 +38,11 @@ function Cart() {
 
   function dinhDangTien(giaTri) {
     return Number(giaTri || 0).toLocaleString("vi-VN") + " đ";
+  }
+
+  function dinhDangNgay(giaTri) {
+    if (!giaTri) return "-";
+    return new Date(giaTri).toLocaleDateString("vi-VN");
   }
 
   function layNgayInput(giaTri) {
@@ -581,6 +587,45 @@ function Cart() {
 
       await capNhatSanPhamDaChonTruocKhiDatHang();
 
+      const phanHoi = await fetch(
+        `${DUONG_DAN_API}/api/cart/checkout/preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...taoHeaderCoToken(),
+          },
+          body: JSON.stringify({
+            item_ids: danhSachItemDuocChon,
+          }),
+        }
+      );
+
+      const duLieu = await phanHoi.json();
+
+      if (duLieu.success) {
+        setPopupXacNhanThue({
+          ...(duLieu.data || {}),
+          item_ids: [...danhSachItemDuocChon],
+        });
+      } else {
+        moPopupLoi(duLieu.message);
+      }
+    } catch (loi) {
+      moPopupLoi(loi.message || "Không kết nối được server");
+    } finally {
+      setDangDatHang(false);
+    }
+  }
+
+  async function dongYXacNhanThue() {
+    try {
+      if (!popupXacNhanThue) {
+        return;
+      }
+
+      setDangDatHang(true);
+
       const phanHoi = await fetch(`${DUONG_DAN_API}/api/cart/checkout`, {
         method: "POST",
         headers: {
@@ -588,7 +633,16 @@ function Cart() {
           ...taoHeaderCoToken(),
         },
         body: JSON.stringify({
-          item_ids: danhSachItemDuocChon,
+          item_ids: popupXacNhanThue.item_ids || [],
+          tong_tien_thue_xac_nhan: Number(
+            popupXacNhanThue.tong_tien_thue || 0
+          ),
+          tong_tien_coc_xac_nhan: Number(
+            popupXacNhanThue.tong_tien_coc || 0
+          ),
+          ty_le_phi_huy_xac_nhan: Number(
+            popupXacNhanThue.ty_le_phi_huy || 0
+          ),
         }),
       });
 
@@ -602,8 +656,17 @@ function Cart() {
           return;
         }
 
+        setPopupXacNhanThue(null);
         window.location.href = checkoutUrl;
       } else {
+        if (duLieu.message === "Thông tin giá thuê/tiền cọc của mẫu thiết bị đã thay đổi. Vui lòng xác nhận lại thông tin mới nhất.") {
+          setPopupXacNhanThue(null);
+          await layGioHang();
+          window.dispatchEvent(new Event("cap-nhat-gio-hang"));
+          moPopupLoi("Thông tin giá thuê/tiền cọc của mẫu thiết bị đã thay đổi. Vui lòng xác nhận lại thông tin mới nhất.");
+          return;
+        }
+
         moPopupLoi(duLieu.message);
       }
     } catch (loi) {
@@ -611,6 +674,12 @@ function Cart() {
     } finally {
       setDangDatHang(false);
     }
+  }
+
+  async function huyXacNhanThue() {
+    setPopupXacNhanThue(null);
+    await layGioHang();
+    window.dispatchEvent(new Event("cap-nhat-gio-hang"));
   }
 
   useEffect(() => {
@@ -818,6 +887,85 @@ function Cart() {
           </div>
         </>
       )}
+
+    {popupXacNhanThue && (
+      <div className="popup-loi-overlay">
+        <div
+          className="popup-loi"
+          style={{
+            fontFamily: '"Segoe UI", Tahoma, Arial, sans-serif',
+          }}
+        >
+          <h3
+            style={{
+              color: "#000000",
+              fontSize: "30px",
+              fontWeight: 700,
+              fontFamily: '"Segoe UI", Tahoma, Arial, sans-serif',
+              whiteSpace: "nowrap",
+              lineHeight: 1.2,
+              textAlign: "center",
+              marginBottom: "22px",
+            }}
+          >
+            XÁC NHẬN THUÊ THIẾT BỊ
+          </h3>
+
+          <p>
+            Thời gian thuê:{" "}
+            {dinhDangNgay(popupXacNhanThue.ngay_nhan)} –{" "}
+            {dinhDangNgay(popupXacNhanThue.ngay_tra)}
+          </p>
+
+          <p>
+            Tổng tiền thuê:{" "}
+            {dinhDangTien(popupXacNhanThue.tong_tien_thue)}
+          </p>
+
+          <p
+            style={{
+              color: "#2563eb",
+            }}
+          >
+            Tiền cọc cần thanh toán ngay:{" "}
+            <b>{dinhDangTien(popupXacNhanThue.tong_tien_coc)}</b>
+          </p>
+
+          <p
+            style={{
+              color: "#dc2626",
+              fontSize: "13px",
+              fontStyle: "normal",
+              fontWeight: 400,
+            }}
+          >
+            Lưu ý: Hủy đơn sẽ mất{" "}
+            {Number(popupXacNhanThue.ty_le_phi_huy || 0)}% phí giữ chỗ
+            từ tiền cọc.
+          </p>
+
+          <div className="nhom-nut">
+            <button
+              type="button"
+              className="nut-huy"
+              onClick={huyXacNhanThue}
+              disabled={dangDatHang}
+            >
+              Hủy
+            </button>
+
+            <button
+              type="button"
+              className="nut-dong-y"
+              onClick={dongYXacNhanThue}
+              disabled={dangDatHang}
+            >
+              {dangDatHang ? "Đang xử lý..." : "Đồng ý"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {popupThongBao && (
       <div className="popup-loi-overlay">

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { DUONG_DAN_API } from "../../api/api";
 
 const TRANG_THAI_DA_GIU_CHO = 1102;
+const TRANG_THAI_YEU_CAU_HUY_CHO_XU_LY = 1701;
+const TRANG_THAI_YEU_CAU_HUY_TU_CHOI = 1703;
 const SO_DONG_MOI_TRANG = 10;
 const SO_ANH_MOI_DONG = 5;
 
@@ -23,6 +25,7 @@ function MyOrders() {
   const [hienPopupHuyDon, setHienPopupHuyDon] = useState(false);
   const [donCanHuy, setDonCanHuy] = useState(null);
   const [lyDoHuy, setLyDoHuy] = useState("");
+  const [dangGuiYeuCauHuy, setDangGuiYeuCauHuy] = useState(false);
 
   function taoHeaderCoToken() {
     const token = localStorage.getItem("token");
@@ -97,8 +100,55 @@ function MyOrders() {
     );
   }
 
-  function coTheHuyDon(trangThai) {
-    return Number(trangThai) === TRANG_THAI_DA_GIU_CHO;
+  function hienThiTrangThaiDon(don) {
+    if (
+      Number(don?.yeu_cau_huy?.trang_thai_id) ===
+      TRANG_THAI_YEU_CAU_HUY_CHO_XU_LY
+    ) {
+      return (
+        <span className="trang-thai-badge trang-thai-cam">
+          {don.yeu_cau_huy.ten_trang_thai || "-"}
+        </span>
+      );
+    }
+
+    return hienThiTrangThai(don?.trang_thai, don?.ten_trang_thai);
+  }
+
+  function coTheGuiYeuCauHuy(don) {
+    if (Number(don?.trang_thai) !== TRANG_THAI_DA_GIU_CHO) {
+      return false;
+    }
+
+    if (!don?.yeu_cau_huy) {
+      return true;
+    }
+
+    return (
+      Number(don.yeu_cau_huy.trang_thai_id) ===
+      TRANG_THAI_YEU_CAU_HUY_TU_CHOI
+    );
+  }
+
+  function dangChoXacNhanHuy(don) {
+    return (
+      Number(don?.yeu_cau_huy?.trang_thai_id) ===
+      TRANG_THAI_YEU_CAU_HUY_CHO_XU_LY
+    );
+  }
+
+  function tinhPhiHuy(don) {
+    const tongTienCoc = Number(don?.tong_tien_coc || 0);
+    const tyLePhiHuy = Number(don?.ty_le_phi_huy_snapshot || 0);
+
+    return Math.round((tongTienCoc * tyLePhiHuy) / 100);
+  }
+
+  function tinhTienCocHoanLai(don) {
+    return Math.max(
+      0,
+      Number(don?.tong_tien_coc || 0) - tinhPhiHuy(don)
+    );
   }
 
   function laFileAnh(file) {
@@ -233,7 +283,7 @@ function MyOrders() {
     setLyDoHuy("");
   }
 
-  async function xacNhanHuyDon() {
+  async function guiYeuCauHuyDon() {
     try {
       if (!donCanHuy) {
         moPopup("Không tìm thấy đơn cần hủy");
@@ -245,10 +295,12 @@ function MyOrders() {
         return;
       }
 
+      setDangGuiYeuCauHuy(true);
+
       const phanHoi = await fetch(
-        `${DUONG_DAN_API}/api/me/orders/${donCanHuy.id}/cancel`,
+        `${DUONG_DAN_API}/api/me/orders/${donCanHuy.id}/cancel-request`,
         {
-          method: "PATCH",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             ...taoHeaderCoToken(),
@@ -262,15 +314,16 @@ function MyOrders() {
       const duLieu = await phanHoi.json();
 
       if (duLieu.success) {
-        moPopup("Hủy đơn thuê thành công");
+        moPopup("Gửi yêu cầu hủy đơn thành công");
         dongPopupHuyDon();
-        dongPopupChiTiet();
-        layDanhSachDon();
+        await layDanhSachDon();
       } else {
         moPopup(duLieu.message);
       }
     } catch {
       moPopup("Không kết nối được server");
+    } finally {
+      setDangGuiYeuCauHuy(false);
     }
   }
 
@@ -322,7 +375,7 @@ function MyOrders() {
                     <td className="tien-coc-don">
                       {dinhDangTien(don.tong_tien_coc)}
                     </td>
-                    <td>{hienThiTrangThai(don.trang_thai, don.ten_trang_thai)}</td>
+                    <td>{hienThiTrangThaiDon(don)}</td>
                     <td>{dinhDangNgay(don.created_at)}</td>
                     <td>
                       <div className="cot-thao-tac">
@@ -337,14 +390,14 @@ function MyOrders() {
                         <button
                           className="nut-huy"
                           type="button"
-                          disabled={!coTheHuyDon(don.trang_thai)}
+                          disabled={!coTheGuiYeuCauHuy(don)}
                           onClick={() => {
-                            if (coTheHuyDon(don.trang_thai)) {
+                            if (coTheGuiYeuCauHuy(don)) {
                               moPopupNhapLyDoHuy(don);
                             }
                           }}
                         >
-                          Hủy đơn
+                          Hủy
                         </button>
                       </div>
                     </td>
@@ -447,12 +500,7 @@ function MyOrders() {
 
                       <tr>
                         <td>Trạng thái</td>
-                        <td>
-                          {hienThiTrangThai(
-                            chiTietDon.don_thue.trang_thai,
-                            chiTietDon.don_thue.ten_trang_thai
-                          )}
-                        </td>
+                        <td>{hienThiTrangThaiDon(chiTietDon.don_thue)}</td>
                       </tr>
 
                       <tr>
@@ -494,6 +542,37 @@ function MyOrders() {
                         <td>Lý do hủy</td>
                         <td>{chiTietDon.don_thue.ly_do_huy || "-"}</td>
                       </tr>
+
+                      {chiTietDon.don_thue.yeu_cau_huy && (
+                        <>
+
+                          <tr>
+                            <td>Lý do yêu cầu hủy</td>
+                            <td>
+                              {chiTietDon.don_thue.yeu_cau_huy.ly_do_huy || "-"}
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>Phí hủy</td>
+                            <td>
+                              {dinhDangTien(
+                                chiTietDon.don_thue.yeu_cau_huy.phi_huy
+                              )}
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>Tiền cọc hoàn lại</td>
+                            <td>
+                              {dinhDangTien(
+                                chiTietDon.don_thue.yeu_cau_huy
+                                  .tien_coc_hoan_lai
+                              )}
+                            </td>
+                          </tr>
+                        </>
+                      )}
                     </tbody>
                   </table>
 
@@ -598,13 +677,32 @@ function MyOrders() {
         <div className="popup-nen">
           <div className="popup-hop popup-xac-nhan">
             <div className="popup-tieu-de">
-              <h3>Xác nhận hủy đơn</h3>
+              <h3>Hủy đơn</h3>
             </div>
 
             <div className="popup-noi-dung">
               <p>
-                Bạn có chắc muốn hủy đơn <b>{donCanHuy.ma_don || "này"}</b>
-                không?
+                Mã đơn: <b>{donCanHuy.ma_don || "-"}</b>
+              </p>
+
+              <p>
+                Tiền cọc đã thanh toán:{" "}
+                <b>{dinhDangTien(donCanHuy.tong_tien_coc)}</b>
+              </p>
+
+              <p>
+                Tỷ lệ phí hủy:{" "}
+                <b>{Number(donCanHuy.ty_le_phi_huy_snapshot || 0)}%</b>
+              </p>
+
+              <p>
+                Phí hủy:{" "}
+                <b>{dinhDangTien(tinhPhiHuy(donCanHuy))}</b>
+              </p>
+
+              <p>
+                Tiền cọc hoàn lại:{" "}
+                <b>{dinhDangTien(tinhTienCocHoanLai(donCanHuy))}</b>
               </p>
 
               <div className="o-form can-trai">
@@ -615,15 +713,36 @@ function MyOrders() {
                   placeholder="Nhập lý do hủy đơn..."
                 />
               </div>
+
+              <p
+                style={{
+                  color: "#dc2626",
+                  fontSize: "13px",
+                  fontStyle: "normal",
+                }}
+              >
+                Sau khi gửi yêu cầu, vui lòng liên hệ cửa hàng để được xác nhận
+                hủy và hoàn lại tiền cọc.
+              </p>
             </div>
 
             <div className="popup-actions">
-              <button className="nut-dong-y" type="button" onClick={xacNhanHuyDon}>
-                Đồng ý
+              <button
+                className="nut-huy"
+                type="button"
+                onClick={dongPopupHuyDon}
+                disabled={dangGuiYeuCauHuy}
+              >
+                Đóng
               </button>
 
-              <button className="nut-huy" type="button" onClick={dongPopupHuyDon}>
-                Hủy
+              <button
+                className="nut-dong-y"
+                type="button"
+                onClick={guiYeuCauHuyDon}
+                disabled={dangGuiYeuCauHuy}
+              >
+                {dangGuiYeuCauHuy ? "Đang gửi..." : "Đồng ý"}
               </button>
             </div>
           </div>
