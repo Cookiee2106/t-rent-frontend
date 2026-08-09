@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
 import { DUONG_DAN_API } from "../../api/api";
 
+const TRANG_THAI_DA_HUY = 1101;
 const TRANG_THAI_DA_GIU_CHO = 1102;
+const TRANG_THAI_HOAN_THANH = 1104;
+
 const TRANG_THAI_YEU_CAU_HUY_CHO_XU_LY = 1701;
 const TRANG_THAI_YEU_CAU_HUY_TU_CHOI = 1703;
+
+const LOAI_HOAN_COC = 2303;
+const LOAI_KHAU_TRU_COC = 2304;
+const LOAI_PHU_THU = 2305;
+
 const SO_DONG_MOI_TRANG = 10;
 const SO_ANH_MOI_DONG = 5;
 
@@ -149,6 +157,46 @@ function MyOrders() {
       0,
       Number(don?.tong_tien_coc || 0) - tinhPhiHuy(don)
     );
+  }
+
+  // Chỉ hiển thị đúng một kết quả thanh lý: Hoàn cọc, Khấu trừ cọc hoặc Phụ thu.
+  function layKetQuaThanhLyDaChon(chiTiet) {
+    const don = chiTiet?.don_thue;
+
+    if (
+      !don ||
+      (Number(don.trang_thai) !== TRANG_THAI_HOAN_THANH && !don.tra_luc)
+    ) {
+      return null;
+    }
+
+    const danhSachThanhToan = chiTiet?.thanh_toan || [];
+
+    const tinhTongTheoLoai = (loaiDongTienId) =>
+      danhSachThanhToan
+        .filter(
+          (item) =>
+            Number(item.loai_dong_tien_id) === Number(loaiDongTienId)
+        )
+        .reduce((tong, item) => tong + Number(item.so_tien || 0), 0);
+
+    const tienPhuThu = tinhTongTheoLoai(LOAI_PHU_THU);
+    const tienKhauTru = tinhTongTheoLoai(LOAI_KHAU_TRU_COC);
+    const tienHoanCoc = tinhTongTheoLoai(LOAI_HOAN_COC);
+
+    if (tienPhuThu > 0) {
+      return { ten: "Phụ thu", so_tien: tienPhuThu };
+    }
+
+    if (tienKhauTru > 0) {
+      return { ten: "Khấu trừ cọc", so_tien: tienKhauTru };
+    }
+
+    if (tienHoanCoc > 0) {
+      return { ten: "Hoàn cọc", so_tien: tienHoanCoc };
+    }
+
+    return null;
   }
 
   function laFileAnh(file) {
@@ -455,7 +503,7 @@ function MyOrders() {
                 <p className="thong-bao">Đang tải chi tiết đơn thuê...</p>
               ) : chiTietDon ? (
                 <>
-                  <h3>Thông tin đơn thuê</h3>
+                  <h3>Thông tin thuê</h3>
 
                   <table className="bang-popup">
                     <tbody>
@@ -503,6 +551,58 @@ function MyOrders() {
                         <td>{hienThiTrangThaiDon(chiTietDon.don_thue)}</td>
                       </tr>
 
+                      {Number(chiTietDon.don_thue.trang_thai) ===
+                        TRANG_THAI_DA_HUY && (
+                        <>
+                          <tr>
+                            <td>Phí hủy đơn (%)</td>
+                            <td>
+                              {Number(
+                                chiTietDon.don_thue.yeu_cau_huy
+                                  ?.ty_le_phi_huy_snapshot ??
+                                  chiTietDon.don_thue.ty_le_phi_huy_snapshot ??
+                                  0
+                              )}
+                              %
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>Phí hủy</td>
+                            <td>
+                              {dinhDangTien(
+                                chiTietDon.don_thue.yeu_cau_huy?.phi_huy
+                              )}
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>Tiền cọc đã hoàn lại</td>
+                            <td>
+                              {dinhDangTien(
+                                chiTietDon.don_thue.yeu_cau_huy
+                                  ?.tien_coc_hoan_lai
+                              )}
+                            </td>
+                          </tr>
+
+                          <tr>
+                            <td>Lý do hủy</td>
+                            <td>
+                              {chiTietDon.don_thue.ly_do_huy ||
+                                chiTietDon.don_thue.yeu_cau_huy?.ly_do_huy ||
+                                "-"}
+                            </td>
+                          </tr>
+                        </>
+                      )}
+                    </tbody>
+                  </table>
+
+                  <h3>Thông tin bàn giao/thanh lý</h3>
+
+                  <table className="bang-popup">
+                    <tbody>
                       <tr>
                         <td>Thời điểm bàn giao</td>
                         <td>{dinhDangNgay(chiTietDon.don_thue.ban_giao_luc)}</td>
@@ -533,46 +633,19 @@ function MyOrders() {
                         <td>{chiTietDon.don_thue.ghi_chu_thanh_ly || "-"}</td>
                       </tr>
 
-                      <tr>
-                        <td>Phí phát sinh</td>
-                        <td>{dinhDangTien(chiTietDon.don_thue.phi_phat_sinh_tien)}</td>
-                      </tr>
+                      {(() => {
+                        const ketQuaThanhLy =
+                          layKetQuaThanhLyDaChon(chiTietDon);
 
-                      <tr>
-                        <td>Lý do hủy</td>
-                        <td>{chiTietDon.don_thue.ly_do_huy || "-"}</td>
-                      </tr>
+                        if (!ketQuaThanhLy) return null;
 
-                      {chiTietDon.don_thue.yeu_cau_huy && (
-                        <>
-
+                        return (
                           <tr>
-                            <td>Lý do yêu cầu hủy</td>
-                            <td>
-                              {chiTietDon.don_thue.yeu_cau_huy.ly_do_huy || "-"}
-                            </td>
+                            <td>{ketQuaThanhLy.ten}</td>
+                            <td>{dinhDangTien(ketQuaThanhLy.so_tien)}</td>
                           </tr>
-
-                          <tr>
-                            <td>Phí hủy</td>
-                            <td>
-                              {dinhDangTien(
-                                chiTietDon.don_thue.yeu_cau_huy.phi_huy
-                              )}
-                            </td>
-                          </tr>
-
-                          <tr>
-                            <td>Tiền cọc hoàn lại</td>
-                            <td>
-                              {dinhDangTien(
-                                chiTietDon.don_thue.yeu_cau_huy
-                                  .tien_coc_hoan_lai
-                              )}
-                            </td>
-                          </tr>
-                        </>
-                      )}
+                        );
+                      })()}
                     </tbody>
                   </table>
 
@@ -584,13 +657,8 @@ function MyOrders() {
                         <thead>
                           <tr>
                             <th>STT</th>
-                            <th>Hãng</th>
                             <th>Tên mẫu</th>
-                            <th>Danh mục</th>
-                            <th>Số lượng</th>
-                            <th>Giá thuê/ngày</th>
-                            <th>Tiền thuê</th>
-                            <th>Tiền cọc</th>
+                            <th>Giá trị thiết bị</th>
                           </tr>
                         </thead>
 
@@ -598,16 +666,9 @@ function MyOrders() {
                           {chiTietDon.chi_tiet_don.map((item, index) => (
                             <tr key={item.id}>
                               <td>{index + 1}</td>
-                              <td>{item.ten_hang || "-"}</td>
-                              <td>{item.ten_mau}</td>
-                              <td>{item.ten_danh_muc || "-"}</td>
-                              <td>{item.so_luong}</td>
-                              <td>{dinhDangTien(item.gia_thue_ngay_snapshot)}</td>
-                              <td className="tien-thue-don">
-                                {dinhDangTien(item.tien_thue)}
-                              </td>
-                              <td className="tien-coc-don">
-                                {dinhDangTien(item.tien_coc)}
+                              <td>{item.ten_mau || "-"}</td>
+                              <td>
+                                {dinhDangTien(item.gia_tri_thiet_bi_snapshot)}
                               </td>
                             </tr>
                           ))}
