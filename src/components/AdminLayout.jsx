@@ -131,7 +131,7 @@ function AdminLayout({ children }) {
               </Link>
 
               <Link to="/admin/orders">
-                Quản lý đơn hàng
+                Quản lý đơn thuê
               </Link>
 
               <Link to="/admin/settlements">

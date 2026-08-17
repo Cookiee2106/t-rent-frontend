@@ -6,6 +6,7 @@ const TRANG_THAI_DA_GIU_CHO = 1102;
 const TRANG_THAI_DANG_THUE = 1103;
 const TRANG_THAI_HOAN_THANH = 1104;
 const TRANG_THAI_QUA_HAN = 1105;
+const TRANG_THAI_CHO_XU_LY = 1106;
 
 const TRANG_THAI_YEU_CAU_HUY_CHO_XU_LY = 1701;
 const TRANG_THAI_YEU_CAU_HUY_DA_XAC_NHAN = 1702;
@@ -520,6 +521,7 @@ function AdminOrderList() {
     if (trangThai === TRANG_THAI_DANG_THUE) return "Đang thuê";
     if (trangThai === TRANG_THAI_HOAN_THANH) return "Hoàn thành";
     if (trangThai === TRANG_THAI_QUA_HAN) return "Quá hạn";
+    if (trangThai === TRANG_THAI_CHO_XU_LY) return "Chờ xử lý";
 
     return id || "-";
   }
@@ -544,6 +546,10 @@ function AdminOrderList() {
     }
 
     if (trangThai === TRANG_THAI_QUA_HAN) {
+      return "trang-thai-badge trang-thai-cam";
+    }
+
+    if (trangThai === TRANG_THAI_CHO_XU_LY) {
       return "trang-thai-badge trang-thai-cam";
     }
 
@@ -1739,6 +1745,7 @@ function AdminOrderList() {
           <option value="1103">Đang thuê</option>
           <option value="1104">Hoàn thành</option>
           <option value="1105">Quá hạn</option>
+          <option value="1106">Chờ xử lý</option>
         </select>
       </div>
 

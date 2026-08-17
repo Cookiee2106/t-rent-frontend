@@ -4,6 +4,7 @@ import { DUONG_DAN_API } from "../../api/api";
 const TRANG_THAI_DA_HUY = 1101;
 const TRANG_THAI_DA_GIU_CHO = 1102;
 const TRANG_THAI_HOAN_THANH = 1104;
+const TRANG_THAI_CHO_XU_LY = 1106;
 
 const TRANG_THAI_YEU_CAU_HUY_CHO_XU_LY = 1701;
 const TRANG_THAI_YEU_CAU_HUY_TU_CHOI = 1703;
@@ -186,6 +187,7 @@ function MyOrders() {
     if (id === 1103) return "trang-thai-badge trang-thai-xanh-duong";
     if (id === 1104) return "trang-thai-badge trang-thai-xanh";
     if (id === 1105) return "trang-thai-badge trang-thai-cam";
+    if (id === TRANG_THAI_CHO_XU_LY) return "trang-thai-badge trang-thai-cam";
 
     return "trang-thai-badge trang-thai-xam";
   }
@@ -193,7 +195,10 @@ function MyOrders() {
   function hienThiTrangThai(trangThaiId, tenTrangThai) {
     return (
       <span className={layClassTrangThai(trangThaiId)}>
-        {tenTrangThai || trangThaiId || "-"}
+        {tenTrangThai ||
+          (Number(trangThaiId) === TRANG_THAI_CHO_XU_LY
+            ? "Chờ xử lý"
+            : trangThaiId || "-")}
       </span>
     );
   }

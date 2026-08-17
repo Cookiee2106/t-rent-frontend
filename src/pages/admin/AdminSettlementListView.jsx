@@ -7,6 +7,7 @@ const SO_ANH_MOI_DONG = 5;
 const TRANG_THAI_DANG_THUE = 1103;
 const TRANG_THAI_HOAN_THANH = 1104;
 const TRANG_THAI_QUA_HAN = 1105;
+const TRANG_THAI_CHO_XU_LY = 1106;
 
 const TRANG_THAI_TB_SAN_SANG = 501;
 const TRANG_THAI_TB_BAO_TRI = 503;
@@ -32,6 +33,7 @@ function SettlementList() {
   const [hinhThucXuLyCoc, setHinhThucXuLyCoc] = useState("HOAN_COC");
   const [soTien, setSoTien] = useState("");
   const [ghiChuThanhLy, setGhiChuThanhLy] = useState("");
+  const [choXuLy, setChoXuLy] = useState(false);
   const [anhKhiTra, setAnhKhiTra] = useState([]);
   const [danhSachKiemTraVatPham, setDanhSachKiemTraVatPham] = useState([]);
   const [dangGui, setDangGui] = useState(false);
@@ -205,6 +207,7 @@ function SettlementList() {
     if (id === TRANG_THAI_DANG_THUE) return "trang-thai-badge trang-thai-xanh-duong";
     if (id === TRANG_THAI_HOAN_THANH) return "trang-thai-badge trang-thai-xanh";
     if (id === TRANG_THAI_QUA_HAN) return "trang-thai-badge trang-thai-cam";
+    if (id === TRANG_THAI_CHO_XU_LY) return "trang-thai-badge trang-thai-cam";
 
     return "trang-thai-badge trang-thai-xam";
   }
@@ -219,7 +222,22 @@ function SettlementList() {
 
   function coTheThanhLy(don) {
     const trangThai = Number(don?.trang_thai);
-    return trangThai === TRANG_THAI_DANG_THUE || trangThai === TRANG_THAI_QUA_HAN;
+
+    if (trangThai === TRANG_THAI_DANG_THUE || trangThai === TRANG_THAI_QUA_HAN) {
+      return true;
+    }
+
+    if (trangThai === TRANG_THAI_CHO_XU_LY) {
+      return Number(don?.so_bao_tri_dang_xu_ly || 0) === 0;
+    }
+
+    return false;
+  }
+
+  function tenNutThanhLy() {
+    // Nút ở trang danh sách luôn giữ tên "Thanh lý".
+    // Trạng thái Chờ xử lý chỉ thể hiện ở cột trạng thái, không đổi tên nút.
+    return "Thanh lý";
   }
 
   async function layDanhSachThanhLy() {
@@ -280,7 +298,10 @@ function SettlementList() {
       if (duLieu.success) {
         setChiTietThanhLy(duLieu.data);
 
-        if (cheDo === "THANH_LY") {
+        if (
+          cheDo === "THANH_LY" &&
+          Number(duLieu.data?.trang_thai) !== TRANG_THAI_CHO_XU_LY
+        ) {
           setDanhSachKiemTraVatPham(taoDanhSachKiemTraMacDinh(duLieu.data));
         }
       } else {
@@ -307,6 +328,7 @@ function SettlementList() {
     setHinhThucXuLyCoc("HOAN_COC");
     setSoTien("");
     setGhiChuThanhLy("");
+    setChoXuLy(false);
     setAnhKhiTra([]);
     setDanhSachKiemTraVatPham([]);
   }
@@ -396,16 +418,29 @@ function SettlementList() {
   }
 
   function doiKiemTraVatPham(index, field, value) {
-    setDanhSachKiemTraVatPham(
-      danhSachKiemTraVatPham.map((item, viTri) => {
-        if (viTri !== index) return item;
+    const danhSachMoi = danhSachKiemTraVatPham.map((item, viTri) => {
+      if (viTri !== index) return item;
 
-        return {
-          ...item,
-          [field]: value,
-        };
-      })
-    );
+      return {
+        ...item,
+        [field]: value,
+      };
+    });
+
+    setDanhSachKiemTraVatPham(danhSachMoi);
+
+    // Nếu không còn thiết bị nào chọn Bảo trì thì không được giữ Chờ xử lý.
+    if (field === "trang_thai_sau_tra") {
+      const conThietBiBaoTri = danhSachMoi.some(
+        (item) =>
+          item.loai_kiem_tra === "THIET_BI" &&
+          Number(item.trang_thai_sau_tra) === TRANG_THAI_TB_BAO_TRI
+      );
+
+      if (!conThietBiBaoTri) {
+        setChoXuLy(false);
+      }
+    }
   }
 
   function themAnhKhiTra(e) {
@@ -451,17 +486,45 @@ function SettlementList() {
       return false;
     }
 
+    const dangQuyetToanChoXuLy =
+      Number(chiTietThanhLy.trang_thai) === TRANG_THAI_CHO_XU_LY;
+
+    // Đơn Chờ xử lý đã kiểm kê và nhận trả trước đó.
+    // Khi bảo trì hoàn thành, nhân viên chỉ nhập tiền và xác nhận thanh lý một lần.
+    if (dangQuyetToanChoXuLy) {
+      if (Number(chiTietThanhLy.so_bao_tri_dang_xu_ly || 0) > 0) {
+        moPopupThongBao("Còn thiết bị đang bảo trì, chưa thể xác nhận thanh lý");
+        return false;
+      }
+
+      if (hinhThucXuLyCoc !== "HOAN_COC" && Number(soTien || 0) <= 0) {
+        moPopupThongBao("Vui lòng nhập số tiền xử lý cọc");
+        return false;
+      }
+
+      if (hinhThucXuLyCoc === "KHAU_TRU_COC") {
+        const tienCoc = Number(chiTietThanhLy?.tien_coc_da_thanh_toan || 0);
+
+        if (Number(soTien || 0) > tienCoc) {
+          moPopupThongBao("Số tiền khấu trừ không được lớn hơn tiền cọc");
+          return false;
+        }
+      }
+
+      return true;
+    }
+
     if (!ghiChuThanhLy.trim()) {
       moPopupThongBao("Vui lòng nhập ghi chú thanh lý");
       return false;
     }
 
-    if (hinhThucXuLyCoc !== "HOAN_COC" && Number(soTien || 0) <= 0) {
+    if (!choXuLy && hinhThucXuLyCoc !== "HOAN_COC" && Number(soTien || 0) <= 0) {
       moPopupThongBao("Vui lòng nhập số tiền xử lý cọc");
       return false;
     }
 
-    if (hinhThucXuLyCoc === "KHAU_TRU_COC") {
+    if (!choXuLy && hinhThucXuLyCoc === "KHAU_TRU_COC") {
       const tienCoc = Number(chiTietThanhLy?.tien_coc_da_thanh_toan || 0);
 
       if (Number(soTien || 0) > tienCoc) {
@@ -470,14 +533,19 @@ function SettlementList() {
       }
     }
 
+    let coThietBiBaoTri = false;
+
     for (const item of danhSachKiemTraVatPham) {
       if (
         item.loai_kiem_tra === "THIET_BI" &&
-        Number(item.trang_thai_sau_tra) === TRANG_THAI_TB_BAO_TRI &&
-        !String(item.ly_do_bao_tri || "").trim()
+        Number(item.trang_thai_sau_tra) === TRANG_THAI_TB_BAO_TRI
       ) {
-        moPopupThongBao("Vui lòng nhập lý do bảo trì cho từng thiết bị chọn Bảo trì");
-        return false;
+        coThietBiBaoTri = true;
+
+        if (!String(item.ly_do_bao_tri || "").trim()) {
+          moPopupThongBao("Vui lòng nhập lý do bảo trì cho từng thiết bị chọn Bảo trì");
+          return false;
+        }
       }
 
       if (item.loai_kiem_tra === "PHU_KIEN") {
@@ -496,6 +564,13 @@ function SettlementList() {
       }
     }
 
+    if (choXuLy && !coThietBiBaoTri) {
+      moPopupThongBao(
+        "Chỉ chọn Chờ xử lý khi có ít nhất một thiết bị chuyển sang Bảo trì"
+      );
+      return false;
+    }
+
     if (anhKhiTra.length === 0) {
       moPopupThongBao("Vui lòng chọn ít nhất 1 ảnh khi trả");
       return false;
@@ -512,34 +587,41 @@ function SettlementList() {
     try {
       setDangGui(true);
 
-      const danhSachThietBi = danhSachKiemTraVatPham
-        .filter((item) => item.loai_kiem_tra === "THIET_BI")
-        .map((item) => ({
-          thiet_bi_id: item.thiet_bi_id,
-          trang_thai_sau_tra: Number(item.trang_thai_sau_tra),
-          ly_do_bao_tri: String(item.ly_do_bao_tri || "").trim(),
-        }));
-
-      const danhSachPhuKien = danhSachKiemTraVatPham
-        .filter((item) => item.loai_kiem_tra === "PHU_KIEN")
-        .map((item) => ({
-          ban_giao_vat_pham_id: item.ban_giao_vat_pham_id,
-          chi_tiet_don_thue_id: item.chi_tiet_don_thue_id,
-          bo_di_kem_id: item.bo_di_kem_id,
-          phu_kien_id: item.phu_kien_id,
-          phu_kien_vi_tri_kho_id: item.phu_kien_vi_tri_kho_id || null,
-          so_luong_tra_lai: Number(item.so_luong_tra_lai),
-        }));
+      const dangQuyetToanChoXuLy =
+        Number(chiTietThanhLy.trang_thai) === TRANG_THAI_CHO_XU_LY;
 
       const formData = new FormData();
       formData.append("hinh_thuc_xu_ly_coc", hinhThucXuLyCoc);
       formData.append("so_tien", soTien || 0);
-      formData.append("ghi_chu_thanh_ly", ghiChuThanhLy.trim());
-      formData.append("kiem_tra_thiet_bi", JSON.stringify(danhSachThietBi));
-      formData.append("kiem_tra_phu_kien", JSON.stringify(danhSachPhuKien));
 
-      for (const file of anhKhiTra) {
-        formData.append("anh_khi_tra", file);
+      if (!dangQuyetToanChoXuLy) {
+        const danhSachThietBi = danhSachKiemTraVatPham
+          .filter((item) => item.loai_kiem_tra === "THIET_BI")
+          .map((item) => ({
+            thiet_bi_id: item.thiet_bi_id,
+            trang_thai_sau_tra: Number(item.trang_thai_sau_tra),
+            ly_do_bao_tri: String(item.ly_do_bao_tri || "").trim(),
+          }));
+
+        const danhSachPhuKien = danhSachKiemTraVatPham
+          .filter((item) => item.loai_kiem_tra === "PHU_KIEN")
+          .map((item) => ({
+            ban_giao_vat_pham_id: item.ban_giao_vat_pham_id,
+            chi_tiet_don_thue_id: item.chi_tiet_don_thue_id,
+            bo_di_kem_id: item.bo_di_kem_id,
+            phu_kien_id: item.phu_kien_id,
+            phu_kien_vi_tri_kho_id: item.phu_kien_vi_tri_kho_id || null,
+            so_luong_tra_lai: Number(item.so_luong_tra_lai),
+          }));
+
+        formData.append("cho_xu_ly", choXuLy ? "1" : "0");
+        formData.append("ghi_chu_thanh_ly", ghiChuThanhLy.trim());
+        formData.append("kiem_tra_thiet_bi", JSON.stringify(danhSachThietBi));
+        formData.append("kiem_tra_phu_kien", JSON.stringify(danhSachPhuKien));
+
+        for (const file of anhKhiTra) {
+          formData.append("anh_khi_tra", file);
+        }
       }
 
       const phanHoi = await fetch(
@@ -554,7 +636,9 @@ function SettlementList() {
       const duLieu = await phanHoi.json();
 
       if (duLieu.success) {
-        moPopupThongBao("Lập phiếu trả/thanh lý thành công");
+        moPopupThongBao(
+          duLieu.message || duLieu.data?.message || "Xử lý thanh lý thành công"
+        );
         dongPopup();
         layDanhSachThanhLy();
       } else {
@@ -999,15 +1083,57 @@ function SettlementList() {
     );
   }
 
-  function renderFormThanhLy() {
-    if (!chiTietThanhLy || cheDoPopup !== "THANH_LY") return null;
+  function renderKetQuaBaoTriChoXuLy() {
+    if (
+      !chiTietThanhLy ||
+      Number(chiTietThanhLy.trang_thai) !== TRANG_THAI_CHO_XU_LY ||
+      Number(chiTietThanhLy.so_bao_tri_dang_xu_ly || 0) > 0
+    ) {
+      return null;
+    }
 
+    const danhSachBaoTri = chiTietThanhLy.bao_tri || [];
+
+    if (danhSachBaoTri.length === 0) return null;
+
+    return (
+      <>
+        <h3>Kết quả bảo trì</h3>
+        <div className="admin-bang-wrapper">
+          <table className="bang-quan-ly bang-gon">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Mã phiếu</th>
+                <th>Thiết bị</th>
+                <th>Serial</th>
+                <th>Lý do</th>
+                <th>Kết quả / ghi chú bảo trì</th>
+              </tr>
+            </thead>
+            <tbody>
+              {danhSachBaoTri.map((item, index) => (
+                <tr key={item.id}>
+                  <td>{index + 1}</td>
+                  <td>{hienThi(item.ma_phieu_bao_tri)}</td>
+                  <td>{hienThi(item.ten_mau)}</td>
+                  <td>{hienThi(item.so_serial)}</td>
+                  <td>{hienThi(item.ly_do)}</td>
+                  <td>{hienThi(item.ket_qua)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </>
+    );
+  }
+
+  function renderBangXuLyTienCoc() {
     const tienTamTinh = tinhTienTamTinh();
 
     return (
-      <form onSubmit={guiThanhLy}>
-        {renderSanPhamBanGiao(true)}
-
+      <>
         <h3>Xử lý tiền cọc</h3>
 
         <table className="bang-popup">
@@ -1057,26 +1183,97 @@ function SettlementList() {
             </tr>
           </tbody>
         </table>
+      </>
+    );
+  }
 
-        <div className="o-form">
-          <label>Ghi chú thanh lý</label>
-          <textarea
-            value={ghiChuThanhLy}
-            onChange={(e) => setGhiChuThanhLy(e.target.value)}
-            placeholder="Nhập ghi chú thanh lý, tình trạng khi trả..."
-          />
-        </div>
+  function renderFormThanhLy() {
+    if (!chiTietThanhLy || cheDoPopup !== "THANH_LY") return null;
 
-        <div className="o-form">
-          <label>Ảnh khi trả</label>
-          <input type="file" multiple accept="image/*" onChange={themAnhKhiTra} />
-        </div>
+    const dangQuyetToanChoXuLy =
+      Number(chiTietThanhLy.trang_thai) === TRANG_THAI_CHO_XU_LY;
 
-        {renderAnhDangChon()}
+    const coThietBiChonBaoTri = danhSachKiemTraVatPham.some(
+      (item) =>
+        item.loai_kiem_tra === "THIET_BI" &&
+        Number(item.trang_thai_sau_tra) === TRANG_THAI_TB_BAO_TRI
+    );
+
+    return (
+      <form onSubmit={guiThanhLy}>
+        {dangQuyetToanChoXuLy ? (
+          <>
+            {renderSanPhamBanGiao(false)}
+            {renderKetQuaBaoTriChoXuLy()}
+            {renderBangXuLyTienCoc()}
+          </>
+        ) : (
+          <>
+            {renderSanPhamBanGiao(true)}
+
+            <div className="o-form">
+              <label
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  flexWrap: "nowrap",
+                  gap: "8px",
+                  width: "max-content",
+                  whiteSpace: "nowrap",
+                  cursor: coThietBiChonBaoTri ? "pointer" : "not-allowed",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={choXuLy}
+                  disabled={!coThietBiChonBaoTri}
+                  onChange={(e) => {
+                    setChoXuLy(e.target.checked);
+                    if (e.target.checked) {
+                      setSoTien("");
+                    }
+                  }}
+                  style={{ margin: 0 }}
+                />
+                <span style={{ whiteSpace: "nowrap", flexShrink: 0 }}>Chờ xử lý</span>
+              </label>
+            </div>
+
+            {!choXuLy && renderBangXuLyTienCoc()}
+
+            {choXuLy && (
+              <p style={{ color: "red", marginTop: "6px" }}>
+                Xác nhận thanh lý sau khi bảo trì hoàn thành
+              </p>
+            )}
+
+            <div className="o-form">
+              <label>Ghi chú thanh lý</label>
+              <textarea
+                value={ghiChuThanhLy}
+                onChange={(e) => setGhiChuThanhLy(e.target.value)}
+                placeholder="Nhập ghi chú thanh lý, tình trạng khi trả..."
+              />
+            </div>
+
+            <div className="o-form">
+              <label>Ảnh khi trả</label>
+              <input type="file" multiple accept="image/*" onChange={themAnhKhiTra} />
+            </div>
+
+            {renderAnhDangChon()}
+          </>
+        )}
 
         <div className="popup-actions">
           <button className="nut-dong-y" type="submit" disabled={dangGui}>
-            {dangGui ? "Đang xử lý..." : "Xác nhận thanh lý"}
+            {dangGui
+              ? "Đang xử lý..."
+              : dangQuyetToanChoXuLy
+                ? "Xác nhận thanh lý"
+                : choXuLy
+                  ? "Lưu kiểm kê & chuyển bảo trì"
+                  : "Xác nhận thanh lý"}
           </button>
         </div>
       </form>
@@ -1107,6 +1304,7 @@ function SettlementList() {
           <option value="0">Tất cả trạng thái</option>
           <option value={TRANG_THAI_DANG_THUE}>Đang thuê</option>
           <option value={TRANG_THAI_QUA_HAN}>Quá hạn</option>
+          <option value={TRANG_THAI_CHO_XU_LY}>Chờ xử lý</option>
           <option value={TRANG_THAI_HOAN_THANH}>Hoàn thành</option>
         </select>
       </div>
@@ -1171,7 +1369,7 @@ function SettlementList() {
                           if (coTheThanhLy(don)) lapPhieuTra(don.id);
                         }}
                       >
-                        Thanh lý
+                        {tenNutThanhLy(don)}
                       </button>
                     </div>
                   </td>
@@ -1210,7 +1408,9 @@ function SettlementList() {
             <div className="popup-tieu-de">
               <h3>
                 {cheDoPopup === "THANH_LY"
-                  ? "Lập phiếu trả / thanh lý"
+                  ? Number(chiTietThanhLy?.trang_thai) === TRANG_THAI_CHO_XU_LY
+                    ? "Xác nhận thanh lý"
+                    : "Lập phiếu trả / thanh lý"
                   : "Chi tiết thanh lý"}
               </h3>
 
