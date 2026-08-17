@@ -5,6 +5,7 @@ const SO_DONG_MOI_TRANG = 10;
 
 function AdminWarehouseLocationList() {
   const [danhSachViTri, setDanhSachViTri] = useState([]);
+  const [danhSachDanhMuc, setDanhSachDanhMuc] = useState([]);
   const [tuKhoaNhap, setTuKhoaNhap] = useState("");
   const [tuKhoa, setTuKhoa] = useState("");
 
@@ -17,6 +18,7 @@ function AdminWarehouseLocationList() {
 
   const [formViTri, setFormViTri] = useState({
     ten_vi_tri: "",
+    danh_muc_id: "",
     suc_chua_toi_da: "",
   });
 
@@ -25,6 +27,7 @@ function AdminWarehouseLocationList() {
 
   useEffect(() => {
     layDanhSachViTri();
+    layDanhSachDanhMuc();
   }, []);
 
   function moPopupThongBao(noiDung) {
@@ -83,11 +86,58 @@ function AdminWarehouseLocationList() {
     }
   }
 
+  // Lấy đủ 3 nhóm danh mục đang dùng trong hệ thống:
+  // thiết bị chính (2501), thiết bị phụ (2502), phụ kiện (2503).
+  async function layDanhSachDanhMuc() {
+    try {
+      const danhSachTinhChat = [2501, 2502, 2503];
+
+      const cacPhanHoi = await Promise.all(
+        danhSachTinhChat.map((tinhChatId) =>
+          fetch(
+            `${DUONG_DAN_API}/api/equipment-categories/options?tinh_chat_id=${tinhChatId}`,
+            {
+              headers: taoHeaderCoToken(),
+            }
+          )
+        )
+      );
+
+      const cacDuLieu = await Promise.all(
+        cacPhanHoi.map((phanHoi) => phanHoi.json())
+      );
+
+      const danhMucGop = [];
+      const daCo = new Set();
+
+      for (const duLieu of cacDuLieu) {
+        for (const danhMuc of duLieu.data || []) {
+          if (!daCo.has(String(danhMuc.id))) {
+            daCo.add(String(danhMuc.id));
+            danhMucGop.push(danhMuc);
+          }
+        }
+      }
+
+      danhMucGop.sort((a, b) =>
+        String(a.ten_danh_muc || "").localeCompare(
+          String(b.ten_danh_muc || ""),
+          "vi"
+        )
+      );
+
+      setDanhSachDanhMuc(danhMucGop);
+    } catch {
+      moPopupThongBao("Không tải được danh sách danh mục");
+    }
+  }
+
   function moThem() {
     setViTriDangChon(null);
 
     setFormViTri({
       ten_vi_tri: "",
+      danh_muc_id: "",
       suc_chua_toi_da: "",
     });
 
@@ -99,6 +149,7 @@ function AdminWarehouseLocationList() {
 
     setFormViTri({
       ten_vi_tri: viTri.ten_vi_tri || "",
+      danh_muc_id: viTri.danh_muc_id || "",
       suc_chua_toi_da: viTri.suc_chua_toi_da || "",
     });
 
@@ -111,6 +162,7 @@ function AdminWarehouseLocationList() {
 
     setFormViTri({
       ten_vi_tri: "",
+      danh_muc_id: "",
       suc_chua_toi_da: "",
     });
   }
@@ -127,6 +179,11 @@ function AdminWarehouseLocationList() {
 
     if (!formViTri.ten_vi_tri.trim()) {
       moPopupThongBao("Vui lòng nhập tên vị trí");
+      return false;
+    }
+
+    if (!formViTri.danh_muc_id) {
+      moPopupThongBao("Vui lòng chọn danh mục");
       return false;
     }
 
@@ -165,6 +222,7 @@ function AdminWarehouseLocationList() {
         },
         body: JSON.stringify({
           ten_vi_tri: formViTri.ten_vi_tri,
+          danh_muc_id: formViTri.danh_muc_id,
           suc_chua_toi_da: Number(formViTri.suc_chua_toi_da),
         }),
       });
@@ -236,8 +294,8 @@ function AdminWarehouseLocationList() {
   const danhSachSauLoc = useMemo(() => {
     return danhSachViTri.filter((vt) => {
       const noiDung = `${vt.ten_vi_tri || ""} ${
-        vt.ten_trang_thai || ""
-      }`.toLowerCase();
+        vt.ten_danh_muc || ""
+      } ${vt.ten_trang_thai || ""}`.toLowerCase();
 
       return noiDung.includes(tuKhoa.toLowerCase());
     });
@@ -261,7 +319,7 @@ function AdminWarehouseLocationList() {
 
       <div className="khung-loc-admin">
         <input
-          placeholder="Tìm tên vị trí hoặc trạng thái"
+          placeholder="Tìm tên vị trí, danh mục hoặc trạng thái"
           value={tuKhoaNhap}
           onChange={(e) => {
             setTuKhoaNhap(e.target.value);
@@ -281,6 +339,7 @@ function AdminWarehouseLocationList() {
             <tr>
               <th>STT</th>
               <th>Tên vị trí</th>
+              <th>Danh mục</th>
               <th>Sức chứa tối đa</th>
               <th>Đang chứa</th>
               <th>Trạng thái</th>
@@ -293,13 +352,13 @@ function AdminWarehouseLocationList() {
           <tbody>
             {dangTai ? (
               <tr>
-                <td colSpan="8" style={{ textAlign: "center" }}>
+                <td colSpan="7" style={{ textAlign: "center" }}>
                   Đang tải dữ liệu...
                 </td>
               </tr>
             ) : danhSachHienThi.length === 0 ? (
               <tr>
-                <td colSpan="8" style={{ textAlign: "center" }}>
+                <td colSpan="7" style={{ textAlign: "center" }}>
                   Không có dữ liệu
                 </td>
               </tr>
@@ -308,6 +367,7 @@ function AdminWarehouseLocationList() {
                 <tr key={vt.id}>
                   <td>{viTriBatDau + index + 1}</td>
                   <td>{hienThi(vt.ten_vi_tri)}</td>
+                  <td>{hienThi(vt.ten_danh_muc)}</td>
                   <td>{vt.suc_chua_toi_da || 0}</td>
                   <td>{vt.so_luong_dang_chua || 0}</td>
 
@@ -388,6 +448,25 @@ function AdminWarehouseLocationList() {
                       doiFormViTri("ten_vi_tri", e.target.value)
                     }
                   />
+                </div>
+
+                <div className="o-form">
+                  <label>Danh mục</label>
+
+                  <select
+                    value={formViTri.danh_muc_id}
+                    onChange={(e) =>
+                      doiFormViTri("danh_muc_id", e.target.value)
+                    }
+                  >
+                    <option value="">-- Chọn danh mục --</option>
+
+                    {danhSachDanhMuc.map((danhMuc) => (
+                      <option key={danhMuc.id} value={danhMuc.id}>
+                        {danhMuc.ten_danh_muc}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="o-form">

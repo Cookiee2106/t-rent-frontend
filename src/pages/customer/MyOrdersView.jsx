@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DUONG_DAN_API } from "../../api/api";
 
 const TRANG_THAI_DA_HUY = 1101;
@@ -18,6 +18,7 @@ const SO_ANH_MOI_DONG = 5;
 const MUC_DICH_HOP_DONG_GIAY = 2601;
 const MUC_DICH_ANH_BAN_GIAO = 2602;
 const MUC_DICH_ANH_KHI_TRA = 2603;
+const MUC_DICH_ANH_BIEN_BAN_BAN_GIAO = 2604;
 
 function MyOrders() {
   const [danhSachDon, setDanhSachDon] = useState([]);
@@ -25,6 +26,8 @@ function MyOrders() {
   const [chiTietDon, setChiTietDon] = useState(null);
   const [moPopupChiTiet, setMoPopupChiTiet] = useState(false);
   const [anhDangXem, setAnhDangXem] = useState("");
+  const [blobUrlTepBaoVe, setBlobUrlTepBaoVe] = useState({});
+  const blobUrlsRef = useRef(new Set());
 
   const [dangTai, setDangTai] = useState(false);
   const [dangTaiChiTiet, setDangTaiChiTiet] = useState(false);
@@ -45,6 +48,93 @@ function MyOrders() {
     return {
       Authorization: `Bearer ${token}`,
     };
+  }
+
+  function taoBlobUrl(blob) {
+    const blobUrl = URL.createObjectURL(blob);
+    blobUrlsRef.current.add(blobUrl);
+    return blobUrl;
+  }
+
+  function thuHoiBlobUrl(blobUrl) {
+    if (!blobUrl || !blobUrl.startsWith("blob:")) return;
+    URL.revokeObjectURL(blobUrl);
+    blobUrlsRef.current.delete(blobUrl);
+  }
+
+  function xoaBlobTepBaoVe() {
+    setBlobUrlTepBaoVe((hienTai) => {
+      Object.values(hienTai).forEach(thuHoiBlobUrl);
+      return {};
+    });
+  }
+
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach((blobUrl) => URL.revokeObjectURL(blobUrl));
+      blobUrlsRef.current.clear();
+    };
+  }, []);
+
+  async function layBlobUrlTepBaoVe(fileId) {
+    const phanHoi = await fetch(
+      `${String(DUONG_DAN_API).replace(/\/+$/, "")}/api/protected-files/orders/${fileId}/content`,
+      {
+        headers: taoHeaderCoToken(),
+      }
+    );
+
+    if (!phanHoi.ok) {
+      const duLieuLoi = await phanHoi.json().catch(() => ({}));
+      throw new Error(duLieuLoi.message || "Không thể tải ảnh");
+    }
+
+    const blob = await phanHoi.blob();
+    const blobUrl = taoBlobUrl(blob);
+
+    setBlobUrlTepBaoVe((hienTai) => {
+      if (hienTai[fileId] && hienTai[fileId] !== blobUrl) {
+        thuHoiBlobUrl(hienTai[fileId]);
+      }
+
+      return {
+        ...hienTai,
+        [fileId]: blobUrl,
+      };
+    });
+
+    return blobUrl;
+  }
+
+  async function taiBlobDanhSachTepBaoVe(danhSach = []) {
+    const danhSachKhongTrung = [
+      ...new Map(
+        danhSach
+          .filter((file) => file?.id)
+          .map((file) => [String(file.id), file])
+      ).values(),
+    ];
+
+    await Promise.all(
+      danhSachKhongTrung.map(async (file) => {
+        try {
+          await layBlobUrlTepBaoVe(file.id);
+        } catch {
+          // Không làm vỡ popup nếu một ảnh cũ bị thiếu trên nơi lưu trữ.
+        }
+      })
+    );
+  }
+
+  async function moAnhTepBaoVe(file) {
+    if (!file?.id) return;
+
+    try {
+      const blobUrl = await layBlobUrlTepBaoVe(file.id);
+      setAnhDangXem(blobUrl);
+    } catch (loi) {
+      moPopup(loi.message);
+    }
   }
 
   function moPopup(noiDung) {
@@ -124,6 +214,10 @@ function MyOrders() {
   }
 
   function coTheGuiYeuCauHuy(don) {
+    if (don?.da_xuat_bien_ban) {
+      return false;
+    }
+
     if (Number(don?.trang_thai) !== TRANG_THAI_DA_GIU_CHO) {
       return false;
     }
@@ -202,15 +296,7 @@ function MyOrders() {
   function laFileAnh(file) {
     if (!file) return false;
     if (file.loai_file && file.loai_file.startsWith("image/")) return true;
-
-    const url = String(file.file_url || "").toLowerCase();
-
-    return (
-      url.endsWith(".jpg") ||
-      url.endsWith(".jpeg") ||
-      url.endsWith(".png") ||
-      url.endsWith(".webp")
-    );
+    return [2601, 2602, 2603, 2604].includes(Number(file.muc_dich_id));
   }
 
   function layAnhTheoMucDich(mucDichId) {
@@ -234,15 +320,24 @@ function MyOrders() {
               gridTemplateColumns: `repeat(${SO_ANH_MOI_DONG}, minmax(0, 1fr))`,
             }}
           >
-            {danhSachAnh.map((file) => (
-              <img
-                className="anh-tep-popup"
-                key={file.id}
-                src={file.file_url}
-                alt={tieuDe}
-                onClick={() => setAnhDangXem(file.file_url)}
-              />
-            ))}
+            {danhSachAnh.map((file) =>
+              blobUrlTepBaoVe[file.id] ? (
+                <img
+                  className="anh-tep-popup"
+                  key={file.id}
+                  src={blobUrlTepBaoVe[file.id]}
+                  alt={tieuDe}
+                  draggable={false}
+                  onContextMenu={(e) => e.preventDefault()}
+                  onDragStart={(e) => e.preventDefault()}
+                  onClick={() => moAnhTepBaoVe(file)}
+                />
+              ) : (
+                <div className="anh-tep-popup" key={file.id}>
+                  Đang tải ảnh...
+                </div>
+              )
+            )}
           </div>
         ) : (
           <p>Chưa có {tieuDe.toLowerCase()}.</p>
@@ -250,6 +345,14 @@ function MyOrders() {
       </div>
     );
   }
+
+  useEffect(() => {
+    xoaBlobTepBaoVe();
+
+    if ((chiTietDon?.tep_don_thue || []).length > 0) {
+      taiBlobDanhSachTepBaoVe(chiTietDon.tep_don_thue);
+    }
+  }, [chiTietDon]);
 
   async function layDanhSachDon() {
     try {
@@ -434,6 +537,7 @@ function MyOrders() {
                         >
                           Xem chi tiết
                         </button>
+
 
                         <button
                           className="nut-huy"
@@ -718,7 +822,12 @@ function MyOrders() {
                   {chiTietDon.tep_don_thue && chiTietDon.tep_don_thue.length > 0 ? (
                     <>
                       {hienThiNhomAnhDonThue("Ảnh hợp đồng", MUC_DICH_HOP_DONG_GIAY)}
-                      {hienThiNhomAnhDonThue("Ảnh bàn giao", MUC_DICH_ANH_BAN_GIAO)}
+                      {hienThiNhomAnhDonThue("Ảnh bàn giao thiết bị", MUC_DICH_ANH_BAN_GIAO)}
+
+                  {hienThiNhomAnhDonThue(
+                    "Ảnh biên bản bàn giao",
+                    MUC_DICH_ANH_BIEN_BAN_BAN_GIAO
+                  )}
                       {hienThiNhomAnhDonThue("Ảnh thanh lý", MUC_DICH_ANH_KHI_TRA)}
                     </>
                   ) : (
@@ -829,7 +938,13 @@ function MyOrders() {
       {anhDangXem && (
         <div className="popup-nen" onClick={() => setAnhDangXem("")}>
           <div className="popup-anh">
-            <img src={anhDangXem} alt="Ảnh đơn thuê" />
+            <img
+              src={anhDangXem}
+              alt="Ảnh đơn thuê"
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+              onDragStart={(e) => e.preventDefault()}
+            />
           </div>
         </div>
       )}

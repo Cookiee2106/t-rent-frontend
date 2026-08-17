@@ -17,6 +17,7 @@ import EquipmentList from "./pages/customer/EquipmentListView";
 import EquipmentDetail from "./pages/customer/EquipmentDetailView";
 import MyOrders from "./pages/customer/MyOrdersView";
 import Cart from "./pages/customer/CartView";
+import QuyDinhThueView from "./pages/customer/QuyDinhThueView";
 
 import CustomerAccountList from "./pages/admin/AdminCustomerAccountListView";
 import SettlementList from "./pages/admin/AdminSettlementListView";
@@ -246,6 +247,17 @@ function App() {
             </RouteKhachHang>
           }
         />
+
+        <Route 
+          path="/quy-dinh" 
+          element={
+          <RouteKhachHang>
+              <Layout>
+                <QuyDinhThueView />
+              </Layout>
+            </RouteKhachHang>
+          } />
+            
 
         {/* Các route dùng chung cho nhân viên và quản trị */}
         <Route

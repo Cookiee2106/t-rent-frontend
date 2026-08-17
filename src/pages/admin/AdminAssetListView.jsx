@@ -67,6 +67,10 @@ function AssetList() {
     return new Date(ngay).toLocaleDateString("vi-VN");
   }
 
+  function dinhDangSo(giaTri) {
+    return Number(giaTri || 0).toLocaleString("vi-VN");
+  }
+
   function layTenMau(thietBi) {
     return thietBi.ten_mau || "";
   }
@@ -261,9 +265,14 @@ function AssetList() {
   function chonMauThietBi(mau) {
     setTenMauDangChon(layTenMauOption(mau));
 
+    // Chọn mẫu mới có thể làm thay đổi danh mục,
+    // vì vậy bắt buộc chọn lại vị trí kho phù hợp.
+    setTenViTriDangChon("");
+
     setForm({
       ...form,
       mau_thiet_bi_id: mau.id,
+      vi_tri_kho_id: "",
     });
 
     setHienDanhSachMau(false);
@@ -487,10 +496,29 @@ function AssetList() {
     return noiDung.includes(tenMauDangChon.trim().toLowerCase());
   });
 
+  const mauDangChon = danhSachMau.find(
+    (mau) => String(mau.id) === String(form.mau_thiet_bi_id)
+  );
+
   const danhSachViTriSauLoc = danhSachViTriKho.filter((viTri) => {
+    // Chưa chọn mẫu thì chưa cho chọn vị trí.
+    if (!mauDangChon) {
+      return false;
+    }
+
+    // Ưu tiên so sánh bằng ID danh mục.
+    // Nếu API mẫu chưa trả danh_muc_id thì fallback sang tên danh mục.
+    const khopDanhMuc = mauDangChon.danh_muc_id
+      ? String(viTri.danh_muc_id) === String(mauDangChon.danh_muc_id)
+      : String(viTri.ten_danh_muc || "") ===
+        String(mauDangChon.ten_danh_muc || "");
+
     const noiDung = layTenViTriOption(viTri).toLowerCase();
 
-    return noiDung.includes(tenViTriDangChon.toLowerCase());
+    return (
+      khopDanhMuc &&
+      noiDung.includes(tenViTriDangChon.toLowerCase())
+    );
   });
 
   const danhSachSauLoc = danhSachThietBi.filter((tb) => {
@@ -908,13 +936,26 @@ function AssetList() {
                           className="combo-dong"
                           onMouseDown={() => chonViTriKho(viTri)}
                         >
-                          {layTenViTriOption(viTri)}
+                          <b>{layTenViTriOption(viTri)}</b>
+                          <span
+                            style={{
+                              display: "block",
+                              marginTop: "3px",
+                              fontSize: "13px",
+                              color: "#666",
+                            }}
+                          >
+                            Sức chứa: {dinhDangSo(viTri.suc_chua_toi_da)} -
+                            Đang chứa: {dinhDangSo(viTri.so_luong_dang_chua)}
+                          </span>
                         </div>
                       ))}
 
                       {danhSachViTriSauLoc.length === 0 && (
                         <div className="combo-dong combo-rong">
-                          Không tìm thấy vị trí kho
+                          {!form.mau_thiet_bi_id
+                            ? "Vui lòng chọn mẫu thiết bị trước"
+                            : "Không có vị trí kho phù hợp với danh mục"}
                         </div>
                       )}
                     </div>

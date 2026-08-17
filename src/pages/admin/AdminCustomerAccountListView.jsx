@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DUONG_DAN_API, taoHeaderCoToken } from "../../api/api";
 
 const SO_DONG_MOI_TRANG = 10;
@@ -15,6 +15,8 @@ function CustomerAccountList() {
   const [trangHienTai, setTrangHienTai] = useState(1);
   const [chiTiet, setChiTiet] = useState(null);
   const [anhDangXem, setAnhDangXem] = useState("");
+  const [blobAnhXacMinh, setBlobAnhXacMinh] = useState({});
+  const blobUrlsRef = useRef(new Set());
 
   const [hienXacNhanDuyet, setHienXacNhanDuyet] = useState(false);
   const [hienTuChoi, setHienTuChoi] = useState(false);
@@ -25,6 +27,82 @@ function CustomerAccountList() {
 
   function moPopupThongBao(noiDung) {
     setPopupThongBao(noiDung);
+  }
+
+  function taoBlobUrl(blob) {
+    const blobUrl = URL.createObjectURL(blob);
+    blobUrlsRef.current.add(blobUrl);
+    return blobUrl;
+  }
+
+  function thuHoiBlobUrl(blobUrl) {
+    if (!blobUrl || !blobUrl.startsWith("blob:")) return;
+    URL.revokeObjectURL(blobUrl);
+    blobUrlsRef.current.delete(blobUrl);
+  }
+
+  function xoaBlobAnhXacMinh() {
+    setBlobAnhXacMinh((hienTai) => {
+      Object.values(hienTai).forEach(thuHoiBlobUrl);
+      return {};
+    });
+  }
+
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach((blobUrl) => URL.revokeObjectURL(blobUrl));
+      blobUrlsRef.current.clear();
+    };
+  }, []);
+
+  async function layBlobAnhXacMinhBaoVe(hoSoId, loaiAnh) {
+    const phanHoi = await fetch(
+      `${String(DUONG_DAN_API).replace(/\/+$/, "")}/api/protected-files/verifications/${hoSoId}/${loaiAnh}/content`,
+      {
+        headers: taoHeaderCoToken(),
+      }
+    );
+
+    if (!phanHoi.ok) {
+      const duLieuLoi = await phanHoi.json().catch(() => ({}));
+      throw new Error(duLieuLoi.message || "Không thể tải ảnh xác minh");
+    }
+
+    const blob = await phanHoi.blob();
+    return taoBlobUrl(blob);
+  }
+
+  async function taiAnhXacMinhBaoVe(hoSo) {
+    xoaBlobAnhXacMinh();
+
+    if (!hoSo?.ho_so_xac_minh_id) {
+      return;
+    }
+
+    const cauHinh = [
+      ["front", "co_anh_mat_truoc"],
+      ["back", "co_anh_mat_sau"],
+      ["holding", "co_anh_cam_cccd"],
+    ];
+
+    const ketQua = {};
+
+    await Promise.all(
+      cauHinh.map(async ([loaiAnh, truongCoAnh]) => {
+        if (!hoSo[truongCoAnh]) return;
+
+        try {
+          ketQua[loaiAnh] = await layBlobAnhXacMinhBaoVe(
+            hoSo.ho_so_xac_minh_id,
+            loaiAnh
+          );
+        } catch {
+          ketQua[loaiAnh] = "";
+        }
+      })
+    );
+
+    setBlobAnhXacMinh(ketQua);
   }
 
   function dinhDangNgay(ngay) {
@@ -123,6 +201,7 @@ function CustomerAccountList() {
 
       if (duLieu.success) {
         setChiTiet(duLieu.data);
+        await taiAnhXacMinhBaoVe(duLieu.data);
       } else {
         moPopupThongBao(duLieu.message);
       }
@@ -399,7 +478,11 @@ function CustomerAccountList() {
 
               <button
                 className="nut-dong-popup"
-                onClick={() => setChiTiet(null)}
+                onClick={() => {
+                  xoaBlobAnhXacMinh();
+                  setAnhDangXem("");
+                  setChiTiet(null);
+                }}
               >
                 Đóng
               </button>
@@ -463,29 +546,42 @@ function CustomerAccountList() {
                       <td>Ảnh xác minh</td>
                       <td>
                         <div className="nhom-anh-popup">
-                          <img
-                            src={chiTiet.anh_mat_truoc_url}
-                            alt="CCCD mặt trước"
-                            onClick={() =>
-                              setAnhDangXem(chiTiet.anh_mat_truoc_url)
-                            }
-                          />
+                          {chiTiet.co_anh_mat_truoc && blobAnhXacMinh.front && (
+                            <img
+                              src={blobAnhXacMinh.front}
+                              alt="CCCD mặt trước"
+                              draggable={false}
+                              onContextMenu={(e) => e.preventDefault()}
+                              onDragStart={(e) => e.preventDefault()}
+                              onClick={() => setAnhDangXem(blobAnhXacMinh.front)}
+                            />
+                          )}
 
-                          <img
-                            src={chiTiet.anh_mat_sau_url}
-                            alt="CCCD mặt sau"
-                            onClick={() =>
-                              setAnhDangXem(chiTiet.anh_mat_sau_url)
-                            }
-                          />
+                          {chiTiet.co_anh_mat_sau && blobAnhXacMinh.back && (
+                            <img
+                              src={blobAnhXacMinh.back}
+                              alt="CCCD mặt sau"
+                              draggable={false}
+                              onContextMenu={(e) => e.preventDefault()}
+                              onDragStart={(e) => e.preventDefault()}
+                              onClick={() => setAnhDangXem(blobAnhXacMinh.back)}
+                            />
+                          )}
 
-                          <img
-                            src={chiTiet.anh_cam_cccd_url}
-                            alt="Ảnh cầm CCCD"
-                            onClick={() =>
-                              setAnhDangXem(chiTiet.anh_cam_cccd_url)
-                            }
-                          />
+                          {chiTiet.co_anh_cam_cccd && blobAnhXacMinh.holding && (
+                            <img
+                              src={blobAnhXacMinh.holding}
+                              alt="Ảnh cầm CCCD"
+                              draggable={false}
+                              onContextMenu={(e) => e.preventDefault()}
+                              onDragStart={(e) => e.preventDefault()}
+                              onClick={() => setAnhDangXem(blobAnhXacMinh.holding)}
+                            />
+                          )}
+
+                          {!blobAnhXacMinh.front &&
+                            !blobAnhXacMinh.back &&
+                            !blobAnhXacMinh.holding && <span>Đang tải ảnh...</span>}
                         </div>
                       </td>
                     </tr>
@@ -640,7 +736,13 @@ function CustomerAccountList() {
       {anhDangXem && (
         <div className="popup-nen" onClick={() => setAnhDangXem("")}>
           <div className="popup-anh">
-            <img src={anhDangXem} alt="Ảnh xác minh" />
+            <img
+              src={anhDangXem}
+              alt="Ảnh xác minh"
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+              onDragStart={(e) => e.preventDefault()}
+            />
           </div>
         </div>
       )}

@@ -45,6 +45,7 @@ function AdminAccessoryList() {
     danh_muc_id: "",
     vi_tri_kho_id: "",
     tong_so_luong: "0",
+    gia_tri_phu_kien: "",
     mo_ta: "",
   });
 
@@ -77,6 +78,10 @@ function AdminAccessoryList() {
 
   function dinhDangSo(giaTri) {
     return Number(giaTri || 0).toLocaleString("vi-VN");
+  }
+
+  function dinhDangTien(giaTri) {
+    return `${dinhDangSo(giaTri)} đ`;
   }
 
   function chuanHoaTen(giaTri) {
@@ -217,6 +222,7 @@ function AdminAccessoryList() {
       danh_muc_id: "",
       vi_tri_kho_id: "",
       tong_so_luong: "0",
+      gia_tri_phu_kien: "",
       mo_ta: "",
     });
 
@@ -243,6 +249,7 @@ function AdminAccessoryList() {
       danh_muc_id: phuKien.danh_muc_id || "",
       vi_tri_kho_id: phuKien.vi_tri_kho_id || "",
       tong_so_luong: String(phuKien.tong_so_luong || 0),
+      gia_tri_phu_kien: String(phuKien.gia_tri_phu_kien || ""),
       mo_ta: phuKien.mo_ta || "",
     });
 
@@ -330,6 +337,9 @@ function AdminAccessoryList() {
       danhMuc.ten_danh_muc
     );
 
+    const doiDanhMuc =
+      String(form.danh_muc_id || "") !== String(danhMuc.id || "");
+
     setTenDanhMucDangChon(danhMuc.ten_danh_muc || "");
 
     if (!laCapSau) {
@@ -337,16 +347,31 @@ function AdminAccessoryList() {
       setHienGoiYNgam(false);
     }
 
+    // Khi đổi danh mục phải chọn lại vị trí kho,
+    // tránh giữ vị trí thuộc danh mục cũ.
+    if (doiDanhMuc) {
+      setDanhSachPhanBo([]);
+      setDanhSachPhanBoTam([]);
+      setTenViTriDangChon("");
+      setViTriPhanBoDangChon(null);
+    }
+
     setForm({
       ...form,
       danh_muc_id: danhMuc.id,
       ngam_id: laCapSau ? form.ngam_id : "",
+      vi_tri_kho_id: "",
     });
 
     setHienGoiYDanhMuc(false);
   }
 
   function moPopupPhanBoViTri() {
+    if (!form.danh_muc_id) {
+      moPopup("Vui lòng chọn danh mục trước khi chọn vị trí kho");
+      return;
+    }
+
     setDanhSachPhanBoTam(
       danhSachPhanBo.map((item) => ({
         ...item,
@@ -519,6 +544,12 @@ function AdminAccessoryList() {
       return moPopup("Vui lòng chọn danh mục trong danh sách");
     }
 
+    const giaTriPhuKien = Number(form.gia_tri_phu_kien);
+
+    if (!Number.isSafeInteger(giaTriPhuKien) || giaTriPhuKien <= 0) {
+      return moPopup("Giá trị phụ kiện phải là số nguyên lớn hơn 0");
+    }
+
     if (formDangChonCapSau() && !form.ngam_id) {
       return moPopup("Vui lòng chọn ngàm cho phụ kiện Cáp sau");
     }
@@ -572,6 +603,7 @@ function AdminAccessoryList() {
           })),
           vi_tri_kho_id: danhSachPhanBo[0]?.vi_tri_kho_id || null,
           tong_so_luong: tongSoLuongTrongForm(),
+          gia_tri_phu_kien: giaTriPhuKien,
           mo_ta: form.mo_ta.trim(),
         }),
       });
@@ -670,11 +702,18 @@ function AdminAccessoryList() {
   );
 
   const danhSachViTriSauLoc = danhSachViTri.filter((viTri) => {
+    const khopDanhMuc =
+      String(viTri.danh_muc_id || "") === String(form.danh_muc_id || "");
+
     const khopTuKhoa = String(viTri.ten_vi_tri || "")
       .toLowerCase()
       .includes(tenViTriDangChon.toLowerCase());
 
-    return khopTuKhoa && !viTriDaDuocChon(viTri.id);
+    return (
+      khopDanhMuc &&
+      khopTuKhoa &&
+      !viTriDaDuocChon(viTri.id)
+    );
   });
 
   const danhSachSauLoc = danhSachPhuKien.filter((phuKien) => {
@@ -798,6 +837,7 @@ function AdminAccessoryList() {
               <th>Ngàm</th>
               <th>Danh mục</th>
               <th>Tổng SL</th>
+              <th>Giá trị</th>
               <th>Đang dùng</th>
               <th>Trạng thái</th>
               <th>Vị trí kho</th>
@@ -815,6 +855,7 @@ function AdminAccessoryList() {
                 <td>{hienThi(phuKien.ten_ngam)}</td>
                 <td>{hienThi(phuKien.ten_danh_muc)}</td>
                 <td>{dinhDangSo(phuKien.tong_so_luong)}</td>
+                <td>{dinhDangTien(phuKien.gia_tri_phu_kien)}</td>
                 <td>{dinhDangSo(phuKien.so_luong_dang_su_dung)}</td>
                 <td>
                   <span
@@ -901,7 +942,7 @@ function AdminAccessoryList() {
 
             {danhSachHienThi.length === 0 && (
               <tr>
-                <td colSpan="10" style={{ textAlign: "center" }}>
+                <td colSpan="11" style={{ textAlign: "center" }}>
                   Không có dữ liệu
                 </td>
               </tr>
@@ -1010,6 +1051,11 @@ function AdminAccessoryList() {
                   <tr>
                     <td>Tổng số lượng</td>
                     <td>{dinhDangSo(chiTietPhuKien.tong_so_luong)}</td>
+                  </tr>
+
+                  <tr>
+                    <td>Giá trị phụ kiện</td>
+                    <td>{dinhDangTien(chiTietPhuKien.gia_tri_phu_kien)}</td>
                   </tr>
 
                   <tr>
@@ -1157,6 +1203,19 @@ function AdminAccessoryList() {
                     Phụ kiện bắt buộc có ít nhất một vị trí kho.
                   </small>
                 )}
+              </div>
+
+              <div className="o-form">
+                <label>Giá trị phụ kiện (VNĐ)</label>
+                <input
+                  type="number"
+                  name="gia_tri_phu_kien"
+                  min="1"
+                  step="1"
+                  value={form.gia_tri_phu_kien}
+                  onChange={doiForm}
+                  placeholder="Ví dụ: 100000"
+                />
               </div>
 
               <div className="o-form">

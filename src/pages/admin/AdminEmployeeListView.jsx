@@ -25,6 +25,7 @@ function EmployeeList() {
     ho_ten: "",
     email: "",
     so_dien_thoai: "",
+    so_cccd: "",
     dia_chi: "",
     mat_khau: "",
   });
@@ -104,6 +105,7 @@ function EmployeeList() {
       ho_ten: "",
       email: "",
       so_dien_thoai: "",
+      so_cccd: "",
       dia_chi: "",
       mat_khau: "",
     });
@@ -119,6 +121,7 @@ function EmployeeList() {
       ho_ten: nhanVien.ho_ten || "",
       email: "",
       so_dien_thoai: nhanVien.so_dien_thoai || "",
+      so_cccd: nhanVien.so_cccd || "",
       dia_chi: nhanVien.dia_chi || "",
       mat_khau: "",
     });
@@ -138,6 +141,14 @@ function EmployeeList() {
 
     if (!form.ho_ten.trim()) {
       return moPopup("Vui lòng nhập họ tên");
+    }
+
+    if (!form.so_cccd.trim()) {
+      return moPopup("Vui lòng nhập số CCCD");
+    }
+
+    if (!/^[0-9]{12}$/.test(form.so_cccd.trim())) {
+      return moPopup("Số CCCD phải gồm đúng 12 chữ số");
     }
 
     if (cheDoForm === "THEM") {
@@ -162,12 +173,14 @@ function EmployeeList() {
             ho_ten: form.ho_ten,
             email: form.email,
             so_dien_thoai: form.so_dien_thoai,
+            so_cccd: form.so_cccd,
             dia_chi: form.dia_chi,
             mat_khau: form.mat_khau,
           }
         : {
             ho_ten: form.ho_ten,
             so_dien_thoai: form.so_dien_thoai,
+            so_cccd: form.so_cccd,
             dia_chi: form.dia_chi,
           };
 
@@ -460,13 +473,13 @@ function EmployeeList() {
                 </tr>
 
                 <tr>
-                  <td>Địa chỉ</td>
-                  <td>{hienThi(chiTietNhanVien.dia_chi)}</td>
+                  <td>CCCD</td>
+                  <td>{hienThi(chiTietNhanVien.so_cccd)}</td>
                 </tr>
 
                 <tr>
-                  <td>Vai trò</td>
-                  <td>{hienThi(chiTietNhanVien.vai_tro)}</td>
+                  <td>Địa chỉ</td>
+                  <td>{hienThi(chiTietNhanVien.dia_chi)}</td>
                 </tr>
 
                 <tr>
@@ -520,6 +533,18 @@ function EmployeeList() {
                   name="so_dien_thoai"
                   value={form.so_dien_thoai}
                   onChange={doiForm}
+                />
+              </div>
+
+              <div className="o-form">
+                <label>CCCD</label>
+                <input
+                  name="so_cccd"
+                  value={form.so_cccd}
+                  onChange={doiForm}
+                  maxLength={12}
+                  inputMode="numeric"
+                  placeholder="Nhập 12 chữ số CCCD"
                 />
               </div>
 

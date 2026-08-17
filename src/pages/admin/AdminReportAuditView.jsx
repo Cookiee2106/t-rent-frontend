@@ -45,7 +45,6 @@ function ReportAuditPage() {
   const [danhSachThaoTac, setDanhSachThaoTac] = useState([]);
   const [tongDongThaoTac, setTongDongThaoTac] = useState(0);
   const [trangHienTai, setTrangHienTai] = useState(1);
-  const [chiTietThaoTac, setChiTietThaoTac] = useState(null);
 
   // Chỉ nhận kết quả của lần tìm kiếm nhật ký mới nhất.
   // Phản hồi cũ về chậm sẽ bị bỏ qua để dữ liệu không nhảy ngược lại.
@@ -281,23 +280,6 @@ function ReportAuditPage() {
     }
   }
 
-  async function xemChiTietThaoTac(id) {
-    try {
-      const phanHoi = await fetch(`${DUONG_DAN_API}/api/admin/audit-logs/${id}`, {
-        headers: taoHeaderCoToken(),
-      });
-
-      const duLieu = await phanHoi.json();
-
-      if (duLieu.success) {
-        setChiTietThaoTac(duLieu.data);
-      } else {
-        moPopupThongBao(duLieu.message);
-      }
-    } catch {
-      moPopupThongBao("Không kết nối được server");
-    }
-  }
 
   function xoaLocDoanhThu() {
     // LỌC THEO NGÀY CŨ - GIỮ LẠI, KHÔNG XÓA.
@@ -476,7 +458,11 @@ function ReportAuditPage() {
   }
 
   function renderDoanhThu() {
-    const data = baoCaoDoanhThu?.data || [];
+    // Chỉ hiển thị những tháng thực sự có doanh thu.
+    const data = (baoCaoDoanhThu?.data || []).filter(
+      (item) => Number(item.tong_doanh_thu || 0) > 0
+    );
+
     const doanhThuTheoMau =
       baoCaoDoanhThu?.revenue_by_models || [];
 
@@ -593,7 +579,6 @@ function ReportAuditPage() {
           <table className="bang-quan-ly bang-gon">
             <thead>
               <tr>
-                <th>STT</th>
                 <th>Tháng</th>
                 <th>Số đơn có doanh thu</th>
                 <th>Doanh thu</th>
@@ -601,9 +586,8 @@ function ReportAuditPage() {
             </thead>
 
             <tbody>
-              {data.map((item, index) => (
+              {data.map((item) => (
                 <tr key={item.thang_hien_thi}>
-                  <td>{index + 1}</td>
                   <td>{hienThi(item.thang_hien_thi)}</td>
                   <td>{item.so_don_thue}</td>
                   <td className="tien-thue-don">
@@ -614,7 +598,7 @@ function ReportAuditPage() {
 
               {data.length === 0 && (
                 <tr>
-                  <td colSpan="4" style={{ textAlign: "center" }}>
+                  <td colSpan="3" style={{ textAlign: "center" }}>
                     Không có dữ liệu
                   </td>
                 </tr>
@@ -894,6 +878,7 @@ function ReportAuditPage() {
             <option value="0">Tất cả hành động</option>
             <option value="THANH_TOAN_COC">Thanh toán tiền giữ chỗ</option>
             <option value="NHAN_TIEN_THUE">Nhận tiền thuê khi bàn giao</option>
+            <option value="HUY_DON">Hủy đơn</option>
             <option value="THANH_LY">Thanh lý hợp đồng</option>
           </select>
 
@@ -935,7 +920,6 @@ function ReportAuditPage() {
                 <th>Mã đơn</th>
                 <th>Hành động</th>
                 <th>Thời gian</th>
-                <th>Chi tiết</th>
               </tr>
             </thead>
 
@@ -949,21 +933,12 @@ function ReportAuditPage() {
                   <td>{hienThi(item.ma_don)}</td>
                   <td>{hienThi(item.ten_thao_tac)}</td>
                   <td>{dinhDangNgayGio(item.thoi_gian)}</td>
-                  <td>
-                    <button
-                      className="nut-xem-chi-tiet"
-                      type="button"
-                      onClick={() => xemChiTietThaoTac(item.id)}
-                    >
-                      Xem chi tiết
-                    </button>
-                  </td>
                 </tr>
               ))}
 
               {danhSachThaoTac.length === 0 && (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: "center" }}>
+                  <td colSpan="7" style={{ textAlign: "center" }}>
                     Không có dữ liệu
                   </td>
                 </tr>
@@ -1056,24 +1031,6 @@ function ReportAuditPage() {
         </div>
       )}
 
-      {chiTietThaoTac && (
-        <div className="popup-overlay" onClick={() => setChiTietThaoTac(null)}>
-          <div className="popup" onClick={(e) => e.stopPropagation()}>
-            <h3>Chi tiết thao tác</h3>
-            <p><strong>Người dùng:</strong> {hienThi(chiTietThaoTac.ten_nguoi_dung)}</p>
-            <p><strong>Email:</strong> {hienThi(chiTietThaoTac.email)}</p>
-            <p><strong>Vai trò:</strong> {hienThi(hienThiVaiTro(chiTietThaoTac))}</p>
-            <p><strong>Mã đơn:</strong> {hienThi(chiTietThaoTac.ma_don)}</p>
-            <p><strong>Hành động:</strong> {hienThi(chiTietThaoTac.ten_thao_tac)}</p>
-            <p><strong>Số tiền:</strong> {dinhDangTien(chiTietThaoTac.so_tien)}</p>
-            <p><strong>Thời gian:</strong> {dinhDangNgayGio(chiTietThaoTac.thoi_gian)}</p>
-            <p><strong>Ghi chú:</strong> {hienThi(chiTietThaoTac.ghi_chu)}</p>
-            <div className="popup-actions">
-              <button className="nut-dong-popup" type="button" onClick={() => setChiTietThaoTac(null)}>Đóng</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

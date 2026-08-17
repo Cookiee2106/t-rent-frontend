@@ -5241,3 +5241,26 @@ footer.chan-trang-dang-luoi {
 .popup-cau-hinh-vi-tri-phu-kien .popup-actions-vi-tri-phu-kien button {
   min-width: 120px;
 }
+
+
+/* ================= TÀI LIỆU ĐƠN THUÊ ================= */
+
+.nhom-nut-tai-lieu-don {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.thong-bao-khoa-ban-giao {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #475569;
+  text-align: center;
+  font-size: 14px;
+}

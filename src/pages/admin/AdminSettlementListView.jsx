@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DUONG_DAN_API, taoHeaderCoToken } from "../../api/api";
 
 const SO_DONG_MOI_TRANG = 10;
@@ -15,6 +15,7 @@ const TRANG_THAI_TB_BI_MAT = 505;
 const MUC_DICH_HOP_DONG_GIAY = 2601;
 const MUC_DICH_ANH_BAN_GIAO = 2602;
 const MUC_DICH_ANH_KHI_TRA = 2603;
+const MUC_DICH_ANH_BIEN_BAN_BAN_GIAO = 2604;
 
 function SettlementList() {
   const [danhSachDon, setDanhSachDon] = useState([]);
@@ -36,14 +37,111 @@ function SettlementList() {
   const [dangGui, setDangGui] = useState(false);
 
   const [anhDangXem, setAnhDangXem] = useState("");
+  const [blobUrlTepBaoVe, setBlobUrlTepBaoVe] = useState({});
+  const blobUrlsRef = useRef(new Set());
   const [popupThongBao, setPopupThongBao] = useState("");
 
   useEffect(() => {
     layDanhSachThanhLy();
   }, [trangHienTai, tuKhoa, trangThaiLoc]);
 
+  useEffect(() => {
+    xoaBlobTepBaoVe();
+
+    if ((chiTietThanhLy?.tep_don_thue || []).length > 0) {
+      taiBlobDanhSachTepBaoVe(chiTietThanhLy.tep_don_thue);
+    }
+  }, [chiTietThanhLy]);
+
   function moPopupThongBao(noiDung) {
     setPopupThongBao(noiDung || "Có lỗi xảy ra");
+  }
+
+  function taoBlobUrl(blob) {
+    const blobUrl = URL.createObjectURL(blob);
+    blobUrlsRef.current.add(blobUrl);
+    return blobUrl;
+  }
+
+  function thuHoiBlobUrl(blobUrl) {
+    if (!blobUrl || !blobUrl.startsWith("blob:")) return;
+    URL.revokeObjectURL(blobUrl);
+    blobUrlsRef.current.delete(blobUrl);
+  }
+
+  function xoaBlobTepBaoVe() {
+    setBlobUrlTepBaoVe((hienTai) => {
+      Object.values(hienTai).forEach(thuHoiBlobUrl);
+      return {};
+    });
+  }
+
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach((blobUrl) => URL.revokeObjectURL(blobUrl));
+      blobUrlsRef.current.clear();
+    };
+  }, []);
+
+  async function layBlobUrlTepBaoVe(fileId) {
+    const phanHoi = await fetch(
+      `${String(DUONG_DAN_API).replace(/\/+$/, "")}/api/protected-files/orders/${fileId}/content`,
+      {
+        headers: taoHeaderCoToken(),
+      }
+    );
+
+    if (!phanHoi.ok) {
+      const duLieuLoi = await phanHoi.json().catch(() => ({}));
+      throw new Error(duLieuLoi.message || "Không thể tải ảnh");
+    }
+
+    const blob = await phanHoi.blob();
+    const blobUrl = taoBlobUrl(blob);
+
+    setBlobUrlTepBaoVe((hienTai) => {
+      if (hienTai[fileId] && hienTai[fileId] !== blobUrl) {
+        thuHoiBlobUrl(hienTai[fileId]);
+      }
+
+      return {
+        ...hienTai,
+        [fileId]: blobUrl,
+      };
+    });
+
+    return blobUrl;
+  }
+
+  async function taiBlobDanhSachTepBaoVe(danhSach = []) {
+    const danhSachKhongTrung = [
+      ...new Map(
+        danhSach
+          .filter((file) => file?.id)
+          .map((file) => [String(file.id), file])
+      ).values(),
+    ];
+
+    await Promise.all(
+      danhSachKhongTrung.map(async (file) => {
+        try {
+          await layBlobUrlTepBaoVe(file.id);
+        } catch {
+          // Không làm vỡ popup nếu một ảnh cũ bị thiếu trên nơi lưu trữ.
+        }
+      })
+    );
+  }
+
+  async function moTepBaoVe(file) {
+    if (!file?.id) return;
+
+    try {
+      const blobUrl = await layBlobUrlTepBaoVe(file.id);
+      setAnhDangXem(blobUrl);
+    } catch (loi) {
+      moPopupThongBao(loi.message);
+    }
   }
 
   function dinhDangTien(giaTri) {
@@ -98,14 +196,7 @@ function SettlementList() {
   function laFileAnh(file) {
     if (!file) return false;
     if (file.loai_file && file.loai_file.startsWith("image/")) return true;
-
-    const url = String(file.file_url || "").toLowerCase();
-    return (
-      url.endsWith(".jpg") ||
-      url.endsWith(".jpeg") ||
-      url.endsWith(".png") ||
-      url.endsWith(".webp")
-    );
+    return [2601, 2602, 2603, 2604].includes(Number(file.muc_dich_id));
   }
 
   function layClassTrangThaiDon(trangThaiId) {
@@ -498,18 +589,20 @@ function SettlementList() {
               <div
                 className="the-anh-thanh-ly"
                 key={file.id}
-                onClick={() => {
-                  if (laFileAnh(file)) {
-                    setAnhDangXem(file.file_url);
-                  } else {
-                    window.open(file.file_url, "_blank");
-                  }
-                }}
+                onClick={() => moTepBaoVe(file)}
               >
-                {laFileAnh(file) ? (
-                  <img src={file.file_url} alt="Ảnh đơn thuê" />
+                {laFileAnh(file) && blobUrlTepBaoVe[file.id] ? (
+                  <img
+                    src={blobUrlTepBaoVe[file.id]}
+                    alt="Ảnh đơn thuê"
+                    draggable={false}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onDragStart={(e) => e.preventDefault()}
+                  />
                 ) : (
-                  <div className="tep-khong-phai-anh">Mở file</div>
+                  <div className="tep-khong-phai-anh">
+                    {laFileAnh(file) ? "Đang tải ảnh..." : "Mở file"}
+                  </div>
                 )}
               </div>
             ))}
@@ -896,7 +989,11 @@ function SettlementList() {
       <>
         <h3>Hình ảnh / file đơn thuê</h3>
         {renderNhomAnh("Ảnh hợp đồng giấy", locTep(MUC_DICH_HOP_DONG_GIAY))}
-        {renderNhomAnh("Ảnh bàn giao", locTep(MUC_DICH_ANH_BAN_GIAO))}
+        {renderNhomAnh("Ảnh bàn giao thiết bị", locTep(MUC_DICH_ANH_BAN_GIAO))}
+        {renderNhomAnh(
+          "Ảnh biên bản bàn giao",
+          locTep(MUC_DICH_ANH_BIEN_BAN_BAN_GIAO)
+        )}
         {renderNhomAnh("Ảnh khi trả", locTep(MUC_DICH_ANH_KHI_TRA))}
       </>
     );
@@ -1165,7 +1262,13 @@ function SettlementList() {
       {anhDangXem && (
         <div className="popup-nen" onClick={() => setAnhDangXem("")}>
           <div className="popup-anh">
-            <img src={anhDangXem} alt="Ảnh xem lớn" />
+            <img
+              src={anhDangXem}
+              alt="Ảnh xem lớn"
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+              onDragStart={(e) => e.preventDefault()}
+            />
           </div>
         </div>
       )}

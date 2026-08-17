@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DUONG_DAN_API, taoHeaderCoToken } from "../../api/api";
 
 const TRANG_THAI_DA_HUY = 1101;
@@ -19,6 +19,7 @@ const SO_DONG_MOI_TRANG = 10;
 const SO_DONG_YEU_CAU_HUY_MOI_TRANG = 10;
 const SO_FILE_TOI_DA = 5;
 const SO_ANH_MOI_DONG = 5;
+const MUC_DICH_ANH_BIEN_BAN_BAN_GIAO = 2604;
 
 
 function ComboboxTimTaiSan({
@@ -26,6 +27,7 @@ function ComboboxTimTaiSan({
   danhSachTaiSan,
   onChange,
   placeholder = "Tìm serial hoặc vị trí kho",
+  disabled = false,
 }) {
   const [tuKhoa, setTuKhoa] = useState("");
   const [hienDanhSach, setHienDanhSach] = useState(false);
@@ -102,15 +104,20 @@ function ComboboxTimTaiSan({
         value={tuKhoa}
         placeholder={placeholder}
         autoComplete="off"
-        onFocus={() => setHienDanhSach(true)}
-        onChange={(e) => doiTuKhoa(e.target.value)}
+        disabled={disabled}
+        onFocus={() => {
+          if (!disabled) setHienDanhSach(true);
+        }}
+        onChange={(e) => {
+          if (!disabled) doiTuKhoa(e.target.value);
+        }}
         onBlur={() => {
           // Chờ sự kiện click của dòng gợi ý chạy xong rồi mới đóng.
           setTimeout(() => setHienDanhSach(false), 150);
         }}
       />
 
-      {hienDanhSach && (
+      {hienDanhSach && !disabled && (
         <div
           style={{
             position: "absolute",
@@ -192,6 +199,7 @@ function ComboboxTimViTriPhuKien({
   danhSachViTri,
   onChange,
   placeholder = "Tìm vị trí kho",
+  disabled = false,
 }) {
   const [tuKhoa, setTuKhoa] = useState("");
   const [hienDanhSach, setHienDanhSach] = useState(false);
@@ -251,14 +259,19 @@ function ComboboxTimViTriPhuKien({
         value={tuKhoa}
         placeholder={placeholder}
         autoComplete="off"
-        onFocus={() => setHienDanhSach(true)}
-        onChange={(e) => doiTuKhoa(e.target.value)}
+        disabled={disabled}
+        onFocus={() => {
+          if (!disabled) setHienDanhSach(true);
+        }}
+        onChange={(e) => {
+          if (!disabled) doiTuKhoa(e.target.value);
+        }}
         onBlur={() => {
           setTimeout(() => setHienDanhSach(false), 150);
         }}
       />
 
-      {hienDanhSach && (
+      {hienDanhSach && !disabled && (
         <div className="danh-sach-combobox-vi-tri-phu-kien">
           {danhSachTimDuoc.length === 0 ? (
             <div className="dong-combobox-vi-tri-phu-kien">
@@ -299,6 +312,7 @@ function AdminOrderList() {
 
   const [moPopupYeuCauHuy, setMoPopupYeuCauHuy] = useState(false);
   const [danhSachYeuCauHuy, setDanhSachYeuCauHuy] = useState([]);
+  const [tuKhoaYeuCauHuy, setTuKhoaYeuCauHuy] = useState("");
   const [trangYeuCauHuyHienTai, setTrangYeuCauHuyHienTai] = useState(1);
   const [soLuongYeuCauHuyChoXuLy, setSoLuongYeuCauHuyChoXuLy] =
     useState(0);
@@ -323,16 +337,122 @@ function AdminOrderList() {
   const [ghiChuBanGiao, setGhiChuBanGiao] = useState("");
   const [hopDongFiles, setHopDongFiles] = useState([]);
   const [anhBanGiaoFiles, setAnhBanGiaoFiles] = useState([]);
+  const [anhBienBanFiles, setAnhBienBanFiles] = useState([]);
+  const [anhBienBanDaUpload, setAnhBienBanDaUpload] = useState([]);
   const [dangGuiBanGiao, setDangGuiBanGiao] = useState(false);
+  const [daXuatBienBanBanGiao, setDaXuatBienBanBanGiao] = useState(false);
+  const [dangXuatBienBanBanGiao, setDangXuatBienBanBanGiao] = useState(false);
 
   const [anhDangXem, setAnhDangXem] = useState("");
+  const [blobUrlTepBaoVe, setBlobUrlTepBaoVe] = useState({});
+  const blobUrlsRef = useRef(new Set());
+
+  useEffect(() => {
+    const danhSach = [
+      ...(chiTietDon?.tep_don_thue || []),
+      ...(donBanGiao?.tep_don_thue || []),
+      ...(anhBienBanDaUpload || []),
+    ];
+
+    xoaBlobTepBaoVe();
+
+    if (danhSach.length > 0) {
+      taiBlobDanhSachTepBaoVe(danhSach);
+    }
+  }, [chiTietDon, donBanGiao, anhBienBanDaUpload]);
 
   function moPopup(noiDung) {
     setPopupThongBao(noiDung || "Có lỗi xảy ra");
   }
 
+  function taoBlobUrl(blob) {
+    const blobUrl = URL.createObjectURL(blob);
+    blobUrlsRef.current.add(blobUrl);
+    return blobUrl;
+  }
+
+  function thuHoiBlobUrl(blobUrl) {
+    if (!blobUrl || !blobUrl.startsWith("blob:")) return;
+    URL.revokeObjectURL(blobUrl);
+    blobUrlsRef.current.delete(blobUrl);
+  }
+
+  function xoaBlobTepBaoVe() {
+    setBlobUrlTepBaoVe((hienTai) => {
+      Object.values(hienTai).forEach(thuHoiBlobUrl);
+      return {};
+    });
+  }
+
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach((blobUrl) => URL.revokeObjectURL(blobUrl));
+      blobUrlsRef.current.clear();
+    };
+  }, []);
+
+  async function layBlobUrlTepBaoVe(fileId) {
+    const phanHoi = await fetch(
+      `${String(DUONG_DAN_API).replace(/\/+$/, "")}/api/protected-files/orders/${fileId}/content`,
+      {
+        headers: taoHeaderCoToken(),
+      }
+    );
+
+    if (!phanHoi.ok) {
+      const duLieuLoi = await phanHoi.json().catch(() => ({}));
+      throw new Error(duLieuLoi.message || "Không thể tải ảnh");
+    }
+
+    const blob = await phanHoi.blob();
+    const blobUrl = taoBlobUrl(blob);
+
+    setBlobUrlTepBaoVe((hienTai) => {
+      if (hienTai[fileId] && hienTai[fileId] !== blobUrl) {
+        thuHoiBlobUrl(hienTai[fileId]);
+      }
+
+      return {
+        ...hienTai,
+        [fileId]: blobUrl,
+      };
+    });
+
+    return blobUrl;
+  }
+
+  async function taiBlobDanhSachTepBaoVe(danhSach = []) {
+    const danhSachKhongTrung = [
+      ...new Map(
+        danhSach
+          .filter((file) => file?.id)
+          .map((file) => [String(file.id), file])
+      ).values(),
+    ];
+
+    await Promise.all(
+      danhSachKhongTrung.map(async (file) => {
+        try {
+          await layBlobUrlTepBaoVe(file.id);
+        } catch {
+          // Không làm vỡ popup nếu một ảnh cũ bị thiếu trên nơi lưu trữ.
+        }
+      })
+    );
+  }
+
   function hienThi(giaTri) {
     return giaTri || "-";
+  }
+
+  // Chuẩn hóa từ khóa để tìm kiếm không phân biệt chữ hoa/thường và dấu tiếng Việt.
+  function chuanHoaTuKhoa(giaTri) {
+    return String(giaTri || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d");
   }
 
   function layKetQuaThanhLyDaChon(don) {
@@ -463,29 +583,22 @@ function AdminOrderList() {
     if (!file) return false;
     if (file.loai_file && file.loai_file.startsWith("image/")) return true;
 
-    const url = String(file.file_url || "").toLowerCase();
-
-    return (
-      url.endsWith(".jpg") ||
-      url.endsWith(".jpeg") ||
-      url.endsWith(".png") ||
-      url.endsWith(".webp")
-    );
+    return [2601, 2602, 2603, 2604].includes(Number(file.muc_dich_id));
   }
 
   function laFileAnhDangChon(file) {
     return file && file.type && file.type.startsWith("image/");
   }
 
-  function moFileDaUpload(file) {
-    if (!file || !file.file_url) return;
+  async function moFileDaUpload(file) {
+    if (!file?.id) return;
 
-    if (laFileAnh(file)) {
-      setAnhDangXem(file.file_url);
-      return;
+    try {
+      const blobUrl = await layBlobUrlTepBaoVe(file.id);
+      setAnhDangXem(blobUrl);
+    } catch (loi) {
+      moPopup(loi.message);
     }
-
-    window.open(file.file_url, "_blank");
   }
 
   function moFileDangChon(file) {
@@ -527,14 +640,19 @@ function AdminOrderList() {
                 key={file.id}
                 onClick={() => moFileDaUpload(file)}
               >
-                {laFileAnh(file) ? (
+                {laFileAnh(file) && blobUrlTepBaoVe[file.id] ? (
                   <img
                     className="anh-file-admin"
-                    src={file.file_url}
+                    src={blobUrlTepBaoVe[file.id]}
                     alt="Ảnh đơn thuê"
+                    draggable={false}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onDragStart={(e) => e.preventDefault()}
                   />
                 ) : (
-                  <div className="khung-file-khong-anh">File</div>
+                  <div className="khung-file-khong-anh">
+                    {laFileAnh(file) ? "Đang tải ảnh..." : "File"}
+                  </div>
                 )}
               </div>
             ))}
@@ -581,6 +699,69 @@ function AdminOrderList() {
         ))}
       </div>
     );
+  }
+
+  async function moPdfCoToken(url, tuyChon = {}) {
+    const cuaSoPdf = window.open("", "_blank");
+
+    try {
+      const phanHoi = await fetch(url, {
+        ...tuyChon,
+        headers: {
+          ...(tuyChon.headers || {}),
+          ...taoHeaderCoToken(),
+        },
+      });
+
+      const loaiNoiDung = phanHoi.headers.get("content-type") || "";
+
+      if (!phanHoi.ok || !loaiNoiDung.includes("application/pdf")) {
+        const noiDung = await phanHoi.text();
+        let thongBao = `Không thể mở PDF (HTTP ${phanHoi.status})`;
+
+        try {
+          const duLieu = JSON.parse(noiDung);
+          thongBao = duLieu.message || thongBao;
+        } catch {
+          if (noiDung.trim()) thongBao = noiDung;
+        }
+
+        throw new Error(thongBao);
+      }
+
+      const blob = await phanHoi.blob();
+      const urlPdf = URL.createObjectURL(blob);
+
+      if (cuaSoPdf) {
+        cuaSoPdf.location.href = urlPdf;
+      } else {
+        window.open(urlPdf, "_blank");
+      }
+
+      setTimeout(() => URL.revokeObjectURL(urlPdf), 60 * 1000);
+      return true;
+    } catch (loi) {
+      if (cuaSoPdf) cuaSoPdf.close();
+      throw loi;
+    }
+  }
+
+  async function xemHopDong(donId) {
+    try {
+      await moPdfCoToken(`${DUONG_DAN_API}/api/admin/orders/${donId}/contract`);
+    } catch (loi) {
+      moPopup(loi.message || "Không thể mở hợp đồng");
+    }
+  }
+
+  async function xemBienBanBanGiao(donId) {
+    try {
+      await moPdfCoToken(
+        `${DUONG_DAN_API}/api/admin/orders/${donId}/handover-document`
+      );
+    } catch (loi) {
+      moPopup(loi.message || "Không thể mở biên bản bàn giao");
+    }
   }
 
   async function layChinhSachThue() {
@@ -893,8 +1074,23 @@ function AdminOrderList() {
       setGhiChuBanGiao("");
       setHopDongFiles([]);
       setAnhBanGiaoFiles([]);
+      setAnhBienBanFiles([]);
+      setAnhBienBanDaUpload([]);
+      setDaXuatBienBanBanGiao(false);
 
       const chiTiet = await layChiTietDon(donId);
+      const vatPhamDaChot = chiTiet.vat_pham_ban_giao || [];
+      const daXuatBienBan = vatPhamDaChot.length > 0;
+
+      setDaXuatBienBanBanGiao(daXuatBienBan);
+      setGhiChuBanGiao(chiTiet.ghi_chu_ban_giao || "");
+      setAnhBienBanDaUpload(
+        (chiTiet.tep_don_thue || []).filter(
+          (file) =>
+            Number(file.muc_dich_id) ===
+            MUC_DICH_ANH_BIEN_BAN_BAN_GIAO
+        )
+      );
 
       if (Number(chiTiet.trang_thai) !== TRANG_THAI_DA_GIU_CHO) {
         throw new Error("Chỉ lập bàn giao được đơn ở trạng thái Đã giữ chỗ");
@@ -909,6 +1105,25 @@ function AdminOrderList() {
       const viTriPhuKienTam = {};
       const phanBoPhuKienTam = {};
       const luaChonTam = {};
+
+      function themTaiSanDaChot(mauId, vatPham) {
+        if (!mauId || !vatPham?.thiet_bi_id) return;
+
+        if (!taiSanTam[mauId]) taiSanTam[mauId] = [];
+
+        const daCo = taiSanTam[mauId].some(
+          (item) => String(item.id) === String(vatPham.thiet_bi_id)
+        );
+
+        if (!daCo) {
+          taiSanTam[mauId].push({
+            id: vatPham.thiet_bi_id,
+            so_serial: vatPham.so_serial_snapshot || vatPham.so_serial || "",
+            ma_tai_san: vatPham.ma_tai_san_snapshot || "",
+            ten_vi_tri_kho: vatPham.ten_vi_tri_kho || "",
+          });
+        }
+      }
 
       async function napTaiSanTheoMau(mauId) {
         if (!mauId || taiSanTam[mauId]) return;
@@ -925,8 +1140,20 @@ function AdminOrderList() {
 
         await napTaiSanTheoMau(dong.mau_thiet_bi_id);
 
+        const thietBiChinhDaChot = vatPhamDaChot.filter(
+          (item) =>
+            String(item.chi_tiet_don_thue_id) === String(dong.id) &&
+            !item.bo_di_kem_id &&
+            item.thiet_bi_id
+        );
+
         for (let i = 0; i < soLuongDat; i++) {
-          luaChonTam[`main-${dong.id}-${i}`] = "";
+          const vatPhamChot = thietBiChinhDaChot[i];
+          luaChonTam[`main-${dong.id}-${i}`] = vatPhamChot?.thiet_bi_id || "";
+
+          if (vatPhamChot) {
+            themTaiSanDaChot(dong.mau_thiet_bi_id, vatPhamChot);
+          }
         }
 
         const boDiKem = await layBoDiKemCuaMau(dong.mau_thiet_bi_id);
@@ -938,8 +1165,21 @@ function AdminOrderList() {
           if (bdk.mau_thiet_bi_phu_id) {
             await napTaiSanTheoMau(bdk.mau_thiet_bi_phu_id);
 
+            const thietBiPhuDaChot = vatPhamDaChot.filter(
+              (item) =>
+                String(item.chi_tiet_don_thue_id) === String(dong.id) &&
+                String(item.bo_di_kem_id) === String(bdk.id) &&
+                item.thiet_bi_id
+            );
+
             for (let i = 0; i < soLuongCan; i++) {
-              luaChonTam[`bdk-${dong.id}-${bdk.id}-${i}`] = "";
+              const vatPhamChot = thietBiPhuDaChot[i];
+              luaChonTam[`bdk-${dong.id}-${bdk.id}-${i}`] =
+                vatPhamChot?.thiet_bi_id || "";
+
+              if (vatPhamChot) {
+                themTaiSanDaChot(bdk.mau_thiet_bi_phu_id, vatPhamChot);
+              }
             }
           }
 
@@ -950,22 +1190,53 @@ function AdminOrderList() {
             }
 
             const danhSachViTri = viTriPhuKienTam[bdk.phu_kien_id] || [];
-            const coViTriDuSoLuong = danhSachViTri.some(
-              (item) => Number(item.so_luong_kha_dung || 0) >= soLuongCan
+            const vatPhamPhuKienDaChot = vatPhamDaChot.find(
+              (item) =>
+                String(item.chi_tiet_don_thue_id) === String(dong.id) &&
+                String(item.bo_di_kem_id) === String(bdk.id) &&
+                String(item.phu_kien_id) === String(bdk.phu_kien_id)
             );
 
-            if (!coViTriDuSoLuong) {
-              throw new Error(
-                `${taoTenVatPhamBoDiKem(bdk)} không có vị trí nào còn đủ ${soLuongCan} để bàn giao`
+            if (vatPhamPhuKienDaChot) {
+              const daCoViTri = danhSachViTri.some(
+                (item) =>
+                  String(item.phu_kien_vi_tri_kho_id) ===
+                  String(vatPhamPhuKienDaChot.phu_kien_vi_tri_kho_id)
               );
+
+              if (!daCoViTri) {
+                danhSachViTri.push({
+                  phu_kien_vi_tri_kho_id:
+                    vatPhamPhuKienDaChot.phu_kien_vi_tri_kho_id,
+                  ten_vi_tri: vatPhamPhuKienDaChot.ten_vi_tri_kho || "",
+                  so_luong_kha_dung: Number(
+                    vatPhamPhuKienDaChot.so_luong_giao || 0
+                  ),
+                });
+              }
+            }
+
+            if (!daXuatBienBan) {
+              const coViTriDuSoLuong = danhSachViTri.some(
+                (item) => Number(item.so_luong_kha_dung || 0) >= soLuongCan
+              );
+
+              if (!coViTriDuSoLuong) {
+                throw new Error(
+                  `${taoTenVatPhamBoDiKem(bdk)} không có vị trí nào còn đủ ${soLuongCan} để bàn giao`
+                );
+              }
             }
 
             const keyPhuKien = `pk-${dong.id}-${bdk.id}`;
 
             phanBoPhuKienTam[keyPhuKien] = [
               {
-                phu_kien_vi_tri_kho_id: "",
-                so_luong: soLuongCan,
+                phu_kien_vi_tri_kho_id:
+                  vatPhamPhuKienDaChot?.phu_kien_vi_tri_kho_id || "",
+                so_luong: Number(
+                  vatPhamPhuKienDaChot?.so_luong_giao || soLuongCan
+                ),
               },
             ];
           }
@@ -1192,10 +1463,28 @@ function AdminOrderList() {
     return vatPham;
   }
 
+  function daChonDuVatPhamBanGiao() {
+    if (!donBanGiao) return false;
+    if (daXuatBienBanBanGiao) return true;
+
+    try {
+      taoVatPhamBanGiao();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function themFile(e, danhSachCu, setDanhSach, tenLoai) {
     const filesMoi = Array.from(e.target.files || []);
 
     if (filesMoi.length === 0) return;
+
+    if (filesMoi.some((file) => !file.type?.startsWith("image/"))) {
+      moPopup(`Chỉ chấp nhận file hình ảnh cho ${tenLoai}`);
+      e.target.value = "";
+      return;
+    }
 
     const danhSachMoi = [...danhSachCu, ...filesMoi];
 
@@ -1211,6 +1500,58 @@ function AdminOrderList() {
 
   function xoaFile(index, danhSachCu, setDanhSach) {
     setDanhSach(danhSachCu.filter((_, viTri) => viTri !== index));
+  }
+
+  async function xuatBienBanBanGiao() {
+    try {
+      if (!donBanGiao) {
+        throw new Error("Không có dữ liệu đơn bàn giao");
+      }
+
+      if (!daXuatBienBanBanGiao && !ghiChuBanGiao.trim()) {
+        throw new Error("Vui lòng nhập ghi chú bàn giao trước khi xuất biên bản");
+      }
+
+      setDangXuatBienBanBanGiao(true);
+
+      if (daXuatBienBanBanGiao) {
+        await xemBienBanBanGiao(donBanGiao.id);
+        return;
+      }
+
+      const vatPham = taoVatPhamBanGiao();
+
+      await moPdfCoToken(
+        `${DUONG_DAN_API}/api/admin/orders/${donBanGiao.id}/handover-document`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ghi_chu_ban_giao: ghiChuBanGiao.trim(),
+            vat_pham: vatPham,
+          }),
+        }
+      );
+
+      setDaXuatBienBanBanGiao(true);
+
+      // Nạp lại chi tiết để lấy đúng snapshot vật phẩm đã lưu ở Backend.
+      const chiTietMoi = await layChiTietDon(donBanGiao.id);
+      setDonBanGiao(chiTietMoi);
+      setAnhBienBanDaUpload(
+        (chiTietMoi.tep_don_thue || []).filter(
+          (file) =>
+            Number(file.muc_dich_id) ===
+            MUC_DICH_ANH_BIEN_BAN_BAN_GIAO
+        )
+      );
+    } catch (loi) {
+      moPopup(loi.message || "Không thể xuất biên bản bàn giao");
+    } finally {
+      setDangXuatBienBanBanGiao(false);
+    }
   }
 
   async function xacNhanBanGiao() {
@@ -1229,11 +1570,23 @@ function AdminOrderList() {
         throw new Error("Vui lòng tải lên ảnh bàn giao");
       }
 
-      const vatPham = taoVatPhamBanGiao();
-      const formData = new FormData();
+      if (!daXuatBienBanBanGiao) {
+        throw new Error("Vui lòng xuất biên bản bàn giao trước khi xác nhận");
+      }
 
-      formData.append("ghi_chu_ban_giao", ghiChuBanGiao);
-      formData.append("vat_pham", JSON.stringify(vatPham));
+      if (anhBienBanDaUpload.length === 0 && anhBienBanFiles.length === 0) {
+        throw new Error(
+          "Vui lòng chọn ít nhất 1 ảnh biên bản bàn giao đã ký trước khi xác nhận"
+        );
+      }
+
+      if (anhBienBanDaUpload.length + anhBienBanFiles.length > SO_FILE_TOI_DA) {
+        throw new Error(
+          `Tổng số ảnh biên bản bàn giao không được vượt quá ${SO_FILE_TOI_DA}`
+        );
+      }
+
+      const formData = new FormData();
 
       hopDongFiles.forEach((file) => {
         formData.append("hop_dong_giay", file);
@@ -1241,6 +1594,10 @@ function AdminOrderList() {
 
       anhBanGiaoFiles.forEach((file) => {
         formData.append("anh_ban_giao", file);
+      });
+
+      anhBienBanFiles.forEach((file) => {
+        formData.append("anh_bien_ban_ban_giao", file);
       });
 
       const phanHoi = await fetch(
@@ -1257,6 +1614,9 @@ function AdminOrderList() {
       const duLieu = await phanHoi.json();
 
       if (duLieu.success) {
+        xoaBlobTepBaoVe();
+        setAnhDangXem("");
+        setAnhBienBanDaUpload([]);
         setMoPopupBanGiao(false);
         setDonBanGiao(null);
         moPopup(duLieu.message);
@@ -1280,17 +1640,35 @@ function AdminOrderList() {
     layDanhSachYeuCauHuy();
   }, []);
 
+  // Tìm trong popup yêu cầu hủy theo mã đơn, tên khách hàng hoặc số điện thoại.
+  const tuKhoaYeuCauHuyChuanHoa = chuanHoaTuKhoa(tuKhoaYeuCauHuy);
+
+  const danhSachYeuCauHuyDaLoc = danhSachYeuCauHuy.filter((don) => {
+    if (!tuKhoaYeuCauHuyChuanHoa) return true;
+
+    const noiDungTimKiem = [
+      don.ma_don,
+      don.ten_khach_hang,
+      don.sdt_khach_hang,
+    ]
+      .map(chuanHoaTuKhoa)
+      .join(" ");
+
+    return noiDungTimKiem.includes(tuKhoaYeuCauHuyChuanHoa);
+  });
+
+  // Phân trang sau khi lọc để số trang luôn đúng với kết quả tìm kiếm.
   const tongTrangYeuCauHuy = Math.max(
     1,
     Math.ceil(
-      danhSachYeuCauHuy.length / SO_DONG_YEU_CAU_HUY_MOI_TRANG
+      danhSachYeuCauHuyDaLoc.length / SO_DONG_YEU_CAU_HUY_MOI_TRANG
     )
   );
 
   const viTriBatDauYeuCauHuy =
     (trangYeuCauHuyHienTai - 1) * SO_DONG_YEU_CAU_HUY_MOI_TRANG;
 
-  const danhSachYeuCauHuyHienThi = danhSachYeuCauHuy.slice(
+  const danhSachYeuCauHuyHienThi = danhSachYeuCauHuyDaLoc.slice(
     viTriBatDauYeuCauHuy,
     viTriBatDauYeuCauHuy + SO_DONG_YEU_CAU_HUY_MOI_TRANG
   );
@@ -1300,7 +1678,7 @@ function AdminOrderList() {
       setTrangYeuCauHuyHienTai(tongTrangYeuCauHuy);
     }
   }, [
-    danhSachYeuCauHuy.length,
+    danhSachYeuCauHuyDaLoc.length,
     trangYeuCauHuyHienTai,
     tongTrangYeuCauHuy,
   ]);
@@ -1323,6 +1701,7 @@ function AdminOrderList() {
           className="nut-huy nut-yeu-cau-huy-admin"
           type="button"
           onClick={async () => {
+            setTuKhoaYeuCauHuy("");
             setTrangYeuCauHuyHienTai(1);
             setMoPopupYeuCauHuy(true);
             await layChinhSachThue();
@@ -1760,8 +2139,33 @@ function AdminOrderList() {
 
                   <div className="nhom-file-theo-muc-dich">
                     {hienThiNhomFile("Ảnh hợp đồng giấy", 2601)}
-                    {hienThiNhomFile("Ảnh bàn giao", 2602)}
+                    {hienThiNhomFile("Ảnh bàn giao thiết bị", 2602)}
+                    {hienThiNhomFile(
+                      "Ảnh biên bản bàn giao",
+                      MUC_DICH_ANH_BIEN_BAN_BAN_GIAO
+                    )}
                     {hienThiNhomFile("Ảnh khi trả", 2603)}
+                  </div>
+
+                  <div className="nhom-nut-tai-lieu-don">
+                    <button
+                      className="nut-xem-chi-tiet"
+                      type="button"
+                      onClick={() => xemHopDong(chiTietDon.id)}
+                    >
+                      Xem hợp đồng
+                    </button>
+
+                    {chiTietDon.ban_giao_luc &&
+                      (chiTietDon.vat_pham_ban_giao || []).length > 0 && (
+                        <button
+                          className="nut-xem-chi-tiet"
+                          type="button"
+                          onClick={() => xemBienBanBanGiao(chiTietDon.id)}
+                        >
+                          Xem biên bản bàn giao
+                        </button>
+                      )}
                   </div>
                 </>
               ) : (
@@ -1781,7 +2185,13 @@ function AdminOrderList() {
               <button
                 className="nut-dong-popup"
                 type="button"
-                onClick={() => setMoPopupBanGiao(false)}
+                onClick={() => {
+                  xoaBlobTepBaoVe();
+                  setAnhDangXem("");
+                  setAnhBienBanDaUpload([]);
+                  setDonBanGiao(null);
+                  setMoPopupBanGiao(false);
+                }}
               >
                 Đóng
               </button>
@@ -1897,6 +2307,7 @@ function AdminOrderList() {
                                       onChange={(value) =>
                                         thayDoiLuaChon(key, value)
                                       }
+                                      disabled={daXuatBienBanBanGiao}
                                     />
                                   </td>
                                 </tr>
@@ -1926,6 +2337,7 @@ function AdminOrderList() {
                                             onChange={(value) =>
                                               thayDoiLuaChon(key, value)
                                             }
+                                            disabled={daXuatBienBanBanGiao}
                                           />
                                         </td>
                                       </tr>
@@ -1938,11 +2350,13 @@ function AdminOrderList() {
                                 const key = `pk-${dong.id}-${bdk.id}`;
                                 const phanBo = (phanBoPhuKien[key] || [])[0];
                                 const danhSachViTriDuSoLuong =
-                                  layDanhSachViTriDuSoLuong(
-                                    bdk.phu_kien_id,
-                                    key,
-                                    soLuongCan
-                                  );
+                                  daXuatBienBanBanGiao
+                                    ? viTriPhuKienTheoId[bdk.phu_kien_id] || []
+                                    : layDanhSachViTriDuSoLuong(
+                                        bdk.phu_kien_id,
+                                        key,
+                                        soLuongCan
+                                      );
 
                                 const danhSachViTriCombobox =
                                   danhSachViTriDuSoLuong.map((viTri) => {
@@ -1983,6 +2397,7 @@ function AdminOrderList() {
                                           )
                                         }
                                         placeholder="Tìm và chọn vị trí kho"
+                                        disabled={daXuatBienBanBanGiao}
                                       />
                                     </td>
                                   </tr>
@@ -2001,53 +2416,157 @@ function AdminOrderList() {
                     <label>Ghi chú bàn giao</label>
                     <textarea
                       value={ghiChuBanGiao}
+                      disabled={daXuatBienBanBanGiao}
                       onChange={(e) => setGhiChuBanGiao(e.target.value)}
                     />
                   </div>
 
-                  <div className="o-form">
-                    <label>Ảnh hợp đồng giấy</label>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*,.pdf"
-                      onChange={(e) =>
-                        themFile(e, hopDongFiles, setHopDongFiles, "hợp đồng")
-                      }
-                    />
+                  {daXuatBienBanBanGiao ? (
+                    <>
+                      <p className="thong-bao-khoa-ban-giao">
+                        Biên bản đã được xuất. Thông tin vật phẩm và ghi chú bàn giao đã khóa.
+                      </p>
 
-                    {hienThiFileDangChon(hopDongFiles, setHopDongFiles)}
-                  </div>
+                      <div className="o-form">
+                        <label>Ảnh biên bản bàn giao đã ký</label>
+                        {anhBienBanDaUpload.length > 0 && (
+                          <>
+                            <p>Đã upload: {anhBienBanDaUpload.length} ảnh</p>
+                            <div
+                              className="luoi-file-admin"
+                              style={{
+                                gridTemplateColumns: `repeat(${SO_ANH_MOI_DONG}, minmax(0, 1fr))`,
+                              }}
+                            >
+                              {anhBienBanDaUpload.map((file) => (
+                                <div
+                                  className="the-file-admin"
+                                  key={file.id}
+                                  onClick={() => moFileDaUpload(file)}
+                                >
+                                  {blobUrlTepBaoVe[file.id] ? (
+                                    <img
+                                      className="anh-file-admin"
+                                      src={blobUrlTepBaoVe[file.id]}
+                                      alt="Ảnh biên bản bàn giao đã ký"
+                                      draggable={false}
+                                      onContextMenu={(e) => e.preventDefault()}
+                                      onDragStart={(e) => e.preventDefault()}
+                                    />
+                                  ) : (
+                                    <div className="khung-file-khong-anh">
+                                      Đang tải ảnh...
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
 
-                  <div className="o-form">
-                    <label>Ảnh bàn giao</label>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) =>
-                        themFile(
-                          e,
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          disabled={
+                            anhBienBanDaUpload.length >= SO_FILE_TOI_DA
+                          }
+                          onChange={(e) =>
+                            themFile(
+                              e,
+                              anhBienBanFiles,
+                              setAnhBienBanFiles,
+                              "ảnh biên bản bàn giao"
+                            )
+                          }
+                        />
+
+                        {hienThiFileDangChon(
+                          anhBienBanFiles,
+                          setAnhBienBanFiles
+                        )}
+
+                      </div>
+
+                      <div className="o-form">
+                        <label>Ảnh hợp đồng giấy</label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) =>
+                            themFile(
+                              e,
+                              hopDongFiles,
+                              setHopDongFiles,
+                              "hợp đồng"
+                            )
+                          }
+                        />
+
+                        {hienThiFileDangChon(hopDongFiles, setHopDongFiles)}
+                      </div>
+
+                      <div className="o-form">
+                        <label>Ảnh bàn giao thiết bị</label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) =>
+                            themFile(
+                              e,
+                              anhBanGiaoFiles,
+                              setAnhBanGiaoFiles,
+                              "ảnh bàn giao"
+                            )
+                          }
+                        />
+
+                        {hienThiFileDangChon(
                           anhBanGiaoFiles,
-                          setAnhBanGiaoFiles,
-                          "ảnh bàn giao"
-                        )
-                      }
-                    />
-
-                    {hienThiFileDangChon(anhBanGiaoFiles, setAnhBanGiaoFiles)}
-                  </div>
+                          setAnhBanGiaoFiles
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p>
+                      Sau khi xuất biên bản bàn giao, hệ thống mới mở phần chọn ảnh biên bản đã ký, hợp đồng giấy và ảnh bàn giao thiết bị.
+                    </p>
+                  )}
 
                   <div className="popup-actions">
                     <button
+                      className="nut-xem-chi-tiet"
+                      type="button"
+                      disabled={
+                        dangXuatBienBanBanGiao ||
+                        dangGuiBanGiao ||
+                        !daChonDuVatPhamBanGiao() ||
+                        !ghiChuBanGiao.trim()
+                      }
+                      onClick={xuatBienBanBanGiao}
+                    >
+                      {dangXuatBienBanBanGiao
+                        ? "Đang tạo PDF..."
+                        : "Xuất biên bản bàn giao"}
+                    </button>
+
+                    <button
                       className="nut-dong-y"
                       type="button"
-                      disabled={dangGuiBanGiao}
+                      disabled={
+                        dangGuiBanGiao ||
+                        !daXuatBienBanBanGiao ||
+                        (anhBienBanDaUpload.length === 0 &&
+                          anhBienBanFiles.length === 0) ||
+                        hopDongFiles.length === 0 ||
+                        anhBanGiaoFiles.length === 0
+                      }
                       onClick={xacNhanBanGiao}
                     >
                       {dangGuiBanGiao ? "Đang lưu..." : "Xác nhận bàn giao"}
                     </button>
-
                   </div>
                 </>
               )}
@@ -2249,6 +2768,18 @@ function AdminOrderList() {
                 </p>
               </div>
 
+              <div className="khung-loc-admin" style={{ marginBottom: "14px" }}>
+                <input
+                  type="text"
+                  placeholder="Tìm theo mã đơn, tên khách hàng, số điện thoại"
+                  value={tuKhoaYeuCauHuy}
+                  onChange={(e) => {
+                    setTuKhoaYeuCauHuy(e.target.value);
+                    setTrangYeuCauHuyHienTai(1);
+                  }}
+                />
+              </div>
+
               <div className="admin-bang-wrapper">
                 <table className="bang-quan-ly bang-gon bang-yeu-cau-huy">
                   <thead>
@@ -2273,16 +2804,20 @@ function AdminOrderList() {
                           Đang tải danh sách yêu cầu hủy...
                         </td>
                       </tr>
-                    ) : danhSachYeuCauHuy.length === 0 ? (
+                    ) : danhSachYeuCauHuyDaLoc.length === 0 ? (
                       <tr>
                         <td colSpan="10" style={{ textAlign: "center" }}>
-                          Chưa có yêu cầu hủy nào
+                          {tuKhoaYeuCauHuy.trim()
+                            ? "Không tìm thấy yêu cầu hủy phù hợp"
+                            : "Chưa có yêu cầu hủy nào"}
                         </td>
                       </tr>
                     ) : (
                       danhSachYeuCauHuyHienThi.map((don, index) => (
                         <tr key={don.yeu_cau_huy?.id || don.id}>
-                          <td>{index + 1}</td>
+                          <td>
+                            {viTriBatDauYeuCauHuy + index + 1}
+                          </td>
                           <td>{hienThi(don.ma_don)}</td>
                           <td>{hienThi(don.ten_khach_hang)}</td>
                           <td>{dinhDangNgay(don.ngay_nhan)}</td>
@@ -2380,7 +2915,13 @@ function AdminOrderList() {
       {anhDangXem && (
         <div className="popup-nen" onClick={() => setAnhDangXem("")}>
           <div className="popup-anh">
-            <img src={anhDangXem} alt="Ảnh đơn thuê" />
+            <img
+              src={anhDangXem}
+              alt="Ảnh đơn thuê"
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+              onDragStart={(e) => e.preventDefault()}
+            />
           </div>
         </div>
       )}

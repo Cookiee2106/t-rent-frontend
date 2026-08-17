@@ -367,6 +367,7 @@ function Header() {
         <Link to="/equipments">Mẫu thiết bị</Link>
         <Link to="/equipments?nhom=may-anh">Máy ảnh</Link>
         <Link to="/equipments?nhom=ong-kinh">Ống kính</Link>
+        <Link to="/quy-dinh">Quy định</Link>
       </div>
     </div>
   );
